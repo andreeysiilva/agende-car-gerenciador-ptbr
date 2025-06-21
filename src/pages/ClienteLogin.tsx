@@ -89,7 +89,7 @@ const ClienteLogin: React.FC = () => {
               </div>
             </div>
             <CardTitle className="text-2xl font-bold text-text-primary">
-              AgendCar
+              AgendiCar
             </CardTitle>
             <CardDescription className="text-text-secondary">
               {needPasswordReset ? 'Configure sua nova senha' : 'Acesse o painel da sua empresa'}
@@ -219,10 +219,16 @@ const ClienteLogin: React.FC = () => {
               </div>
               
               {!needPasswordReset && (
-                <div className="mt-4 text-center">
+                <div className="mt-4 text-center space-y-2">
                   <p className="text-xs text-text-secondary">
                     Recebeu um código de 6 dígitos via Telegram? Use-o como senha.
                   </p>
+                  <a 
+                    href="/login"
+                    className="text-sm text-primary hover:text-primary-hover underline block"
+                  >
+                    Acessar como administrador
+                  </a>
                 </div>
               )}
             </div>

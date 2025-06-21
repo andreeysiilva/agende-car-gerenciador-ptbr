@@ -1,5 +1,5 @@
 
-import { Home, Users, CreditCard, Settings } from "lucide-react";
+import { Home, Users, CreditCard, Settings, DollarSign, Car } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   Sidebar,
@@ -33,6 +33,11 @@ const menuItems = [
     url: "/planos", 
     icon: CreditCard,
   },
+  {
+    title: "Financeiro",
+    url: "/financeiro",
+    icon: DollarSign,
+  },
 ];
 
 // Componente da sidebar principal da aplicação
@@ -51,11 +56,12 @@ export function AppSidebar() {
     <Sidebar className="border-r bg-white">
       <SidebarHeader className="border-b p-6">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-sm">AC</span>
+          <div className="relative">
+            <Car className="h-8 w-8 text-primary" />
+            <div className="absolute -top-1 -right-1 w-3 h-3 bg-secondary rounded-full opacity-70"></div>
           </div>
           <div>
-            <h2 className="font-semibold text-gray-900">Agende Car</h2>
+            <h2 className="font-semibold text-gray-900">AgendiCar</h2>
             <p className="text-xs text-gray-500">Painel Administrativo</p>
           </div>
         </div>
