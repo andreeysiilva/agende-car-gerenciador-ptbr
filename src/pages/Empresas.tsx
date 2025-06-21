@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Users, Send, Edit, Trash } from 'lucide-react';
+import { Plus, Users, Send, Edit, Trash, Upload, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 
 // Interface para definir a estrutura de uma empresa
@@ -20,6 +20,7 @@ interface Empresa {
   telefone: string;
   plano: string;
   status: 'Ativo' | 'Inativo' | 'Pendente';
+  logo?: string;
   senhaTemporaria?: string;
   dataCriacao: string;
 }
@@ -65,15 +66,30 @@ const Empresas: React.FC = () => {
   const [empresas, setEmpresas] = useState<Empresa[]>(empresasMock);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [empresaEditando, setEmpresaEditando] = useState<Empresa | null>(null);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
   
   // Estados do formulário
   const [formData, setFormData] = useState({
     nome: '',
     email: '',
-    subdominio: '',
     telefone: '',
     plano: ''
   });
+
+  // Função para gerar subdomínio baseado no nome da empresa
+  const gerarSubdominio = (nomeEmpresa: string): string => {
+    return nomeEmpresa
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+      .replace(/[^a-z0-9\s]/g, '') // Remove caracteres especiais
+      .trim()
+      .split(' ')
+      .filter(word => !['do', 'da', 'de', 'dos', 'das', 'e', 'o', 'a'].includes(word))
+      .slice(0, 2) // Pega apenas as duas primeiras palavras relevantes
+      .join('')
+      .substring(0, 20); // Limita a 20 caracteres
+  };
 
   // Função para gerar senha temporária de 6 dígitos
   const gerarSenhaTemporaria = (): string => {
@@ -85,11 +101,11 @@ const Empresas: React.FC = () => {
     setFormData({
       nome: '',
       email: '',
-      subdominio: '',
       telefone: '',
       plano: ''
     });
     setEmpresaEditando(null);
+    setLogoFile(null);
   };
 
   // Função para preparar edição de empresa
@@ -98,16 +114,31 @@ const Empresas: React.FC = () => {
     setFormData({
       nome: empresa.nome,
       email: empresa.email,
-      subdominio: empresa.subdominio,
       telefone: empresa.telefone,
       plano: empresa.plano
     });
     setIsDialogOpen(true);
   };
 
+  // Função para lidar com upload de logo
+  const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) { // 2MB limit
+        toast.error('Arquivo muito grande. Máximo 2MB');
+        return;
+      }
+      if (!file.type.startsWith('image/')) {
+        toast.error('Arquivo deve ser uma imagem');
+        return;
+      }
+      setLogoFile(file);
+    }
+  };
+
   // Função para salvar empresa (criar ou atualizar)
   const salvarEmpresa = () => {
-    if (!formData.nome || !formData.email || !formData.subdominio || !formData.telefone || !formData.plano) {
+    if (!formData.nome || !formData.email || !formData.telefone || !formData.plano) {
       toast.error('Preencha todos os campos obrigatórios');
       return;
     }
@@ -123,11 +154,15 @@ const Empresas: React.FC = () => {
     } else {
       // Criar nova empresa
       const senhaTemporaria = gerarSenhaTemporaria();
+      const subdominio = gerarSubdominio(formData.nome);
+      
       const novaEmpresa: Empresa = {
         id: empresas.length + 1,
         ...formData,
+        subdominio,
         status: 'Pendente',
         senhaTemporaria,
+        logo: logoFile ? URL.createObjectURL(logoFile) : undefined,
         dataCriacao: new Date().toISOString().split('T')[0]
       };
       
@@ -135,8 +170,9 @@ const Empresas: React.FC = () => {
       
       // Simular envio da senha via Telegram
       console.log(`Enviando senha temporária via Telegram para ${formData.telefone}: ${senhaTemporaria}`);
+      console.log(`Subdomínio gerado: ${subdominio}.agendcar.com`);
       
-      toast.success(`Empresa criada! Senha temporária: ${senhaTemporaria}`);
+      toast.success(`Empresa criada! Subdomínio: ${subdominio}.agendcar.com`);
     }
 
     setIsDialogOpen(false);
@@ -161,6 +197,12 @@ const Empresas: React.FC = () => {
     
     console.log(`Reenviando senha via Telegram para ${empresa.telefone}: ${novaSenha}`);
     toast.success(`Nova senha enviada via Telegram: ${novaSenha}`);
+  };
+
+  // Função para abrir dashboard da empresa
+  const abrirDashboardEmpresa = (subdominio: string) => {
+    const url = `https://${subdominio}.agendcar.com`;
+    window.open(url, '_blank');
   };
 
   return (
@@ -193,7 +235,7 @@ const Empresas: React.FC = () => {
               <DialogDescription>
                 {empresaEditando 
                   ? 'Atualize as informações da empresa.'
-                  : 'Preencha os dados para criar uma nova empresa.'
+                  : 'Preencha os dados para criar uma nova empresa. O subdomínio será gerado automaticamente.'
                 }
               </DialogDescription>
             </DialogHeader>
@@ -207,6 +249,41 @@ const Empresas: React.FC = () => {
                   onChange={(e) => setFormData({...formData, nome: e.target.value})}
                   placeholder="Ex: Auto Lavagem Premium"
                 />
+                {formData.nome && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Subdomínio: {gerarSubdominio(formData.nome)}.agendcar.com
+                  </p>
+                )}
+              </div>
+              
+              <div>
+                <Label htmlFor="logo">Logo da Empresa (opcional)</Label>
+                <div className="flex items-center gap-3">
+                  <Input
+                    id="logo"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleLogoUpload}
+                    className="hidden"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => document.getElementById('logo')?.click()}
+                    className="flex items-center gap-2"
+                  >
+                    <Upload className="h-4 w-4" />
+                    {logoFile ? 'Trocar Logo' : 'Enviar Logo'}
+                  </Button>
+                  {logoFile && (
+                    <span className="text-sm text-gray-600">
+                      {logoFile.name}
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Máximo 2MB, formatos: JPG, PNG, SVG
+                </p>
               </div>
               
               <div>
@@ -218,19 +295,6 @@ const Empresas: React.FC = () => {
                   onChange={(e) => setFormData({...formData, email: e.target.value})}
                   placeholder="contato@empresa.com"
                 />
-              </div>
-              
-              <div>
-                <Label htmlFor="subdominio">Subdomínio *</Label>
-                <Input
-                  id="subdominio"
-                  value={formData.subdominio}
-                  onChange={(e) => setFormData({...formData, subdominio: e.target.value})}
-                  placeholder="minhaempresa"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Será usado como: {formData.subdominio || 'subdominio'}.agendecar.com
-                </p>
               </div>
               
               <div>
@@ -329,16 +393,31 @@ const Empresas: React.FC = () => {
                 {empresas.map((empresa) => (
                   <TableRow key={empresa.id}>
                     <TableCell>
-                      <div>
-                        <div className="font-medium">{empresa.nome}</div>
-                        <div className="text-sm text-gray-500">{empresa.email}</div>
-                        <div className="text-sm text-gray-500">{empresa.telefone}</div>
+                      <div className="flex items-center gap-3">
+                        {empresa.logo && (
+                          <img 
+                            src={empresa.logo} 
+                            alt={`Logo ${empresa.nome}`}
+                            className="w-10 h-10 rounded-lg object-cover"
+                          />
+                        )}
+                        <div>
+                          <div className="font-medium">{empresa.nome}</div>
+                          <div className="text-sm text-gray-500">{empresa.email}</div>
+                          <div className="text-sm text-gray-500">{empresa.telefone}</div>
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <code className="text-sm bg-gray-100 px-2 py-1 rounded">
-                        {empresa.subdominio}.agendecar.com
-                      </code>
+                      <button
+                        onClick={() => abrirDashboardEmpresa(empresa.subdominio)}
+                        className="flex items-center gap-2 text-primary hover:text-primary-hover transition-colors"
+                      >
+                        <code className="text-sm bg-gray-100 px-2 py-1 rounded">
+                          {empresa.subdominio}.agendcar.com
+                        </code>
+                        <ExternalLink className="h-4 w-4" />
+                      </button>
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline">{empresa.plano}</Badge>

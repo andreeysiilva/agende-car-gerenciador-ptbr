@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Clock, Plus, ArrowLeft, ArrowRight, Filter } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import AgendamentoForm from '@/components/AgendamentoForm';
 
 // Interface para horários da agenda
 interface HorarioAgenda {
@@ -13,6 +14,7 @@ interface HorarioAgenda {
   agendamento?: {
     cliente: string;
     servico: string;
+    nomeCarro: string;
     duracao: number; // em minutos
     telefone: string;
   };
@@ -35,6 +37,7 @@ const agendamentosDia: HorarioAgenda[] = horariosDisponiveis.map(hora => {
       agendamento: {
         cliente: 'João Silva',
         servico: 'Lavagem Completa',
+        nomeCarro: 'Fiat Uno',
         duracao: 60,
         telefone: '(11) 99999-1234'
       }
@@ -47,6 +50,7 @@ const agendamentosDia: HorarioAgenda[] = horariosDisponiveis.map(hora => {
       agendamento: {
         cliente: 'Maria Santos',
         servico: 'Enceramento',
+        nomeCarro: 'Civic',
         duracao: 90,
         telefone: '(11) 99999-5678'
       }
@@ -59,6 +63,7 @@ const agendamentosDia: HorarioAgenda[] = horariosDisponiveis.map(hora => {
       agendamento: {
         cliente: 'Pedro Costa',
         servico: 'Lavagem + Cera',
+        nomeCarro: 'Hilux',
         duracao: 120,
         telefone: '(11) 99999-9012'
       }
@@ -71,6 +76,8 @@ const ClienteAgenda = () => {
   const [dataAtual, setDataAtual] = useState(new Date());
   const [filtroServico, setFiltroServico] = useState('todos');
   const [visualizacao, setVisualizacao] = useState<'dia' | 'semana' | 'mes'>('dia');
+  const [agendamentoFormAberto, setAgendamentoFormAberto] = useState(false);
+  const [horarioSelecionado, setHorarioSelecionado] = useState<string>('');
 
   // Navegação de data
   const navegarData = (direcao: 'anterior' | 'proximo') => {
@@ -97,8 +104,8 @@ const ClienteAgenda = () => {
 
   // Função para criar novo agendamento
   const criarAgendamento = (horario: string) => {
-    // Aqui seria implementada a lógica para criar um novo agendamento
-    console.log('Criar agendamento para:', horario);
+    setHorarioSelecionado(horario);
+    setAgendamentoFormAberto(true);
   };
 
   return (
@@ -108,7 +115,11 @@ const ClienteAgenda = () => {
         <div className="px-4 py-3">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-xl font-bold text-text-primary">Agenda</h1>
-            <Button size="sm" className="bg-primary hover:bg-primary-hover">
+            <Button 
+              size="sm" 
+              className="bg-primary hover:bg-primary-hover"
+              onClick={() => setAgendamentoFormAberto(true)}
+            >
               <Plus className="h-4 w-4 mr-2" />
               Novo Agendamento
             </Button>
@@ -216,8 +227,10 @@ const ClienteAgenda = () => {
                   {agendamentosDia.map((horario) => (
                     <div
                       key={horario.hora}
-                      className={`agenda-slot ${
-                        horario.disponivel ? 'available' : 'occupied'
+                      className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                        horario.disponivel 
+                          ? 'border-green-200 bg-green-50 hover:border-green-300 hover:bg-green-100' 
+                          : 'border-red-200 bg-red-50 cursor-not-allowed'
                       }`}
                       onClick={() => horario.disponivel && criarAgendamento(horario.hora)}
                     >
@@ -246,7 +259,10 @@ const ClienteAgenda = () => {
                             {horario.agendamento.servico}
                           </p>
                           <p className="text-xs text-text-secondary">
-                            {horario.agendamento.duracao} min • {horario.agendamento.telefone}
+                            {horario.agendamento.nomeCarro} • {horario.agendamento.duracao} min
+                          </p>
+                          <p className="text-xs text-text-secondary">
+                            {horario.agendamento.telefone}
                           </p>
                         </div>
                       )}
@@ -296,6 +312,13 @@ const ClienteAgenda = () => {
           </Card>
         )}
       </main>
+
+      {/* Formulário de agendamento */}
+      <AgendamentoForm
+        isOpen={agendamentoFormAberto}
+        onClose={() => setAgendamentoFormAberto(false)}
+        horarioSelecionado={horarioSelecionado}
+      />
     </div>
   );
 };

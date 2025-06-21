@@ -13,6 +13,7 @@ import Dashboard from "./pages/Dashboard";
 import Empresas from "./pages/Empresas";
 import Planos from "./pages/Planos";
 import NotFound from "./pages/NotFound";
+import ClienteLogin from "./pages/ClienteLogin";
 import ClienteDashboard from "./pages/ClienteDashboard";
 import ClienteAgenda from "./pages/ClienteAgenda";
 import ClienteServicos from "./pages/ClienteServicos";
@@ -30,7 +31,11 @@ const App = () => (
       <AuthProvider>
         <BrowserRouter>
           <Routes>
+            {/* Login administrativo */}
             <Route path="/login" element={<Login />} />
+            
+            {/* Login para clientes (empresas) */}
+            <Route path="/cliente/login" element={<ClienteLogin />} />
             
             {/* Rotas do cliente (dashboard das empresas) */}
             <Route path="/cliente/*" element={
