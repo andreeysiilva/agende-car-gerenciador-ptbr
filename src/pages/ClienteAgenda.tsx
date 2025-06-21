@@ -6,71 +6,26 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar, Clock, Plus, ArrowLeft, ArrowRight, Filter } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AgendamentoForm from '@/components/AgendamentoForm';
+import { toast } from 'sonner';
+
+// Interface para agendamentos
+interface Agendamento {
+  id?: number;
+  nomeCliente: string;
+  telefone: string;
+  nomeCarro: string;
+  servico: string;
+  observacoes: string;
+  horario: string;
+  data: string;
+}
 
 // Interface para horários da agenda
 interface HorarioAgenda {
   hora: string;
   disponivel: boolean;
-  agendamento?: {
-    cliente: string;
-    servico: string;
-    nomeCarro: string;
-    duracao: number; // em minutos
-    telefone: string;
-  };
+  agendamento?: Agendamento;
 }
-
-// Dados mock para a agenda
-const horariosDisponiveis = [
-  '08:00', '08:30', '09:00', '09:30', '10:00', '10:30',
-  '11:00', '11:30', '12:00', '12:30', '13:00', '13:30',
-  '14:00', '14:30', '15:00', '15:30', '16:00', '16:30',
-  '17:00', '17:30', '18:00'
-];
-
-const agendamentosDia: HorarioAgenda[] = horariosDisponiveis.map(hora => {
-  // Mock de alguns agendamentos para demonstração
-  if (hora === '09:00') {
-    return {
-      hora,
-      disponivel: false,
-      agendamento: {
-        cliente: 'João Silva',
-        servico: 'Lavagem Completa',
-        nomeCarro: 'Fiat Uno',
-        duracao: 60,
-        telefone: '(11) 99999-1234'
-      }
-    };
-  }
-  if (hora === '11:30') {
-    return {
-      hora,
-      disponivel: false,
-      agendamento: {
-        cliente: 'Maria Santos',
-        servico: 'Enceramento',
-        nomeCarro: 'Civic',
-        duracao: 90,
-        telefone: '(11) 99999-5678'
-      }
-    };
-  }
-  if (hora === '14:00') {
-    return {
-      hora,
-      disponivel: false,
-      agendamento: {
-        cliente: 'Pedro Costa',
-        servico: 'Lavagem + Cera',
-        nomeCarro: 'Hilux',
-        duracao: 120,
-        telefone: '(11) 99999-9012'
-      }
-    };
-  }
-  return { hora, disponivel: true };
-});
 
 const ClienteAgenda = () => {
   const [dataAtual, setDataAtual] = useState(new Date());
@@ -78,6 +33,60 @@ const ClienteAgenda = () => {
   const [visualizacao, setVisualizacao] = useState<'dia' | 'semana' | 'mes'>('dia');
   const [agendamentoFormAberto, setAgendamentoFormAberto] = useState(false);
   const [horarioSelecionado, setHorarioSelecionado] = useState<string>('');
+  const [agendamentoSelecionado, setAgendamentoSelecionado] = useState<Agendamento | undefined>();
+  const [agendamentos, setAgendamentos] = useState<Agendamento[]>([
+    {
+      id: 1,
+      nomeCliente: 'João Silva',
+      telefone: '(11) 99999-1234',
+      nomeCarro: 'Fiat Uno',
+      servico: 'Lavagem Completa',
+      observacoes: '',
+      horario: '09:00',
+      data: new Date().toISOString().split('T')[0]
+    },
+    {
+      id: 2,
+      nomeCliente: 'Maria Santos',
+      telefone: '(11) 99999-5678',
+      nomeCarro: 'Civic',
+      servico: 'Enceramento',
+      observacoes: '',
+      horario: '11:30',
+      data: new Date().toISOString().split('T')[0]
+    },
+    {
+      id: 3,
+      nomeCliente: 'Pedro Costa',
+      telefone: '(11) 99999-9012',
+      nomeCarro: 'Hilux',
+      servico: 'Lavagem + Cera',
+      observacoes: '',
+      horario: '14:00',
+      data: new Date().toISOString().split('T')[0]
+    }
+  ]);
+
+  // Horários disponíveis
+  const horariosDisponiveis = [
+    '08:00', '08:30', '09:00', '09:30', '10:00', '10:30',
+    '11:00', '11:30', '12:00', '12:30', '13:00', '13:30',
+    '14:00', '14:30', '15:00', '15:30', '16:00', '16:30',
+    '17:00', '17:30', '18:00'
+  ];
+
+  // Criar array de horários para o dia atual
+  const agendamentosDia: HorarioAgenda[] = horariosDisponiveis.map(hora => {
+    const agendamentoDoHorario = agendamentos.find(
+      a => a.horario === hora && a.data === dataAtual.toISOString().split('T')[0]
+    );
+    
+    return {
+      hora,
+      disponivel: !agendamentoDoHorario,
+      agendamento: agendamentoDoHorario
+    };
+  });
 
   // Navegação de data
   const navegarData = (direcao: 'anterior' | 'proximo') => {
@@ -105,7 +114,38 @@ const ClienteAgenda = () => {
   // Função para criar novo agendamento
   const criarAgendamento = (horario: string) => {
     setHorarioSelecionado(horario);
+    setAgendamentoSelecionado(undefined);
     setAgendamentoFormAberto(true);
+  };
+
+  // Função para editar agendamento existente
+  const editarAgendamento = (agendamento: Agendamento) => {
+    setAgendamentoSelecionado(agendamento);
+    setHorarioSelecionado('');
+    setAgendamentoFormAberto(true);
+  };
+
+  // Função para salvar agendamento
+  const salvarAgendamento = (novoAgendamento: Agendamento) => {
+    if (novoAgendamento.id) {
+      // Editar agendamento existente
+      setAgendamentos(prev => 
+        prev.map(a => a.id === novoAgendamento.id ? novoAgendamento : a)
+      );
+    } else {
+      // Criar novo agendamento
+      const id = Math.max(...agendamentos.map(a => a.id || 0), 0) + 1;
+      setAgendamentos(prev => [...prev, { 
+        ...novoAgendamento, 
+        id,
+        data: dataAtual.toISOString().split('T')[0]
+      }]);
+    }
+  };
+
+  // Função para excluir agendamento
+  const excluirAgendamento = (id: number) => {
+    setAgendamentos(prev => prev.filter(a => a.id !== id));
   };
 
   return (
@@ -118,7 +158,11 @@ const ClienteAgenda = () => {
             <Button 
               size="sm" 
               className="bg-primary hover:bg-primary-hover"
-              onClick={() => setAgendamentoFormAberto(true)}
+              onClick={() => {
+                setHorarioSelecionado('');
+                setAgendamentoSelecionado(undefined);
+                setAgendamentoFormAberto(true);
+              }}
             >
               <Plus className="h-4 w-4 mr-2" />
               Novo Agendamento
@@ -230,9 +274,15 @@ const ClienteAgenda = () => {
                       className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
                         horario.disponivel 
                           ? 'border-green-200 bg-green-50 hover:border-green-300 hover:bg-green-100' 
-                          : 'border-red-200 bg-red-50 cursor-not-allowed'
+                          : 'border-red-200 bg-red-50 hover:border-red-300 hover:bg-red-100'
                       }`}
-                      onClick={() => horario.disponivel && criarAgendamento(horario.hora)}
+                      onClick={() => {
+                        if (horario.disponivel) {
+                          criarAgendamento(horario.hora);
+                        } else if (horario.agendamento) {
+                          editarAgendamento(horario.agendamento);
+                        }
+                      }}
                     >
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
@@ -253,13 +303,13 @@ const ClienteAgenda = () => {
                       {!horario.disponivel && horario.agendamento && (
                         <div className="space-y-1">
                           <p className="font-medium text-sm text-text-primary">
-                            {horario.agendamento.cliente}
+                            {horario.agendamento.nomeCliente}
                           </p>
                           <p className="text-xs text-text-secondary">
                             {horario.agendamento.servico}
                           </p>
                           <p className="text-xs text-text-secondary">
-                            {horario.agendamento.nomeCarro} • {horario.agendamento.duracao} min
+                            {horario.agendamento.nomeCarro}
                           </p>
                           <p className="text-xs text-text-secondary">
                             {horario.agendamento.telefone}
@@ -318,6 +368,9 @@ const ClienteAgenda = () => {
         isOpen={agendamentoFormAberto}
         onClose={() => setAgendamentoFormAberto(false)}
         horarioSelecionado={horarioSelecionado}
+        agendamento={agendamentoSelecionado}
+        onSave={salvarAgendamento}
+        onDelete={excluirAgendamento}
       />
     </div>
   );
