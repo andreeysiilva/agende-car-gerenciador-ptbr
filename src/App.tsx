@@ -12,6 +12,7 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Empresas from "./pages/Empresas";
 import Planos from "./pages/Planos";
+import AdminFinanceiro from "./pages/AdminFinanceiro";
 import NotFound from "./pages/NotFound";
 import ClienteLogin from "./pages/ClienteLogin";
 import ClienteDashboard from "./pages/ClienteDashboard";
@@ -19,6 +20,7 @@ import ClienteAgenda from "./pages/ClienteAgenda";
 import ClienteServicos from "./pages/ClienteServicos";
 import ClienteEstatisticas from "./pages/ClienteEstatisticas";
 import ClienteClientes from "./pages/ClienteClientes";
+import ClienteFinanceiro from "./pages/ClienteFinanceiro";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 
 const queryClient = new QueryClient();
@@ -45,6 +47,7 @@ const App = () => (
                 <Route path="/servicos" element={<ClienteServicos />} />
                 <Route path="/estatisticas" element={<ClienteEstatisticas />} />
                 <Route path="/clientes" element={<ClienteClientes />} />
+                <Route path="/financeiro" element={<ClienteFinanceiro />} />
               </Routes>
             } />
             
@@ -63,6 +66,7 @@ const App = () => (
                           <Route path="/" element={<Dashboard />} />
                           <Route path="/empresas" element={<Empresas />} />
                           <Route path="/planos" element={<Planos />} />
+                          <Route path="/financeiro" element={<AdminFinanceiro />} />
                           <Route path="*" element={<NotFound />} />
                         </Routes>
                       </div>

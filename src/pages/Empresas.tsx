@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Users, Send, Edit, Trash, Upload, ExternalLink } from 'lucide-react';
+import { Plus, Users, Send, Edit, Trash, Upload, ExternalLink, Car } from 'lucide-react';
 import { toast } from 'sonner';
 
 // Interface para definir a estrutura de uma empresa
@@ -61,7 +61,6 @@ const empresasMock: Empresa[] = [
 
 const planosDisponiveis = ['Básico', 'Premium', 'Enterprise'];
 
-// Página para gerenciamento de empresas
 const Empresas: React.FC = () => {
   const [empresas, setEmpresas] = useState<Empresa[]>(empresasMock);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -206,12 +205,21 @@ const Empresas: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-4 sm:space-y-6 animate-fade-in p-4 sm:p-0">
+      {/* Logo e título do AgendCar */}
+      <div className="flex items-center gap-3 mb-6">
+        <div className="relative">
+          <Car className="h-8 w-8 text-primary" />
+          <div className="absolute -top-1 -right-1 w-3 h-3 bg-secondary rounded-full opacity-70"></div>
+        </div>
+        <h1 className="text-2xl sm:text-3xl font-bold text-primary">AgendCar</h1>
+      </div>
+
       {/* Cabeçalho da página */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Gerenciar Empresas</h1>
-          <p className="text-gray-600">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Gerenciar Empresas</h2>
+          <p className="text-sm sm:text-base text-gray-600">
             Administre todas as empresas cadastradas na plataforma
           </p>
         </div>
@@ -221,13 +229,13 @@ const Empresas: React.FC = () => {
           if (!open) resetarFormulario();
         }}>
           <DialogTrigger asChild>
-            <Button className="bg-primary hover:bg-primary-600 text-white">
+            <Button className="w-full sm:w-auto bg-primary hover:bg-primary-600 text-white">
               <Plus className="h-4 w-4 mr-2" />
               Nova Empresa
             </Button>
           </DialogTrigger>
           
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="w-[95vw] max-w-md mx-auto">
             <DialogHeader>
               <DialogTitle>
                 {empresaEditando ? 'Editar Empresa' : 'Cadastrar Nova Empresa'}
@@ -248,6 +256,7 @@ const Empresas: React.FC = () => {
                   value={formData.nome}
                   onChange={(e) => setFormData({...formData, nome: e.target.value})}
                   placeholder="Ex: Auto Lavagem Premium"
+                  className="mt-1"
                 />
                 {formData.nome && (
                   <p className="text-xs text-gray-500 mt-1">
@@ -258,7 +267,7 @@ const Empresas: React.FC = () => {
               
               <div>
                 <Label htmlFor="logo">Logo da Empresa (opcional)</Label>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 mt-1">
                   <Input
                     id="logo"
                     type="file"
@@ -270,13 +279,13 @@ const Empresas: React.FC = () => {
                     type="button"
                     variant="outline"
                     onClick={() => document.getElementById('logo')?.click()}
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-2 text-sm"
                   >
                     <Upload className="h-4 w-4" />
                     {logoFile ? 'Trocar Logo' : 'Enviar Logo'}
                   </Button>
                   {logoFile && (
-                    <span className="text-sm text-gray-600">
+                    <span className="text-sm text-gray-600 truncate">
                       {logoFile.name}
                     </span>
                   )}
@@ -294,6 +303,7 @@ const Empresas: React.FC = () => {
                   value={formData.email}
                   onChange={(e) => setFormData({...formData, email: e.target.value})}
                   placeholder="contato@empresa.com"
+                  className="mt-1"
                 />
               </div>
               
@@ -304,13 +314,14 @@ const Empresas: React.FC = () => {
                   value={formData.telefone}
                   onChange={(e) => setFormData({...formData, telefone: e.target.value})}
                   placeholder="(11) 99999-9999"
+                  className="mt-1"
                 />
               </div>
               
               <div>
                 <Label htmlFor="plano">Plano *</Label>
                 <Select value={formData.plano} onValueChange={(value) => setFormData({...formData, plano: value})}>
-                  <SelectTrigger>
+                  <SelectTrigger className="mt-1">
                     <SelectValue placeholder="Selecione um plano" />
                   </SelectTrigger>
                   <SelectContent>
@@ -322,7 +333,7 @@ const Empresas: React.FC = () => {
               </div>
             </div>
             
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <Button 
                 variant="outline" 
                 onClick={() => setIsDialogOpen(false)}
@@ -344,132 +355,218 @@ const Empresas: React.FC = () => {
       {/* Card com estatísticas */}
       <Card className="dashboard-card">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-lg">
             <Users className="h-5 w-5 text-blue-600" />
             Resumo das Empresas
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center p-4 bg-blue-50 rounded-lg">
-              <div className="text-2xl font-bold text-blue-600">{empresas.length}</div>
-              <div className="text-sm text-gray-600">Total de Empresas</div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="text-center p-3 sm:p-4 bg-blue-50 rounded-lg">
+              <div className="text-xl sm:text-2xl font-bold text-blue-600">{empresas.length}</div>
+              <div className="text-xs sm:text-sm text-gray-600">Total de Empresas</div>
             </div>
-            <div className="text-center p-4 bg-green-50 rounded-lg">
-              <div className="text-2xl font-bold text-green-600">
+            <div className="text-center p-3 sm:p-4 bg-green-50 rounded-lg">
+              <div className="text-xl sm:text-2xl font-bold text-green-600">
                 {empresas.filter(e => e.status === 'Ativo').length}
               </div>
-              <div className="text-sm text-gray-600">Empresas Ativas</div>
+              <div className="text-xs sm:text-sm text-gray-600">Empresas Ativas</div>
             </div>
-            <div className="text-center p-4 bg-yellow-50 rounded-lg">
-              <div className="text-2xl font-bold text-yellow-600">
+            <div className="text-center p-3 sm:p-4 bg-yellow-50 rounded-lg">
+              <div className="text-xl sm:text-2xl font-bold text-yellow-600">
                 {empresas.filter(e => e.status === 'Pendente').length}
               </div>
-              <div className="text-sm text-gray-600">Aguardando Ativação</div>
+              <div className="text-xs sm:text-sm text-gray-600">Aguardando Ativação</div>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Tabela de empresas */}
+      {/* Tabela de empresas - Responsiva */}
       <Card className="dashboard-card">
         <CardHeader>
-          <CardTitle>Lista de Empresas Cadastradas</CardTitle>
+          <CardTitle className="text-lg">Lista de Empresas Cadastradas</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Empresa</TableHead>
-                  <TableHead>Subdomínio</TableHead>
-                  <TableHead>Plano</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Data de Criação</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {empresas.map((empresa) => (
-                  <TableRow key={empresa.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        {empresa.logo && (
-                          <img 
-                            src={empresa.logo} 
-                            alt={`Logo ${empresa.nome}`}
-                            className="w-10 h-10 rounded-lg object-cover"
-                          />
-                        )}
-                        <div>
-                          <div className="font-medium">{empresa.nome}</div>
-                          <div className="text-sm text-gray-500">{empresa.email}</div>
-                          <div className="text-sm text-gray-500">{empresa.telefone}</div>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <button
-                        onClick={() => abrirDashboardEmpresa(empresa.subdominio)}
-                        className="flex items-center gap-2 text-primary hover:text-primary-hover transition-colors"
-                      >
-                        <code className="text-sm bg-gray-100 px-2 py-1 rounded">
-                          {empresa.subdominio}.agendcar.com
-                        </code>
-                        <ExternalLink className="h-4 w-4" />
-                      </button>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{empresa.plano}</Badge>
-                    </TableCell>
-                    <TableCell>
+        <CardContent className="p-0 sm:p-6">
+          {/* Versão mobile - Cards */}
+          <div className="block sm:hidden space-y-4 p-4">
+            {empresas.map((empresa) => (
+              <Card key={empresa.id} className="border border-gray-200">
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3 mb-3">
+                    {empresa.logo && (
+                      <img 
+                        src={empresa.logo} 
+                        alt={`Logo ${empresa.nome}`}
+                        className="w-12 h-12 rounded-lg object-cover"
+                      />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-medium text-gray-900 truncate">{empresa.nome}</h3>
+                      <p className="text-sm text-gray-500 truncate">{empresa.email}</p>
+                      <p className="text-sm text-gray-500">{empresa.telefone}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2 mb-3">
+                    <button
+                      onClick={() => abrirDashboardEmpresa(empresa.subdominio)}
+                      className="flex items-center gap-2 text-primary hover:text-primary-hover transition-colors w-full"
+                    >
+                      <code className="text-xs bg-gray-100 px-2 py-1 rounded flex-1 text-left truncate">
+                        {empresa.subdominio}.agendcar.com
+                      </code>
+                      <ExternalLink className="h-4 w-4 flex-shrink-0" />
+                    </button>
+                    
+                    <div className="flex items-center justify-between">
+                      <Badge variant="outline" className="text-xs">{empresa.plano}</Badge>
                       <Badge 
                         variant={
                           empresa.status === 'Ativo' ? 'default' : 
                           empresa.status === 'Pendente' ? 'secondary' : 'destructive'
                         }
+                        className="text-xs"
                       >
                         {empresa.status}
                       </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {new Date(empresa.dataCriacao).toLocaleDateString('pt-BR')}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex gap-2 justify-end">
-                        {empresa.status === 'Pendente' && (
+                    </div>
+                    
+                    <p className="text-xs text-gray-500">
+                      Criado em: {new Date(empresa.dataCriacao).toLocaleDateString('pt-BR')}
+                    </p>
+                  </div>
+                  
+                  <div className="flex flex-wrap gap-2">
+                    {empresa.status === 'Pendente' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => reenviarSenha(empresa)}
+                        className="h-8 text-xs flex-1"
+                      >
+                        <Send className="h-3 w-3 mr-1" />
+                        Reenviar
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => iniciarEdicao(empresa)}
+                      className="h-8 text-xs"
+                    >
+                      <Edit className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => excluirEmpresa(empresa.id)}
+                      className="h-8 text-xs"
+                    >
+                      <Trash className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Versão desktop - Tabela */}
+          <div className="hidden sm:block">
+            <div className="rounded-md border overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Empresa</TableHead>
+                    <TableHead>Subdomínio</TableHead>
+                    <TableHead>Plano</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Data de Criação</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {empresas.map((empresa) => (
+                    <TableRow key={empresa.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          {empresa.logo && (
+                            <img 
+                              src={empresa.logo} 
+                              alt={`Logo ${empresa.nome}`}
+                              className="w-10 h-10 rounded-lg object-cover"
+                            />
+                          )}
+                          <div>
+                            <div className="font-medium">{empresa.nome}</div>
+                            <div className="text-sm text-gray-500">{empresa.email}</div>
+                            <div className="text-sm text-gray-500">{empresa.telefone}</div>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <button
+                          onClick={() => abrirDashboardEmpresa(empresa.subdominio)}
+                          className="flex items-center gap-2 text-primary hover:text-primary-hover transition-colors"
+                        >
+                          <code className="text-sm bg-gray-100 px-2 py-1 rounded">
+                            {empresa.subdominio}.agendcar.com
+                          </code>
+                          <ExternalLink className="h-4 w-4" />
+                        </button>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{empresa.plano}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant={
+                            empresa.status === 'Ativo' ? 'default' : 
+                            empresa.status === 'Pendente' ? 'secondary' : 'destructive'
+                          }
+                        >
+                          {empresa.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {new Date(empresa.dataCriacao).toLocaleDateString('pt-BR')}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex gap-2 justify-end">
+                          {empresa.status === 'Pendente' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => reenviarSenha(empresa)}
+                              className="h-8"
+                            >
+                              <Send className="h-3 w-3 mr-1" />
+                              Reenviar
+                            </Button>
+                          )}
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => reenviarSenha(empresa)}
+                            onClick={() => iniciarEdicao(empresa)}
                             className="h-8"
                           >
-                            <Send className="h-3 w-3 mr-1" />
-                            Reenviar
+                            <Edit className="h-3 w-3" />
                           </Button>
-                        )}
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => iniciarEdicao(empresa)}
-                          className="h-8"
-                        >
-                          <Edit className="h-3 w-3" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => excluirEmpresa(empresa.id)}
-                          className="h-8"
-                        >
-                          <Trash className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => excluirEmpresa(empresa.id)}
+                            className="h-8"
+                          >
+                            <Trash className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         </CardContent>
       </Card>

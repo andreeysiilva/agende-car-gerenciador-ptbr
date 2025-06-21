@@ -2,7 +2,7 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Calendar, Car, Users, TrendingUp, Home, LogOut } from 'lucide-react';
+import { Calendar, Car, Users, TrendingUp, Home, LogOut, DollarSign } from 'lucide-react';
 
 // Componente de navegação para o dashboard do cliente
 const ClienteNavigation: React.FC = () => {
@@ -40,6 +40,12 @@ const ClienteNavigation: React.FC = () => {
       label: 'Clientes',
       path: '/cliente/clientes',
       description: 'Base de clientes'
+    },
+    {
+      icon: DollarSign,
+      label: 'Financeiro',
+      path: '/cliente/financeiro',
+      description: 'Pagamentos e assinatura'
     }
   ];
 
