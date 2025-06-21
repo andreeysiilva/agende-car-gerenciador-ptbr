@@ -13,6 +13,11 @@ import Dashboard from "./pages/Dashboard";
 import Empresas from "./pages/Empresas";
 import Planos from "./pages/Planos";
 import NotFound from "./pages/NotFound";
+import ClienteDashboard from "./pages/ClienteDashboard";
+import ClienteAgenda from "./pages/ClienteAgenda";
+import ClienteServicos from "./pages/ClienteServicos";
+import ClienteEstatisticas from "./pages/ClienteEstatisticas";
+import ClienteClientes from "./pages/ClienteClientes";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 
 const queryClient = new QueryClient();
@@ -26,10 +31,23 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<Login />} />
+            
+            {/* Rotas do cliente (dashboard das empresas) */}
+            <Route path="/cliente/*" element={
+              <Routes>
+                <Route path="/" element={<ClienteDashboard />} />
+                <Route path="/agenda" element={<ClienteAgenda />} />
+                <Route path="/servicos" element={<ClienteServicos />} />
+                <Route path="/estatisticas" element={<ClienteEstatisticas />} />
+                <Route path="/clientes" element={<ClienteClientes />} />
+              </Routes>
+            } />
+            
+            {/* Rotas do admin (dashboard administrativo) */}
             <Route path="/*" element={
               <ProtectedRoute>
                 <SidebarProvider>
-                  <div className="min-h-screen flex w-full bg-gray-50">
+                  <div className="min-h-screen flex w-full bg-background">
                     <AppSidebar />
                     <main className="flex-1 flex flex-col">
                       <div className="border-b bg-white px-4 py-3">

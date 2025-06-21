@@ -23,11 +23,11 @@ export default {
 				sans: ['Inter', 'system-ui', 'sans-serif'],
 			},
 			colors: {
-				border: 'hsl(var(--border))',
-				input: 'hsl(var(--input))',
-				ring: 'hsl(var(--ring))',
-				background: 'hsl(var(--background))',
-				foreground: 'hsl(var(--foreground))',
+				border: '#e5e7eb',
+				input: '#e5e7eb',
+				ring: '#2563eb',
+				background: '#f8fafc',
+				foreground: '#1f2937',
 				primary: {
 					DEFAULT: '#2563eb',
 					foreground: '#ffffff',
@@ -36,42 +36,54 @@ export default {
 					500: '#2563eb',
 					600: '#1d4ed8',
 					700: '#1e40af',
+					hover: '#1d4ed8',
 				},
 				secondary: {
-					DEFAULT: 'hsl(var(--secondary))',
-					foreground: 'hsl(var(--secondary-foreground))'
+					DEFAULT: '#10b981',
+					foreground: '#ffffff',
+					50: '#ecfdf5',
+					100: '#d1fae5',
+					500: '#10b981',
+					600: '#059669',
+					700: '#047857',
+					hover: '#059669',
 				},
 				destructive: {
-					DEFAULT: 'hsl(var(--destructive))',
-					foreground: 'hsl(var(--destructive-foreground))'
+					DEFAULT: '#ef4444',
+					foreground: '#ffffff'
 				},
 				muted: {
-					DEFAULT: 'hsl(var(--muted))',
-					foreground: 'hsl(var(--muted-foreground))'
+					DEFAULT: '#f3f4f6',
+					foreground: '#6b7280'
 				},
 				accent: {
-					DEFAULT: 'hsl(var(--accent))',
-					foreground: 'hsl(var(--accent-foreground))'
+					DEFAULT: '#f3f4f6',
+					foreground: '#1f2937'
 				},
 				popover: {
-					DEFAULT: 'hsl(var(--popover))',
-					foreground: 'hsl(var(--popover-foreground))'
+					DEFAULT: '#ffffff',
+					foreground: '#1f2937'
 				},
 				card: {
-					DEFAULT: 'hsl(var(--card))',
-					foreground: 'hsl(var(--card-foreground))'
+					DEFAULT: '#ffffff',
+					foreground: '#1f2937'
 				},
 				sidebar: {
-					DEFAULT: '#f8fafc',
-					foreground: '#334155',
+					DEFAULT: '#ffffff',
+					foreground: '#1f2937',
 					primary: '#2563eb',
 					'primary-foreground': '#ffffff',
-					accent: '#f1f5f9',
-					'accent-foreground': '#475569',
-					border: '#e2e8f0',
+					accent: '#f3f4f6',
+					'accent-foreground': '#1f2937',
+					border: '#e5e7eb',
 					ring: '#2563eb',
 					background: '#ffffff',
-				}
+				},
+				success: '#22c55e',
+				error: '#ef4444',
+				warning: '#facc15',
+				'text-primary': '#1f2937',
+				'text-secondary': '#6b7280',
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

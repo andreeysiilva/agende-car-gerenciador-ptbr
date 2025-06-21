@@ -3,47 +3,47 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definição do sistema de design. Todas as cores, gradientes, fontes, etc devem ser definidas aqui. */
+/* Definição do sistema de design AgendCar - Tema atualizado */
 
 @layer base {
   :root {
-    --background: 250 250 250;
-    --foreground: 15 23 42;
+    --background: 248 250 252;
+    --foreground: 31 41 55;
 
     --card: 255 255 255;
-    --card-foreground: 15 23 42;
+    --card-foreground: 31 41 55;
 
     --popover: 255 255 255;
-    --popover-foreground: 15 23 42;
+    --popover-foreground: 31 41 55;
 
     --primary: 37 99 235;
     --primary-foreground: 255 255 255;
 
-    --secondary: 241 245 249;
-    --secondary-foreground: 71 85 105;
+    --secondary: 16 185 129;
+    --secondary-foreground: 255 255 255;
 
-    --muted: 241 245 249;
-    --muted-foreground: 100 116 139;
+    --muted: 243 244 246;
+    --muted-foreground: 107 114 128;
 
-    --accent: 241 245 249;
-    --accent-foreground: 71 85 105;
+    --accent: 243 244 246;
+    --accent-foreground: 31 41 55;
 
     --destructive: 239 68 68;
     --destructive-foreground: 255 255 255;
 
-    --border: 226 232 240;
-    --input: 226 232 240;
+    --border: 229 231 235;
+    --input: 229 231 235;
     --ring: 37 99 235;
 
     --radius: 0.5rem;
 
-    --sidebar-background: 248 250 252;
-    --sidebar-foreground: 51 65 85;
+    --sidebar-background: 255 255 255;
+    --sidebar-foreground: 31 41 55;
     --sidebar-primary: 37 99 235;
     --sidebar-primary-foreground: 255 255 255;
-    --sidebar-accent: 241 245 249;
-    --sidebar-accent-foreground: 71 85 105;
-    --sidebar-border: 226 232 240;
+    --sidebar-accent: 243 244 246;
+    --sidebar-accent-foreground: 31 41 55;
+    --sidebar-border: 229 231 235;
     --sidebar-ring: 37 99 235;
   }
 
@@ -60,8 +60,8 @@
     --primary: 59 130 246;
     --primary-foreground: 15 23 42;
 
-    --secondary: 51 65 85;
-    --secondary-foreground: 203 213 225;
+    --secondary: 16 185 129;
+    --secondary-foreground: 255 255 255;
 
     --muted: 51 65 85;
     --muted-foreground: 148 163 184;
@@ -96,7 +96,7 @@
     @apply bg-background text-foreground font-sans;
   }
 
-  /* Estilização customizada para elementos específicos */
+  /* Estilização customizada para elementos do AgendCar */
   .dashboard-card {
     @apply bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200;
   }
@@ -108,4 +108,47 @@
   .sidebar-item.active {
     @apply bg-primary-50 text-primary-600 border-r-2 border-primary-500;
   }
+
+  /* Estilização para PWA */
+  .pwa-install-button {
+    @apply bg-secondary hover:bg-secondary-hover text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors duration-200;
+  }
+
+  /* Estilização mobile-first */
+  .mobile-card {
+    @apply bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4;
+  }
+
+  .mobile-nav {
+    @apply fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-2 z-50;
+  }
+
+  /* Agenda específica */
+  .agenda-slot {
+    @apply border border-gray-200 rounded-lg p-3 cursor-pointer hover:bg-gray-50 transition-colors duration-150;
+  }
+
+  .agenda-slot.occupied {
+    @apply bg-red-50 border-red-200 cursor-not-allowed;
+  }
+
+  .agenda-slot.available {
+    @apply bg-green-50 border-green-200 hover:bg-green-100;
+  }
+}
+
+/* Animações específicas para mobile */
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.slide-up {
+  animation: slideUp 0.3s ease-out;
 }
