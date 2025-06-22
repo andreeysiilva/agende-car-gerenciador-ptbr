@@ -1,443 +1,312 @@
 
-import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
-import { Plus, Edit, Trash2, Car, Clock, DollarSign, Search } from 'lucide-react';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { toast } from '@/hooks/use-toast';
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Plus, Edit, Trash2, DollarSign, Clock } from "lucide-react";
+import { ClientLayout } from "@/components/layout/ClientLayout";
 
-// Interface para serviços
-interface Servico {
-  id: number;
-  nome: string;
-  duracao: number; // em minutos
-  preco: number;
-  descricao: string;
-  ativo: boolean;
-}
-
-// Dados mock dos serviços
-const servicosMock: Servico[] = [
+// Dados de exemplo dos serviços
+const servicosExemplo = [
   {
-    id: 1,
-    nome: 'Lavagem Simples',
-    duracao: 30,
+    id: "1",
+    nome: "Lavagem Simples",
+    descricao: "Lavagem externa básica do veículo",
     preco: 25.00,
-    descricao: 'Lavagem externa básica com shampoo automotivo',
+    duracao: 30,
     ativo: true
   },
   {
-    id: 2,
-    nome: 'Lavagem Completa',
-    duracao: 60,
+    id: "2",
+    nome: "Lavagem Completa",
+    descricao: "Lavagem externa e interna completa",
     preco: 45.00,
-    descricao: 'Lavagem externa e interna, aspiração e limpeza dos vidros',
+    duracao: 60,
     ativo: true
   },
   {
-    id: 3,
-    nome: 'Enceramento',
-    duracao: 90,
+    id: "3",
+    nome: "Enceramento",
+    descricao: "Aplicação de cera protetora",
     preco: 80.00,
-    descricao: 'Lavagem completa + aplicação de cera protetora',
+    duracao: 90,
     ativo: true
   },
   {
-    id: 4,
-    nome: 'Detalhamento Completo',
-    duracao: 180,
+    id: "4",
+    nome: "Detalhamento Premium",
+    descricao: "Serviço completo de detalhamento automotivo",
     preco: 150.00,
-    descricao: 'Lavagem, enceramento, hidratação do couro e limpeza detalhada',
-    ativo: true
-  },
-  {
-    id: 5,
-    nome: 'Lavagem de Motor',
-    duracao: 45,
-    preco: 35.00,
-    descricao: 'Limpeza e desengordure do motor',
+    duracao: 180,
     ativo: false
   }
 ];
 
-const ClienteServicos = () => {
-  const [servicos, setServicos] = useState<Servico[]>(servicosMock);
-  const [pesquisa, setPesquisa] = useState('');
-  const [servicoEditando, setServicoEditando] = useState<Servico | null>(null);
-  const [sheetAberto, setSheetAberto] = useState(false);
+export default function ClienteServicos() {
+  const [servicos, setServicos] = useState(servicosExemplo);
+  const [modalAberto, setModalAberto] = useState(false);
+  const [servicoEditando, setServicoEditando] = useState<any>(null);
+  const [formulario, setFormulario] = useState({
+    nome: "",
+    descricao: "",
+    preco: "",
+    duracao: ""
+  });
 
-  // Estados do formulário
-  const [nomeServico, setNomeServico] = useState('');
-  const [duracaoServico, setDuracaoServico] = useState('');
-  const [precoServico, setPrecoServico] = useState('');
-  const [descricaoServico, setDescricaoServico] = useState('');
-
-  // Filtrar serviços pela pesquisa
-  const servicosFiltrados = servicos.filter(servico =>
-    servico.nome.toLowerCase().includes(pesquisa.toLowerCase()) ||
-    servico.descricao.toLowerCase().includes(pesquisa.toLowerCase())
-  );
-
-  // Função para limpar formulário
-  const limparFormulario = () => {
-    setNomeServico('');
-    setDuracaoServico('');
-    setPrecoServico('');
-    setDescricaoServico('');
+  // Função para abrir modal de criação
+  const abrirModalCriacao = () => {
     setServicoEditando(null);
+    setFormulario({ nome: "", descricao: "", preco: "", duracao: "" });
+    setModalAberto(true);
   };
 
-  // Função para abrir formulário de edição
-  const editarServico = (servico: Servico) => {
+  // Função para abrir modal de edição
+  const abrirModalEdicao = (servico: any) => {
     setServicoEditando(servico);
-    setNomeServico(servico.nome);
-    setDuracaoServico(servico.duracao.toString());
-    setPrecoServico(servico.preco.toString());
-    setDescricaoServico(servico.descricao);
-    setSheetAberto(true);
+    setFormulario({
+      nome: servico.nome,
+      descricao: servico.descricao,
+      preco: servico.preco.toString(),
+      duracao: servico.duracao.toString()
+    });
+    setModalAberto(true);
   };
 
   // Função para salvar serviço
   const salvarServico = () => {
-    if (!nomeServico || !duracaoServico || !precoServico) {
-      toast({
-        title: "Erro",
-        description: "Preencha todos os campos obrigatórios",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const servicoData = {
-      nome: nomeServico,
-      duracao: parseInt(duracaoServico),
-      preco: parseFloat(precoServico),
-      descricao: descricaoServico,
-      ativo: true
-    };
-
     if (servicoEditando) {
       // Editar serviço existente
-      setServicos(prev => prev.map(servico =>
-        servico.id === servicoEditando.id
-          ? { ...servico, ...servicoData }
-          : servico
-      ));
-      toast({
-        title: "Sucesso",
-        description: "Serviço atualizado com sucesso!",
-      });
+      setServicos(prev => 
+        prev.map(s => 
+          s.id === servicoEditando.id 
+            ? {
+                ...s,
+                nome: formulario.nome,
+                descricao: formulario.descricao,
+                preco: parseFloat(formulario.preco),
+                duracao: parseInt(formulario.duracao)
+              }
+            : s
+        )
+      );
     } else {
       // Criar novo serviço
-      const novoServico: Servico = {
-        id: Date.now(),
-        ...servicoData
+      const novoServico = {
+        id: Date.now().toString(),
+        nome: formulario.nome,
+        descricao: formulario.descricao,
+        preco: parseFloat(formulario.preco),
+        duracao: parseInt(formulario.duracao),
+        ativo: true
       };
       setServicos(prev => [...prev, novoServico]);
-      toast({
-        title: "Sucesso",
-        description: "Serviço criado com sucesso!",
-      });
     }
-
-    limparFormulario();
-    setSheetAberto(false);
-  };
-
-  // Função para excluir serviço
-  const excluirServico = (id: number) => {
-    setServicos(prev => prev.filter(servico => servico.id !== id));
-    toast({
-      title: "Sucesso",
-      description: "Serviço removido com sucesso!",
-    });
+    setModalAberto(false);
   };
 
   // Função para alternar status do serviço
-  const alternarStatusServico = (id: number) => {
-    setServicos(prev => prev.map(servico =>
-      servico.id === id
-        ? { ...servico, ativo: !servico.ativo }
-        : servico
-    ));
+  const alternarStatus = (id: string) => {
+    setServicos(prev => 
+      prev.map(s => 
+        s.id === id ? { ...s, ativo: !s.ativo } : s
+      )
+    );
   };
 
-  // Formatação de preço
-  const formatarPreco = (preco: number) => {
-    return preco.toLocaleString('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    });
-  };
-
-  // Formatação de duração
-  const formatarDuracao = (minutos: number) => {
-    const horas = Math.floor(minutos / 60);
-    const mins = minutos % 60;
-    if (horas > 0) {
-      return `${horas}h${mins > 0 ? ` ${mins}min` : ''}`;
+  // Função para remover serviço
+  const removerServico = (id: string) => {
+    if (confirm("Tem certeza que deseja remover este serviço?")) {
+      setServicos(prev => prev.filter(s => s.id !== id));
     }
-    return `${mins}min`;
   };
+
+  const servicosAtivos = servicos.filter(s => s.ativo);
+  const precoMedio = servicosAtivos.reduce((acc, s) => acc + s.preco, 0) / servicosAtivos.length || 0;
+  const duracaoMedia = servicosAtivos.reduce((acc, s) => acc + s.duracao, 0) / servicosAtivos.length || 0;
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
-        <div className="px-4 py-3">
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-xl font-bold text-text-primary">Serviços</h1>
-            <Sheet open={sheetAberto} onOpenChange={setSheetAberto}>
-              <SheetTrigger asChild>
-                <Button 
-                  size="sm" 
-                  className="bg-primary hover:bg-primary-hover"
-                  onClick={limparFormulario}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Novo Serviço
-                </Button>
-              </SheetTrigger>
-              <SheetContent className="w-full sm:max-w-md">
-                <SheetHeader>
-                  <SheetTitle>
-                    {servicoEditando ? 'Editar Serviço' : 'Novo Serviço'}
-                  </SheetTitle>
-                  <SheetDescription>
-                    {servicoEditando 
-                      ? 'Atualize as informações do serviço' 
-                      : 'Adicione um novo serviço ao seu catálogo'}
-                  </SheetDescription>
-                </SheetHeader>
-                
-                <div className="space-y-4 mt-6">
-                  <div>
-                    <Label htmlFor="nome">Nome do Serviço *</Label>
-                    <Input
-                      id="nome"
-                      value={nomeServico}
-                      onChange={(e) => setNomeServico(e.target.value)}
-                      placeholder="Ex: Lavagem Completa"
-                    />
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="duracao">Duração (minutos) *</Label>
-                      <Input
-                        id="duracao"
-                        type="number"
-                        value={duracaoServico}
-                        onChange={(e) => setDuracaoServico(e.target.value)}
-                        placeholder="60"
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="preco">Preço (R$) *</Label>
-                      <Input
-                        id="preco"
-                        type="number"
-                        step="0.01"
-                        value={precoServico}
-                        onChange={(e) => setPrecoServico(e.target.value)}
-                        placeholder="45.00"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="descricao">Descrição</Label>
-                    <Textarea
-                      id="descricao"
-                      value={descricaoServico}
-                      onChange={(e) => setDescricaoServico(e.target.value)}
-                      placeholder="Descreva o que está incluído no serviço..."
-                      rows={3}
-                    />
-                  </div>
-                  
-                  <div className="flex gap-3 pt-4">
-                    <Button
-                      onClick={salvarServico}
-                      className="flex-1 bg-primary hover:bg-primary-hover"
-                    >
-                      {servicoEditando ? 'Atualizar' : 'Criar'} Serviço
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => setSheetAberto(false)}
-                    >
-                      Cancelar
-                    </Button>
-                  </div>
-                </div>
-              </SheetContent>
-            </Sheet>
+    <ClientLayout>
+      <div className="space-y-6">
+        {/* Cabeçalho */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Serviços</h1>
+            <p className="text-gray-600">Gerencie os serviços oferecidos pela sua empresa</p>
           </div>
           
-          {/* Barra de pesquisa */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-text-secondary" />
-            <Input
-              placeholder="Pesquisar serviços..."
-              value={pesquisa}
-              onChange={(e) => setPesquisa(e.target.value)}
-              className="pl-10"
-            />
-          </div>
+          <Button onClick={abrirModalCriacao}>
+            <Plus className="h-4 w-4 mr-2" />
+            Novo Serviço
+          </Button>
         </div>
-      </header>
 
-      {/* Conteúdo principal */}
-      <main className="p-4 max-w-6xl mx-auto">
-        {/* Estatísticas */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        {/* Estatísticas rápidas */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
             <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-primary-50 rounded-lg">
-                  <Car className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm text-text-secondary">Total de Serviços</p>
-                  <p className="text-xl font-bold text-text-primary">{servicos.length}</p>
-                </div>
-              </div>
+              <div className="text-2xl font-bold text-primary">{servicos.length}</div>
+              <div className="text-sm text-gray-600">Total de Serviços</div>
             </CardContent>
           </Card>
-          
           <Card>
             <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-secondary-50 rounded-lg">
-                  <DollarSign className="h-5 w-5 text-secondary" />
-                </div>
-                <div>
-                  <p className="text-sm text-text-secondary">Ticket Médio</p>
-                  <p className="text-xl font-bold text-text-primary">
-                    {formatarPreco(servicos.reduce((acc, s) => acc + s.preco, 0) / servicos.length || 0)}
-                  </p>
-                </div>
-              </div>
+              <div className="text-2xl font-bold text-green-600">{servicosAtivos.length}</div>
+              <div className="text-sm text-gray-600">Serviços Ativos</div>
             </CardContent>
           </Card>
-          
           <Card>
             <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-yellow-50 rounded-lg">
-                  <Clock className="h-5 w-5 text-warning" />
-                </div>
-                <div>
-                  <p className="text-sm text-text-secondary">Tempo Médio</p>
-                  <p className="text-xl font-bold text-text-primary">
-                    {formatarDuracao(Math.round(servicos.reduce((acc, s) => acc + s.duracao, 0) / servicos.length || 0))}
-                  </p>
-                </div>
-              </div>
+              <div className="text-2xl font-bold text-blue-600">R$ {precoMedio.toFixed(2)}</div>
+              <div className="text-sm text-gray-600">Preço Médio</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-purple-600">{Math.round(duracaoMedia)}min</div>
+              <div className="text-sm text-gray-600">Duração Média</div>
             </CardContent>
           </Card>
         </div>
 
         {/* Lista de serviços */}
-        <div className="space-y-4">
-          {servicosFiltrados.length === 0 ? (
-            <Card>
-              <CardContent className="p-8 text-center">
-                <Car className="h-12 w-12 mx-auto mb-4 text-text-secondary" />
-                <h3 className="text-lg font-semibold text-text-primary mb-2">
-                  Nenhum serviço encontrado
-                </h3>
-                <p className="text-text-secondary mb-4">
-                  {pesquisa ? 'Tente uma pesquisa diferente' : 'Adicione seu primeiro serviço para começar'}
-                </p>
-                {!pesquisa && (
-                  <Button 
-                    onClick={() => setSheetAberto(true)}
-                    className="bg-primary hover:bg-primary-hover"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Criar Primeiro Serviço
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-          ) : (
-            servicosFiltrados.map((servico) => (
-              <Card key={servico.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-lg font-semibold text-text-primary">
-                          {servico.nome}
-                        </h3>
-                        <Badge 
-                          variant={servico.ativo ? "default" : "secondary"}
-                          className={servico.ativo ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}
-                        >
-                          {servico.ativo ? 'Ativo' : 'Inativo'}
-                        </Badge>
-                      </div>
-                      
-                      <p className="text-text-secondary text-sm mb-3">
-                        {servico.descricao}
-                      </p>
-                      
-                      <div className="flex flex-wrap gap-4 text-sm">
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-4 w-4 text-text-secondary" />
-                          <span className="text-text-secondary">
-                            {formatarDuracao(servico.duracao)}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <DollarSign className="h-4 w-4 text-text-secondary" />
-                          <span className="font-semibold text-secondary">
-                            {formatarPreco(servico.preco)}
-                          </span>
-                        </div>
-                      </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {servicos.map((servico) => (
+            <Card key={servico.id} className="hover:shadow-md transition-shadow">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg">{servico.nome}</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={servico.ativo ? "default" : "secondary"}>
+                      {servico.ativo ? "Ativo" : "Inativo"}
+                    </Badge>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-gray-600 text-sm">{servico.descricao}</p>
+                
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-1">
+                      <DollarSign className="h-4 w-4 text-green-600" />
+                      <span className="font-medium">R$ {servico.preco.toFixed(2)}</span>
                     </div>
-                    
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => alternarStatusServico(servico.id)}
-                      >
-                        {servico.ativo ? 'Desativar' : 'Ativar'}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => editarServico(servico)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => excluirServico(servico.id)}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                    <div className="flex items-center gap-1">
+                      <Clock className="h-4 w-4 text-blue-600" />
+                      <span className="text-sm">{servico.duracao}min</span>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            ))
-          )}
+                </div>
+                
+                <div className="flex gap-2 pt-2 border-t">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={() => abrirModalEdicao(servico)}
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    Editar
+                  </Button>
+                  <Button 
+                    variant={servico.ativo ? "secondary" : "default"} 
+                    size="sm"
+                    onClick={() => alternarStatus(servico.id)}
+                  >
+                    {servico.ativo ? "Desativar" : "Ativar"}
+                  </Button>
+                  <Button 
+                    variant="destructive" 
+                    size="sm"
+                    onClick={() => removerServico(servico.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
-      </main>
-    </div>
-  );
-};
 
-export default ClienteServicos;
+        {/* Modal de criação/edição */}
+        {modalAberto && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <Card className="w-full max-w-md">
+              <CardHeader>
+                <CardTitle>
+                  {servicoEditando ? "Editar Serviço" : "Novo Serviço"}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="nome">Nome do Serviço</Label>
+                  <Input
+                    id="nome"
+                    value={formulario.nome}
+                    onChange={(e) => setFormulario(prev => ({ ...prev, nome: e.target.value }))}
+                    placeholder="Ex: Lavagem Completa"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="descricao">Descrição</Label>
+                  <Textarea
+                    id="descricao"
+                    value={formulario.descricao}
+                    onChange={(e) => setFormulario(prev => ({ ...prev, descricao: e.target.value }))}
+                    placeholder="Descreva o serviço..."
+                    rows={3}
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="preco">Preço (R$)</Label>
+                    <Input
+                      id="preco"
+                      type="number"
+                      step="0.01"
+                      value={formulario.preco}
+                      onChange={(e) => setFormulario(prev => ({ ...prev, preco: e.target.value }))}
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="duracao">Duração (min)</Label>
+                    <Input
+                      id="duracao"
+                      type="number"
+                      value={formulario.duracao}
+                      onChange={(e) => setFormulario(prev => ({ ...prev, duracao: e.target.value }))}
+                      placeholder="60"
+                    />
+                  </div>
+                </div>
+                
+                <div className="flex gap-2 pt-4">
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={() => setModalAberto(false)}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button 
+                    className="flex-1"
+                    onClick={salvarServico}
+                    disabled={!formulario.nome || !formulario.preco || !formulario.duracao}
+                  >
+                    {servicoEditando ? "Salvar" : "Criar"}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </div>
+    </ClientLayout>
+  );
+}

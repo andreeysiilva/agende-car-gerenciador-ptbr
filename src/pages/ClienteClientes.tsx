@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, Phone, Mail, Car, Calendar } from "lucide-react";
+import { Search, Plus, Phone, Mail, Car, Calendar, Users } from "lucide-react";
 import { ClientLayout } from "@/components/layout/ClientLayout";
 
 // Dados de exemplo

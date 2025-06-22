@@ -1,9 +1,9 @@
 
-# AgendCar - Dashboard do Cliente
+# AgendiCar - Dashboard do Cliente
 
 ## Visão Geral
 
-O Dashboard do Cliente é a interface principal para empresas de lavagem automotiva gerenciarem seus negócios através da plataforma AgendCar. Cada empresa acessa seu dashboard através de um subdomínio personalizado (ex: robson.agendcar.com).
+O Dashboard do Cliente é a interface principal para empresas de lavagem automotiva gerenciarem seus negócios através da plataforma AgendiCar. Cada empresa acessa seu dashboard através de um subdomínio personalizado (ex: robson.agendicar.com).
 
 ## Funcionalidades Principais
 
@@ -21,23 +21,23 @@ O Dashboard do Cliente é a interface principal para empresas de lavagem automot
 - Ações rápidas para principais funcionalidades
 
 ### 3. Agenda (`/cliente/agenda`)
-- **Visualização Diária**: Grade de horários com status (livre/ocupado)
-- **Agendamentos**: Informações detalhadas de cada agendamento
+- **Visualização Semanal e Mensal**: Navegação entre semanas e meses
+- **Filtro de Serviços**: Seleção múltipla com filtros dinâmicos
+- **Agendamentos**: Informações detalhadas com modal de edição/exclusão
 - **Formulário de Agendamento**: 
   - Nome do cliente (obrigatório)
   - Telefone (obrigatório) 
   - Nome do carro (obrigatório) - Ex: "Fiat Uno", "Hilux"
   - Serviço selecionado (obrigatório)
   - Observações (opcional)
-- **Navegação de Datas**: Anterior/próximo dia
-- **Filtros**: Por tipo de serviço
-- **Resumo do Dia**: Agendados, disponíveis, faturamento estimado
+- **Navegação de Datas**: Anterior/próximo período
+- **Resumo do Período**: Agendados, disponíveis, faturamento estimado
 
 ### 4. Serviços (`/cliente/servicos`)
-- Cadastro de serviços oferecidos
-- Campos: nome, duração, preço, descrição
-- Edição e exclusão de serviços
-- Gestão completa do catálogo
+- **Cadastro Completo**: Nome, duração, preço, descrição
+- **Gestão de Status**: Ativar/desativar serviços
+- **Estatísticas**: Preço médio, duração média
+- **Edição e Exclusão**: Interface completa de CRUD
 
 ### 5. Estatísticas (`/cliente/estatisticas`)
 - **Filtros Funcionais**:
@@ -57,10 +57,45 @@ O Dashboard do Cliente é a interface principal para empresas de lavagem automot
 - **Dados Dinâmicos**: Atualizados conforme filtro selecionado
 
 ### 6. Clientes (`/cliente/clientes`)
-- Lista completa de clientes
-- Informações: nome, telefone, email, histórico
-- Busca e filtros
-- Adição e edição de clientes
+- **Lista Completa**: Nome, telefone, email, histórico
+- **Busca e Filtros**: Sistema de busca avançado
+- **Estatísticas**: Total, ativos, agendamentos
+- **Modal de Detalhes**: Informações completas do cliente
+
+### 7. Conta (`/cliente/conta`) - **NOVO**
+Sistema completo de configurações da empresa organizado em abas:
+
+#### 7.1 Horário de Funcionamento
+- **Configuração por Dia**: Define horários de abertura e fechamento
+- **Dias Ativos**: Liga/desliga funcionamento por dia da semana
+- **Integração com Agenda**: Limita horários disponíveis para agendamento
+
+#### 7.2 Agendas e Atendentes
+- **Múltiplas Agendas**: Criação de agendas por equipe/atendente
+- **Nomes Personalizados**: Ex: "Equipe A - Lavagem Rápida"
+- **Status Ativo/Inativo**: Controle de visibilidade na agenda
+- **Filtro na Agenda**: Dropdown para selecionar agenda específica
+
+#### 7.3 Dados da Empresa
+- **Informações Básicas**:
+  - Nome da empresa
+  - Endereço físico completo
+  - Telefone de contato
+  - Link externo (WhatsApp, Instagram, etc.)
+- **Upload de Logo**: Sistema de upload de logotipo
+
+#### 7.4 Notificações
+- **Telegram**:
+  - Alertas de novos agendamentos/cancelamentos
+  - Resumo diário da agenda (08:00)
+- **WhatsApp**: Preparado para integração futura (desabilitado)
+- **Configurações Granulares**: Liga/desliga por tipo de notificação
+
+#### 7.5 Segurança
+- **Troca de Senha**: 
+  - Validação de senha atual
+  - Confirmação de nova senha
+  - Integração com Supabase Auth
 
 ## Arquitetura Técnica
 
@@ -73,13 +108,33 @@ src/
 │   ├── ClienteServicos.tsx     # Catálogo de serviços
 │   ├── ClienteEstatisticas.tsx # Relatórios e gráficos
 │   ├── ClienteClientes.tsx     # Base de clientes
-│   └── ClienteLogin.tsx        # Autenticação
+│   └── ClienteConta.tsx        # Configurações da empresa - NOVO
 ├── components/
-│   ├── ClienteNavigation.tsx   # Menu de navegação
-│   └── AgendamentoForm.tsx     # Formulário de agendamento
+│   ├── layout/
+│   │   ├── ClientLayout.tsx    # Layout base do cliente
+│   │   └── ClientSidebar.tsx   # Menu lateral responsivo
+│   └── agenda/
+│       ├── WeekView.tsx        # Visualização semanal
+│       ├── MonthView.tsx       # Visualização mensal
+│       └── ServiceFilter.tsx   # Filtro de serviços
 └── docs/
     └── README_CLIENTE.md       # Esta documentação
 ```
+
+### Banco de Dados Multi-Tenant
+
+#### Tabelas Principais
+- `empresas`: Dados das empresas clientes
+- `usuarios`: Usuários por empresa
+- `agendamentos`: Agendamentos por empresa
+- `servicos`: Serviços oferecidos por empresa
+- `horarios_funcionamento`: Horários por empresa
+- `transacoes`: Transações financeiras
+
+#### Segurança RLS (Row Level Security)
+- Políticas por `empresa_id` em todas as tabelas
+- Isolamento completo entre empresas
+- Acesso baseado em `auth.uid()`
 
 ### Rotas do Cliente
 - `/cliente/login` - Tela de login
@@ -88,38 +143,67 @@ src/
 - `/cliente/servicos` - Gestão de serviços
 - `/cliente/estatisticas` - Relatórios e gráficos
 - `/cliente/clientes` - Base de clientes
+- `/cliente/conta` - Configurações da empresa - **NOVO**
 
-### Design System
+### Sidebar Responsiva
 
-#### Cores Principais
-```css
---primary: #2563eb        /* Azul principal */
---primary-hover: #1d4ed8  /* Azul hover */
---secondary: #10b981      /* Verde secundário */
---secondary-hover: #059669 /* Verde hover */
---background: #f8fafc     /* Fundo claro */
---text-primary: #1f2937   /* Texto escuro */
---text-secondary: #6b7280 /* Texto secundário */
-```
+#### Comportamento
+- **Desktop**: Sidebar fixa visível
+- **Mobile**: Sidebar colapsível com toggle
+- **Navegação**: Destaque da página ativa
+- **Ícones**: Lucide React com labels descritivos
 
-#### Tipografia
-- Fonte principal: "Inter", sans-serif
-- Design responsivo mobile-first
-- Interface em português brasileiro
+#### Itens de Menu
+- 🏠 Dashboard (Painel)
+- 📅 Agenda
+- 🔧 Serviços  
+- 📊 Estatísticas
+- 👥 Clientes
+- ⚙️ Conta
 
-## Características Mobile
+## Design System
 
-### PWA (Progressive Web App)
-- **Manifest**: Configurado para instalação na tela inicial
-- **Ícones**: Diversos tamanhos para diferentes dispositivos
-- **Botão de Instalação**: Funcional em mobile e desktop
-- **Offline Ready**: Estrutura preparada para cache
+### Layout Responsivo
+- **Mobile First**: Design otimizado para dispositivos móveis
+- **Sidebar Unificada**: Mesmo comportamento em todas as páginas
+- **Breakpoints**: Tailwind CSS (sm, md, lg, xl)
+- **Componentes**: shadcn/ui com customizações
 
-### Responsividade
-- **Mobile First**: Design otimizado para mobile
-- **Breakpoints**: sm, md, lg, xl do Tailwind CSS
-- **Menu Lateral**: Colapsível em mobile, fixo em desktop
-- **Toque Amigável**: Botões e áreas de toque otimizadas
+### Componentes Principais
+- `ClientLayout`: Layout base com sidebar
+- `ClientSidebar`: Menu lateral responsivo
+- Cards estatísticos padronizados
+- Modais de criação/edição
+- Filtros e dropdowns
+
+## Como Configurar a Empresa
+
+### 1. Horários de Funcionamento
+1. Acesse `/cliente/conta`
+2. Vá para aba "Horários"
+3. Configure cada dia da semana:
+   - Marque "Funcionando" para dias ativos
+   - Defina horário de abertura e fechamento
+4. Clique "Salvar Horários"
+
+### 2. Agendas por Atendente
+1. Na aba "Agendas", digite o nome da nova agenda
+2. Clique "Adicionar" (ex: "Equipe A - Lavagem Rápida")
+3. Use o toggle para ativar/desativar agendas
+4. Na página de Agenda, use o filtro para visualizar agenda específica
+
+### 3. Configurar Notificações
+1. Aba "Notificações"
+2. Configure Telegram:
+   - Novos agendamentos: Liga/desliga alertas instantâneos
+   - Resumo diário: Resumo às 08:00
+3. WhatsApp: Preparado para integração futura
+
+### 4. Alterar Senha
+1. Aba "Segurança"
+2. Digite senha atual
+3. Digite nova senha duas vezes
+4. Clique "Alterar Senha"
 
 ## Integrações Preparadas
 
@@ -127,55 +211,41 @@ src/
 - **Autenticação**: Row Level Security (RLS)
 - **Database**: Estrutura multi-tenant com `empresa_id`
 - **Real-time**: Atualizações em tempo real
-- **Storage**: Upload de arquivos
+- **Storage**: Upload de arquivos (logos)
 
 ### APIs Externas
-- **Telegram API**: Envio de senhas temporárias
+- **Telegram API**: Envio de notificações
 - **WhatsApp API**: Estrutura preparada (desabilitada)
-
-## Como Usar
-
-### Desenvolvimento
-1. Todas as páginas estão funcionais com dados mock
-2. Navegação entre páginas implementada
-3. Formulários validados e funcionais
-4. Gráficos e filtros operacionais
-
-### Personalização
-1. **Cores**: Editar `tailwind.config.ts`
-2. **Logo**: Componente Car com bolhas de sabão
-3. **Dados**: Substituir mocks por integração Supabase
-4. **Rotas**: Adicionar novas em `App.tsx`
-
-### Instalação PWA
-1. Acessar site no mobile
-2. Clicar em "Instalar App" 
-3. Ou usar menu do navegador > "Adicionar à tela inicial"
 
 ## Próximos Passos
 
 ### Integração Backend
-1. Conectar com Supabase Auth
-2. Implementar queries de dados reais
-3. Configurar RLS policies
-4. Integrar Telegram/WhatsApp APIs
+1. Conectar formulários com Supabase
+2. Implementar upload de logos
+3. Configurar notificações Telegram
+4. Integrar filtros de agenda com banco
 
 ### Funcionalidades Avançadas
-1. Notificações push
-2. Sincronização offline
-3. Relatórios avançados
-4. Sistema de pagamentos
+1. Sistema de templates de mensagem
+2. Integração WhatsApp Business API
+3. Relatórios PDF exportáveis
+4. Sistema de backup automático
 
-### Performance
-1. Lazy loading de componentes
-2. Cache de dados
-3. Otimização de imagens
-4. Service Workers
+## Credenciais de Teste
 
-## Suporte
+### Admin
+- **Email**: `admin@agendicar.com`
+- **Senha**: `admin123`
 
-Para dúvidas sobre implementação ou customização, consulte:
+### Cliente Demo
+- **Email**: `demonstracao`
+- **Senha**: `demo1234`
+
+## Suporte Técnico
+
+Para dúvidas sobre implementação:
 - Documentação do Supabase
 - Tailwind CSS docs  
 - React Router docs
 - Recharts para gráficos
+- shadcn/ui components

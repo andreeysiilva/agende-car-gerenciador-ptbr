@@ -1,85 +1,101 @@
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { AppSidebar } from "@/components/layout/AppSidebar";
-import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import Empresas from "./pages/Empresas";
-import Planos from "./pages/Planos";
-import AdminFinanceiro from "./pages/AdminFinanceiro";
-import NotFound from "./pages/NotFound";
-import ClienteLogin from "./pages/ClienteLogin";
-import ClienteDashboard from "./pages/ClienteDashboard";
-import ClienteAgenda from "./pages/ClienteAgenda";
-import ClienteServicos from "./pages/ClienteServicos";
-import ClienteEstatisticas from "./pages/ClienteEstatisticas";
-import ClienteClientes from "./pages/ClienteClientes";
-import ClienteFinanceiro from "./pages/ClienteFinanceiro";
-import { SidebarTrigger } from "@/components/ui/sidebar";
+import { Toaster } from "@/components/ui/sonner";
 
-const queryClient = new QueryClient();
+// Admin Pages
+import Dashboard from "@/pages/Dashboard";
+import Empresas from "@/pages/Empresas";
+import Planos from "@/pages/Planos";
+import AdminFinanceiro from "@/pages/AdminFinanceiro";
+import Login from "@/pages/Login";
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <AuthProvider>
-        <BrowserRouter>
+// Client Pages
+import ClienteDashboard from "@/pages/ClienteDashboard";
+import ClienteAgenda from "@/pages/ClienteAgenda";
+import ClienteServicos from "@/pages/ClienteServicos";
+import ClienteEstatisticas from "@/pages/ClienteEstatisticas";
+import ClienteClientes from "@/pages/ClienteClientes";
+import ClienteConta from "@/pages/ClienteConta";
+import ClienteLogin from "@/pages/ClienteLogin";
+import ClienteFinanceiro from "@/pages/ClienteFinanceiro";
+
+import Index from "@/pages/Index";
+import NotFound from "@/pages/NotFound";
+
+function App() {
+  return (
+    <AuthProvider>
+      <Router>
+        <div className="min-h-screen bg-background">
           <Routes>
-            {/* Login administrativo */}
+            {/* Página inicial */}
+            <Route path="/" element={<Index />} />
+            
+            {/* Rotas do Admin */}
             <Route path="/login" element={<Login />} />
+            <Route path="/dashboard" element={
+              <SidebarProvider>
+                <div className="min-h-screen flex w-full">
+                  <AppSidebar />
+                  <main className="flex-1">
+                    <Dashboard />
+                  </main>
+                </div>
+              </SidebarProvider>
+            } />
+            <Route path="/empresas" element={
+              <SidebarProvider>
+                <div className="min-h-screen flex w-full">
+                  <AppSidebar />
+                  <main className="flex-1">
+                    <Empresas />
+                  </main>
+                </div>
+              </SidebarProvider>
+            } />
+            <Route path="/planos" element={
+              <SidebarProvider>
+                <div className="min-h-screen flex w-full">
+                  <AppSidebar />
+                  <main className="flex-1">
+                    <Planos />
+                  </main>
+                </div>
+              </SidebarProvider>
+            } />
+            <Route path="/financeiro" element={
+              <SidebarProvider>
+                <div className="min-h-screen flex w-full">
+                  <AppSidebar />
+                  <main className="flex-1">
+                    <AdminFinanceiro />
+                  </main>
+                </div>
+              </SidebarProvider>
+            } />
             
-            {/* Login para clientes (empresas) */}
+            {/* Rotas do Cliente */}
             <Route path="/cliente/login" element={<ClienteLogin />} />
+            <Route path="/cliente" element={<ClienteDashboard />} />
+            <Route path="/cliente/dashboard" element={<ClienteDashboard />} />
+            <Route path="/cliente/agenda" element={<ClienteAgenda />} />
+            <Route path="/cliente/servicos" element={<ClienteServicos />} />
+            <Route path="/cliente/estatisticas" element={<ClienteEstatisticas />} />
+            <Route path="/cliente/clientes" element={<ClienteClientes />} />
+            <Route path="/cliente/conta" element={<ClienteConta />} />
+            <Route path="/cliente/financeiro" element={<ClienteFinanceiro />} />
             
-            {/* Rotas do cliente (dashboard das empresas) */}
-            <Route path="/cliente/*" element={
-              <Routes>
-                <Route path="/" element={<ClienteDashboard />} />
-                <Route path="/agenda" element={<ClienteAgenda />} />
-                <Route path="/servicos" element={<ClienteServicos />} />
-                <Route path="/estatisticas" element={<ClienteEstatisticas />} />
-                <Route path="/clientes" element={<ClienteClientes />} />
-                <Route path="/financeiro" element={<ClienteFinanceiro />} />
-              </Routes>
-            } />
-            
-            {/* Rotas do admin (dashboard administrativo) */}
-            <Route path="/*" element={
-              <ProtectedRoute>
-                <SidebarProvider>
-                  <div className="min-h-screen flex w-full bg-background">
-                    <AppSidebar />
-                    <main className="flex-1 flex flex-col">
-                      <div className="border-b bg-white px-4 py-3">
-                        <SidebarTrigger />
-                      </div>
-                      <div className="flex-1 p-6">
-                        <Routes>
-                          <Route path="/" element={<Dashboard />} />
-                          <Route path="/empresas" element={<Empresas />} />
-                          <Route path="/planos" element={<Planos />} />
-                          <Route path="/financeiro" element={<AdminFinanceiro />} />
-                          <Route path="*" element={<NotFound />} />
-                        </Routes>
-                      </div>
-                    </main>
-                  </div>
-                </SidebarProvider>
-              </ProtectedRoute>
-            } />
+            {/* Rota 404 */}
+            <Route path="*" element={<NotFound />} />
           </Routes>
-        </BrowserRouter>
-      </AuthProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+          <Toaster />
+        </div>
+      </Router>
+    </AuthProvider>
+  );
+}
 
 export default App;
