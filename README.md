@@ -1,269 +1,194 @@
 
-# Agende Car - Dashboard Administrativo
+# AgendiCar - Sistema de Agendamento para Lava-Jatos
 
-Um sistema administrativo completo para gerenciar a plataforma SaaS multi-tenant **Agende Car**, especializada em empresas de lavagem automotiva.
+Sistema completo de agendamento online para empresas de lava-jatos e estética automotiva.
 
-## 📋 Sobre o Projeto
+## 🚗 Sobre o AgendiCar
 
-O Agende Car é uma plataforma que permite a empresas de lavagem automotiva (lava-rápidos) gerenciar seus agendamentos de forma eficiente. Este dashboard administrativo oferece controle total sobre:
+O AgendiCar é uma plataforma SaaS multi-tenant que permite que empresas de lava-jatos gerenciem seus agendamentos de forma eficiente e profissional. O sistema oferece tanto um painel administrativo para os donos de empresa quanto uma interface cliente-friendly para visualização e gestão de agendamentos.
 
-- **Empresas cadastradas** - Criação, edição e gerenciamento de empresas clientes
-- **Planos de assinatura** - Configuração de planos com diferentes limitações e preços
-- **Métricas e relatórios** - Visão geral do crescimento e performance da plataforma
+## 🌟 Principais Funcionalidades
 
-## 🚀 Tecnologias Utilizadas
+### Painel Administrativo (CRM)
+- **Dashboard completo** com métricas e estatísticas
+- **Gestão de empresas** cadastradas na plataforma
+- **Controle de planos** de assinatura (Básico, Premium, Empresarial)
+- **Financeiro** com controle de pagamentos e transações
+- **Autenticação segura** para administradores
 
-- **Frontend**: React 18 + TypeScript
-- **Styling**: Tailwind CSS + shadcn/ui
-- **Roteamento**: React Router DOM
-- **Estado**: Context API + useState
-- **Notificações**: Sonner (Toast)
-- **Ícones**: Lucide React
-- **Build**: Vite
+### Portal do Cliente
+- **Dashboard personalizado** com métricas da empresa
+- **Agenda avançada** com visualizações de semana e mês
+- **Filtros inteligentes** por tipo de serviço
+- **Gestão de serviços** oferecidos
+- **Estatísticas detalhadas** de desempenho
+- **Controle de clientes** e histórico
+- **Configurações de conta**
 
-## 🔐 Autenticação
+### Funcionalidades da Agenda
+- 📅 **Visualização dupla**: Semana e Mês
+- 🔍 **Filtros por serviço** com seleção múltipla
+- ✏️ **Edição e cancelamento** de agendamentos
+- 📱 **Design responsivo** para mobile
+- 🎨 **Códigos de cores** por status do agendamento
 
-O sistema possui autenticação administrativa com credenciais fixas:
+## 🛠️ Tecnologias Utilizadas
 
-- **E-mail**: `admin@agendecar.com`
-- **Senha**: `admin123`
+### Frontend
+- **React 18** com TypeScript
+- **Tailwind CSS** para estilização
+- **Shadcn/ui** para componentes
+- **React Router DOM** para navegação
+- **Lucide React** para ícones
+- **Date-fns** para manipulação de datas
 
-Todas as rotas são protegidas por middleware de autenticação.
+### Backend
+- **Supabase** como Backend-as-a-Service
+- **PostgreSQL** como banco de dados
+- **Row Level Security (RLS)** para segurança multi-tenant
+- **Supabase Auth** para autenticação
 
-## 📁 Estrutura do Projeto
+### Deploy e Hospedagem
+- **Vercel** para hospedagem do frontend
+- **Supabase** para infraestrutura backend
 
-```
-src/
-├── components/          # Componentes reutilizáveis
-│   ├── auth/           # Componentes de autenticação
-│   ├── layout/         # Componentes de layout (sidebar, header)
-│   └── ui/             # Componentes da biblioteca shadcn/ui
-├── contexts/           # Contextos React (AuthContext)
-├── pages/              # Páginas da aplicação
-│   ├── Dashboard.tsx   # Página principal com métricas
-│   ├── Empresas.tsx    # Gerenciamento de empresas
-│   ├── Planos.tsx      # Gerenciamento de planos
-│   ├── Login.tsx       # Página de login
-│   └── NotFound.tsx    # Página 404
-├── hooks/              # Hooks customizados
-├── lib/                # Utilitários e configurações
-└── App.tsx             # Componente principal
-```
-
-## 🏢 Funcionalidades - Gestão de Empresas
-
-### Criar Nova Empresa
-- **Campos obrigatórios**: Nome, E-mail, Subdomínio, Telefone, Plano
-- **Geração automática** de senha temporária (6 dígitos)
-- **Envio via Telegram** (estrutura preparada)
-- **Status inicial**: Pendente (até ativação da empresa)
-
-### Gerenciar Empresas Existentes
-- **Visualização em tabela** com todas as informações
-- **Edição** de dados da empresa
-- **Exclusão** de empresas
-- **Reenvio de senha** via Telegram para empresas pendentes
-- **Filtros por status** (Ativo, Inativo, Pendente)
-
-### Informações Armazenadas
-```typescript
-interface Empresa {
-  id: number;
-  nome: string;
-  email: string;
-  subdominio: string;        // usado para [subdominio].agendecar.com
-  telefone: string;          // WhatsApp/Telegram
-  plano: string;
-  status: 'Ativo' | 'Inativo' | 'Pendente';
-  senhaTemporaria?: string;  // senha de 6 dígitos
-  dataCriacao: string;
-}
-```
-
-## 💳 Funcionalidades - Gestão de Planos
-
-### Criar/Editar Planos
-- **Informações básicas**: Nome, Descrição, Preço mensal
-- **Limitações configuráveis**:
-  - Número de agendamentos por mês
-  - Quantidade de usuários simultâneos
-  - Limite de armazenamento
-  - Suporte prioritário (sim/não)
-  - Integrações avançadas (sim/não)
-
-### Controle de Status
-- **Ativar/Desativar** planos
-- **Visualização em cards** dos planos ativos
-- **Tabela completa** com todos os planos
-
-### Estrutura de Dados
-```typescript
-interface Plano {
-  id: number;
-  nome: string;
-  descricao: string;
-  preco: number;
-  limitacoes: {
-    agendamentosMes: number;
-    usuarios: number;
-    armazenamento: string;
-    suportePrioridade: boolean;
-    integrações: boolean;
-  };
-  ativo: boolean;
-  dataCriacao: string;
-}
-```
-
-## 📊 Dashboard e Métricas
-
-### Métricas Principais
-- **Total de empresas** cadastradas
-- **Total de agendamentos** na plataforma
-- **Registros recentes** (empresas do mês)
-- **Crescimento mensal** em percentual
-
-### Visões Disponíveis
-- **Cards informativos** com números principais
-- **Lista de empresas recentes** com status
-- **Resumo do sistema** (conversão, satisfação, uptime)
-
-## 🔌 Integração com APIs Externas
-
-### Telegram API (Estrutura Preparada)
-```typescript
-// Função para enviar senha via Telegram
-const enviarSenhaViaTelegram = async (telefone: string, senha: string) => {
-  // TODO: Implementar integração com Telegram Bot API
-  console.log(`Enviando senha ${senha} para ${telefone} via Telegram`);
-  
-  // Estrutura para implementação:
-  // 1. Configurar bot do Telegram
-  // 2. Obter chat_id do usuário pelo telefone
-  // 3. Enviar mensagem com a senha temporária
-};
-```
-
-### WhatsApp API (Preparado para implementação futura)
-```typescript
-// Estrutura preparada para WhatsApp Business API
-const enviarSenhaViaWhatsApp = async (telefone: string, senha: string) => {
-  // TODO: Implementar integração com WhatsApp Business API
-  console.log(`Enviando senha ${senha} para ${telefone} via WhatsApp`);
-};
-```
-
-## 🗄️ Estrutura de Banco de Dados (Supabase)
-
-### Tabelas Principais
-```sql
--- Tabela de empresas
-CREATE TABLE empresas (
-  id SERIAL PRIMARY KEY,
-  nome VARCHAR(255) NOT NULL,
-  email VARCHAR(255) UNIQUE NOT NULL,
-  subdominio VARCHAR(100) UNIQUE NOT NULL,
-  telefone VARCHAR(20) NOT NULL,
-  plano_id INTEGER REFERENCES planos(id),
-  status VARCHAR(20) DEFAULT 'Pendente',
-  senha_temporaria VARCHAR(6),
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
-);
-
--- Tabela de planos
-CREATE TABLE planos (
-  id SERIAL PRIMARY KEY,
-  nome VARCHAR(100) NOT NULL,
-  descricao TEXT,
-  preco DECIMAL(10,2) NOT NULL,
-  limitacoes JSONB NOT NULL,
-  ativo BOOLEAN DEFAULT true,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
-);
-
--- Tabela de usuários (para funcionários das empresas)
-CREATE TABLE usuarios (
-  id SERIAL PRIMARY KEY,
-  empresa_id INTEGER REFERENCES empresas(id),
-  nome VARCHAR(255) NOT NULL,
-  email VARCHAR(255) NOT NULL,
-  senha_hash VARCHAR(255) NOT NULL,
-  role VARCHAR(50) DEFAULT 'funcionario',
-  ativo BOOLEAN DEFAULT true,
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
-);
-```
-
-### Row Level Security (RLS)
-```sql
--- Habilitar RLS nas tabelas
-ALTER TABLE empresas ENABLE ROW LEVEL SECURITY;
-ALTER TABLE usuarios ENABLE ROW LEVEL SECURITY;
-ALTER TABLE agendamentos ENABLE ROW LEVEL SECURITY;
-
--- Política para empresas (cada empresa vê apenas seus dados)
-CREATE POLICY "Empresas podem ver apenas seus dados" ON usuarios
-  FOR ALL USING (empresa_id = current_setting('app.current_empresa_id')::INTEGER);
-```
-
-## 🚀 Como Executar o Projeto
+## 🔧 Configuração e Instalação
 
 ### Pré-requisitos
-- Node.js 16+ e npm/yarn instalados
-- Conta no Supabase (para backend)
+- Node.js 18+
+- NPM ou Yarn
+- Conta no Supabase
 
-### Instalação
+### Passo a Passo
+
+1. **Clone o repositório**
 ```bash
-# Clonar o repositório
-git clone <url-do-repositorio>
+git clone https://github.com/seu-usuario/agendicar.git
+cd agendicar
+```
 
-# Navegar para o diretório
-cd agende-car-admin
-
-# Instalar dependências
+2. **Instale as dependências**
+```bash
 npm install
+```
 
-# Executar em modo de desenvolvimento
+3. **Configure as variáveis de ambiente**
+Crie um arquivo `.env.local` na raiz do projeto:
+```env
+VITE_SUPABASE_URL=sua_url_do_supabase
+VITE_SUPABASE_ANON_KEY=sua_chave_anonima_do_supabase
+```
+
+4. **Execute as migrações do banco de dados**
+Execute os comandos SQL fornecidos no arquivo de migração no painel do Supabase.
+
+5. **Inicie o servidor de desenvolvimento**
+```bash
 npm run dev
 ```
 
-### Configuração do Supabase
-1. Criar projeto no [Supabase](https://supabase.com)
-2. Executar as migrations do banco de dados
-3. Configurar as variáveis de ambiente
-4. Implementar as políticas de RLS
+6. **Acesse a aplicação**
+- Painel Admin: `http://localhost:5173/`
+- Portal Cliente: `http://localhost:5173/cliente/`
 
-## 🔧 Próximas Implementações
+## 🔐 Credenciais de Teste
 
-### APIs Externas
-- [ ] **Telegram Bot API** - Envio automático de senhas
-- [ ] **WhatsApp Business API** - Alternativa ao Telegram
-- [ ] **Integração com gateways de pagamento** (Stripe, PagSeguro)
+### Administrador
+- **Email:** `admin@agendicar.com`
+- **Senha:** `admin123`
 
-### Funcionalidades Admin
-- [ ] **Relatórios avançados** com gráficos
-- [ ] **Sistema de notificações** em tempo real
-- [ ] **Backup automático** de dados
-- [ ] **Logs de auditoria** para ações administrativas
+*Use essas credenciais para acessar o painel administrativo e testar todas as funcionalidades.*
 
-### Multi-tenancy
-- [ ] **Implementação completa do RLS** no Supabase
-- [ ] **Isolamento de dados** por empresa
-- [ ] **Customização por tenant** (logos, cores, domínios)
+## 📊 Estrutura do Banco de Dados
+
+### Tabelas Principais
+- **empresas**: Dados das empresas cadastradas
+- **usuarios**: Usuários vinculados às empresas
+- **agendamentos**: Agendamentos dos clientes
+- **servicos**: Serviços oferecidos por cada empresa
+- **planos**: Planos de assinatura disponíveis
+- **transacoes**: Transações financeiras
+- **horarios_funcionamento**: Horários de funcionamento
+
+### Segurança
+- **RLS (Row Level Security)** ativado em todas as tabelas
+- **Políticas de acesso** baseadas em empresa_id
+- **Autenticação JWT** via Supabase Auth
+
+## 🎨 Design e UX
+
+### Características do Design
+- **Mobile-first**: Otimizado para dispositivos móveis
+- **Sidebar responsiva**: Colapsável em telas pequenas
+- **Interface intuitiva**: Fácil navegação e uso
+- **Cores consistentes**: Paleta harmoniosa em todo o sistema
+- **Tipografia**: Font Inter para melhor legibilidade
+
+### Paleta de Cores
+- **Primary**: Azul (#3B82F6)
+- **Secondary**: Verde (#10B981)
+- **Success**: Verde (#22C55E)
+- **Warning**: Amarelo (#F59E0B)
+- **Error**: Vermelho (#EF4444)
+
+## 📱 Responsividade
+
+O sistema é totalmente responsivo e otimizado para:
+- **Desktop** (1024px+)
+- **Tablet** (768px - 1023px)
+- **Mobile** (até 767px)
+
+### Funcionalidades Mobile
+- Sidebar colapsável com botão toggle
+- Cards adaptáveis ao tamanho da tela
+- Navegação por gestos
+- Filtros otimizados para touch
+
+## 🚀 Deploy
+
+### Vercel (Recomendado)
+1. Conecte seu repositório GitHub ao Vercel
+2. Configure as variáveis de ambiente
+3. Deploy automático a cada push
+
+### Netlify
+1. Conecte o repositório
+2. Configure build command: `npm run build`
+3. Configure publish directory: `dist`
+
+## 📈 Roadmap
+
+### Próximas Funcionalidades
+- [ ] Sistema de notificações por SMS/WhatsApp
+- [ ] Integração com sistemas de pagamento
+- [ ] API pública para integrações
+- [ ] App mobile nativo
+- [ ] Sistema de avaliações de clientes
+- [ ] Relatórios avançados em PDF
+- [ ] Multi-idioma (inglês, espanhol)
+
+## 🤝 Contribuição
+
+1. Faça um fork do projeto
+2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
+3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
+4. Push para a branch (`git push origin feature/AmazingFeature`)
+5. Abra um Pull Request
 
 ## 📝 Licença
 
-Este projeto está sob licença MIT. Veja o arquivo `LICENSE` para mais detalhes.
+Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
 
-## 💬 Suporte
+## 📞 Suporte
 
-Para dúvidas ou suporte técnico, entre em contato:
-- **E-mail**: dev@agendecar.com
-- **Telefone**: (11) 99999-9999
+Para suporte técnico ou dúvidas:
+- **Email**: admin@agendicar.com
+- **GitHub Issues**: [Criar Issue](https://github.com/seu-usuario/agendicar/issues)
+
+## 👥 Autores
+
+- **Equipe AgendiCar** - *Desenvolvimento inicial* - [GitHub](https://github.com/seu-usuario)
 
 ---
 
-**Desenvolvido com ❤️ para revolucionar o setor de lavagem automotiva**
+**AgendiCar** - Transformando a gestão de lava-jatos com tecnologia moderna e design intuitivo.

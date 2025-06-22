@@ -49,8 +49,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string): Promise<boolean> => {
     console.log('Tentando fazer login com:', { email, password });
     
-    // Validação hardcoded para o administrador
-    if (email === 'admin@agendecar.com' && password === 'admin123') {
+    // Validação hardcoded para o administrador - credenciais atualizadas para AgendiCar
+    if (email === 'admin@agendicar.com' && password === 'admin123') {
       const userData = { email };
       
       // Salvar dados de autenticação no localStorage

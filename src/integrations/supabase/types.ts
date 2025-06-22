@@ -9,7 +9,339 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      agendamentos: {
+        Row: {
+          created_at: string | null
+          data_agendamento: string
+          empresa_id: string | null
+          horario: string
+          id: string
+          nome_carro: string
+          nome_cliente: string
+          observacoes: string | null
+          servico: string
+          status: string | null
+          telefone: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          data_agendamento: string
+          empresa_id?: string | null
+          horario: string
+          id?: string
+          nome_carro: string
+          nome_cliente: string
+          observacoes?: string | null
+          servico: string
+          status?: string | null
+          telefone: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          data_agendamento?: string
+          empresa_id?: string | null
+          horario?: string
+          id?: string
+          nome_carro?: string
+          nome_cliente?: string
+          observacoes?: string | null
+          servico?: string
+          status?: string | null
+          telefone?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agendamentos_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      empresas: {
+        Row: {
+          created_at: string | null
+          data_vencimento: string | null
+          email: string
+          endereco: string | null
+          id: string
+          logo_url: string | null
+          nome: string
+          plano_id: string | null
+          senha_temporaria: string | null
+          status: string | null
+          subdominio: string
+          telefone: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          data_vencimento?: string | null
+          email: string
+          endereco?: string | null
+          id?: string
+          logo_url?: string | null
+          nome: string
+          plano_id?: string | null
+          senha_temporaria?: string | null
+          status?: string | null
+          subdominio: string
+          telefone: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          data_vencimento?: string | null
+          email?: string
+          endereco?: string | null
+          id?: string
+          logo_url?: string | null
+          nome?: string
+          plano_id?: string | null
+          senha_temporaria?: string | null
+          status?: string | null
+          subdominio?: string
+          telefone?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "empresas_plano_id_fkey"
+            columns: ["plano_id"]
+            isOneToOne: false
+            referencedRelation: "planos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      horarios_funcionamento: {
+        Row: {
+          created_at: string | null
+          dia_semana: number
+          empresa_id: string | null
+          funcionando: boolean | null
+          horario_abertura: string | null
+          horario_fechamento: string | null
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          dia_semana: number
+          empresa_id?: string | null
+          funcionando?: boolean | null
+          horario_abertura?: string | null
+          horario_fechamento?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          dia_semana?: number
+          empresa_id?: string | null
+          funcionando?: boolean | null
+          horario_abertura?: string | null
+          horario_fechamento?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "horarios_funcionamento_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      planos: {
+        Row: {
+          ativo: boolean | null
+          caracteristicas: string[] | null
+          created_at: string | null
+          descricao: string | null
+          id: string
+          limite_agendamentos: number
+          limite_usuarios: number
+          nome: string
+          popular: boolean | null
+          preco: number
+          suporte: string
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          caracteristicas?: string[] | null
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          limite_agendamentos?: number
+          limite_usuarios?: number
+          nome: string
+          popular?: boolean | null
+          preco: number
+          suporte?: string
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          caracteristicas?: string[] | null
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          limite_agendamentos?: number
+          limite_usuarios?: number
+          nome?: string
+          popular?: boolean | null
+          preco?: number
+          suporte?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      servicos: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          descricao: string | null
+          duracao_minutos: number | null
+          empresa_id: string | null
+          id: string
+          nome: string
+          preco: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          descricao?: string | null
+          duracao_minutos?: number | null
+          empresa_id?: string | null
+          id?: string
+          nome: string
+          preco?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          descricao?: string | null
+          duracao_minutos?: number | null
+          empresa_id?: string | null
+          id?: string
+          nome?: string
+          preco?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "servicos_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transacoes: {
+        Row: {
+          created_at: string | null
+          data_pagamento: string | null
+          data_vencimento: string | null
+          descricao: string | null
+          empresa_id: string | null
+          id: string
+          metodo_pagamento: string | null
+          status: string | null
+          tipo: string
+          updated_at: string | null
+          valor: number
+        }
+        Insert: {
+          created_at?: string | null
+          data_pagamento?: string | null
+          data_vencimento?: string | null
+          descricao?: string | null
+          empresa_id?: string | null
+          id?: string
+          metodo_pagamento?: string | null
+          status?: string | null
+          tipo: string
+          updated_at?: string | null
+          valor: number
+        }
+        Update: {
+          created_at?: string | null
+          data_pagamento?: string | null
+          data_vencimento?: string | null
+          descricao?: string | null
+          empresa_id?: string | null
+          id?: string
+          metodo_pagamento?: string | null
+          status?: string | null
+          tipo?: string
+          updated_at?: string | null
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transacoes_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      usuarios: {
+        Row: {
+          ativo: boolean | null
+          auth_user_id: string | null
+          created_at: string | null
+          email: string
+          empresa_id: string | null
+          id: string
+          nome: string
+          role: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          auth_user_id?: string | null
+          created_at?: string | null
+          email: string
+          empresa_id?: string | null
+          id?: string
+          nome: string
+          role?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          auth_user_id?: string | null
+          created_at?: string | null
+          email?: string
+          empresa_id?: string | null
+          id?: string
+          nome?: string
+          role?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "usuarios_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
