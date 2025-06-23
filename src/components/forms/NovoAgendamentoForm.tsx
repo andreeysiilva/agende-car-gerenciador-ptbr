@@ -6,7 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { X } from "lucide-react";
+import { X, Calendar as CalendarIcon } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { cn } from "@/lib/utils";
+import { TimeSlotPicker } from "./TimeSlotPicker";
+import { isPastDate, isValidFutureDate } from "@/utils/holidaysAndDates";
 
 interface NovoAgendamentoFormProps {
   onClose: () => void;
@@ -14,6 +21,14 @@ interface NovoAgendamentoFormProps {
   clientePreSelecionado?: any;
   dataPreSelecionada?: string;
   horarioPreSelecionado?: string;
+  agendamentos?: any[];
+  horariosFuncionamento?: {
+    [key: number]: {
+      funcionando: boolean;
+      abertura: string;
+      fechamento: string;
+    };
+  };
 }
 
 export function NovoAgendamentoForm({ 
@@ -21,7 +36,9 @@ export function NovoAgendamentoForm({
   onSave, 
   clientePreSelecionado,
   dataPreSelecionada,
-  horarioPreSelecionado 
+  horarioPreSelecionado,
+  agendamentos = [],
+  horariosFuncionamento
 }: NovoAgendamentoFormProps) {
   const [formData, setFormData] = useState({
     cliente_nome: clientePreSelecionado?.nome || "",
@@ -34,6 +51,12 @@ export function NovoAgendamentoForm({
     equipe_id: "",
     observacoes: ""
   });
+
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(
+    dataPreSelecionada ? new Date(dataPreSelecionada + 'T00:00:00') : undefined
+  );
+  const [dateError, setDateError] = useState("");
 
   // Dados mockados - serão substituídos por dados do Supabase
   const servicos = [
@@ -51,9 +74,30 @@ export function NovoAgendamentoForm({
     { id: "3", nome: "Equipe B - Detalhamento" }
   ];
 
+  const handleDateSelect = (date: Date | undefined) => {
+    if (!date) return;
+
+    if (isPastDate(date)) {
+      setDateError("Não é possível agendar para datas anteriores ao dia de hoje.");
+      return;
+    }
+
+    setDateError("");
+    setSelectedDate(date);
+    const dateStr = format(date, 'yyyy-MM-dd');
+    setFormData(prev => ({ ...prev, data_agendamento: dateStr, horario: "" }));
+    setDatePickerOpen(false);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validação de data
+    if (formData.data_agendamento && isPastDate(new Date(formData.data_agendamento + 'T00:00:00'))) {
+      setDateError("Não é possível agendar para datas anteriores ao dia de hoje.");
+      return;
+    }
+
     // Validação básica
     if (!formData.cliente_nome || !formData.cliente_telefone || !formData.nome_carro || 
         !formData.servico || !formData.data_agendamento || !formData.horario) {
@@ -82,6 +126,10 @@ export function NovoAgendamentoForm({
 
   const handleChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleTimeChange = (time: string) => {
+    setFormData(prev => ({ ...prev, horario: time }));
   };
 
   return (
@@ -161,29 +209,46 @@ export function NovoAgendamentoForm({
               </Select>
             </div>
 
-            {/* Data e Horário */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="data_agendamento">Data *</Label>
-                <Input
-                  id="data_agendamento"
-                  type="date"
-                  value={formData.data_agendamento}
-                  onChange={(e) => handleChange("data_agendamento", e.target.value)}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="horario">Horário *</Label>
-                <Input
-                  id="horario"
-                  type="time"
-                  value={formData.horario}
-                  onChange={(e) => handleChange("horario", e.target.value)}
-                  required
-                />
-              </div>
+            {/* Data com Date Picker */}
+            <div>
+              <Label>Data do Agendamento *</Label>
+              <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !selectedDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {selectedDate ? format(selectedDate, "dd/MM/yyyy", { locale: ptBR }) : "Selecione uma data"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={handleDateSelect}
+                    disabled={(date) => isPastDate(date)}
+                    locale={ptBR}
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+              {dateError && (
+                <div className="text-sm text-red-500 mt-1">{dateError}</div>
+              )}
             </div>
+
+            {/* Horário com Time Slot Picker */}
+            <TimeSlotPicker
+              selectedDate={formData.data_agendamento}
+              selectedTime={formData.horario}
+              onTimeChange={handleTimeChange}
+              agendamentos={agendamentos}
+              horariosFuncionamento={horariosFuncionamento}
+            />
 
             {/* Equipe */}
             <div>

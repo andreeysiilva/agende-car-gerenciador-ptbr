@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isToday, isSameMonth, startOfWeek, endOfWeek } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { isBrazilianHoliday, getBrazilianHolidayName } from "@/utils/holidaysAndDates";
 
 interface Agendamento {
   id: string;
@@ -76,6 +77,7 @@ export function MonthView({
 
   const handleDayClick = (day: Date) => {
     if (onDayClick) {
+      // Fix timezone issue by using local date string
       const dayStr = format(day, 'yyyy-MM-dd');
       onDayClick(dayStr);
     }
@@ -132,25 +134,42 @@ export function MonthView({
             {calendarDays.map((day, index) => {
               const agendamentosDay = getAgendamentosForDay(day);
               const diaFuncionando = isDiaFuncionando(day);
+              const isHoliday = isBrazilianHoliday(day);
+              const holidayName = getBrazilianHolidayName(day);
               
               return (
                 <div
                   key={day.toISOString()}
-                  className={`min-h-[100px] p-2 border-r border-b last:border-r-0 cursor-pointer hover:bg-gray-50 ${
+                  className={`min-h-[100px] p-2 border-r border-b last:border-r-0 cursor-pointer hover:bg-gray-50 relative ${
                     !isSameMonth(day, currentMonth) 
                       ? 'bg-gray-50 text-gray-400' 
                       : isToday(day) 
                         ? 'bg-blue-50' 
-                        : 'bg-white'
+                        : isHoliday 
+                          ? 'bg-gray-25' 
+                          : 'bg-white'
                   } ${!diaFuncionando ? 'bg-red-50' : ''}`}
                   onClick={() => handleDayClick(day)}
+                  title={holidayName || undefined}
                 >
+                  {/* Indicador de feriado */}
+                  {isHoliday && (
+                    <div className="absolute top-1 right-1 text-xs text-gray-400">
+                      🇧🇷
+                    </div>
+                  )}
+                  
                   <div className={`text-sm font-medium mb-1 ${
                     isToday(day) ? 'text-blue-600 font-bold' : ''
-                  } ${!diaFuncionando ? 'text-red-400' : ''}`}>
+                  } ${!diaFuncionando ? 'text-red-400' : ''} ${isHoliday ? 'text-gray-600' : ''}`}>
                     {format(day, "d")}
                     {!diaFuncionando && (
                       <span className="text-xs text-red-400 block">Fechado</span>
+                    )}
+                    {isHoliday && (
+                      <span className="text-xs text-gray-500 block truncate" title={holidayName || ''}>
+                        {holidayName}
+                      </span>
                     )}
                   </div>
                   

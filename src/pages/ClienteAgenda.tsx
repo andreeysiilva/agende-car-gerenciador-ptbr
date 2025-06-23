@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -279,6 +278,8 @@ export default function ClienteAgenda() {
           <NovoAgendamentoForm
             onClose={() => setMostrarNovoForm(false)}
             onSave={handleSalvarNovoAgendamento}
+            agendamentos={agendamentos}
+            horariosFuncionamento={horariosFuncionamento}
           />
         )}
 
