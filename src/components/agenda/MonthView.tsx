@@ -11,6 +11,7 @@ interface Agendamento {
   cliente: string;
   servico: string;
   horario: string;
+  data_agendamento: string;
   status: 'confirmado' | 'pendente' | 'concluido' | 'cancelado';
 }
 
@@ -18,9 +19,23 @@ interface MonthViewProps {
   agendamentos: Agendamento[];
   filteredServices: string[];
   onAgendamentoClick: (agendamento: Agendamento) => void;
+  onDayClick?: (data: string) => void;
+  horariosFuncionamento?: {
+    [key: number]: {
+      funcionando: boolean;
+      abertura: string;
+      fechamento: string;
+    };
+  };
 }
 
-export function MonthView({ agendamentos, filteredServices, onAgendamentoClick }: MonthViewProps) {
+export function MonthView({ 
+  agendamentos, 
+  filteredServices, 
+  onAgendamentoClick, 
+  onDayClick,
+  horariosFuncionamento 
+}: MonthViewProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   
   const monthStart = startOfMonth(currentMonth);
@@ -45,6 +60,24 @@ export function MonthView({ agendamentos, filteredServices, onAgendamentoClick }
       case 'concluido': return 'bg-blue-500';
       case 'cancelado': return 'bg-red-500';
       default: return 'bg-gray-500';
+    }
+  };
+
+  const getAgendamentosForDay = (day: Date) => {
+    const dayStr = format(day, 'yyyy-MM-dd');
+    return filteredAgendamentos.filter(ag => ag.data_agendamento === dayStr);
+  };
+
+  const isDiaFuncionando = (day: Date) => {
+    if (!horariosFuncionamento) return true;
+    const dayOfWeek = day.getDay();
+    return horariosFuncionamento[dayOfWeek]?.funcionando || false;
+  };
+
+  const handleDayClick = (day: Date) => {
+    if (onDayClick) {
+      const dayStr = format(day, 'yyyy-MM-dd');
+      onDayClick(dayStr);
     }
   };
 
@@ -96,48 +129,60 @@ export function MonthView({ agendamentos, filteredServices, onAgendamentoClick }
 
           {/* Grid do calendário */}
           <div className="grid grid-cols-7">
-            {calendarDays.map((day, index) => (
-              <div
-                key={day.toISOString()}
-                className={`min-h-[100px] p-2 border-r border-b last:border-r-0 ${
-                  !isSameMonth(day, currentMonth) 
-                    ? 'bg-gray-50 text-gray-400' 
-                    : isToday(day) 
-                      ? 'bg-blue-50' 
-                      : 'bg-white'
-                }`}
-              >
-                <div className={`text-sm font-medium mb-1 ${
-                  isToday(day) ? 'text-blue-600 font-bold' : ''
-                }`}>
-                  {format(day, "d")}
-                </div>
-                
-                {/* Agendamentos do dia */}
-                <div className="space-y-1">
-                  {filteredAgendamentos.slice(0, 2).map((agendamento) => (
-                    <div
-                      key={agendamento.id}
-                      onClick={() => onAgendamentoClick(agendamento)}
-                      className="text-xs p-1 rounded cursor-pointer hover:shadow-sm transition-shadow bg-gray-100 hover:bg-gray-200"
-                    >
-                      <div className="flex items-center gap-1">
-                        <div className={`w-2 h-2 rounded-full ${getStatusColor(agendamento.status)}`}></div>
-                        <span className="truncate">{agendamento.horario}</span>
-                      </div>
-                      <div className="truncate text-gray-600">{agendamento.cliente}</div>
-                    </div>
-                  ))}
+            {calendarDays.map((day, index) => {
+              const agendamentosDay = getAgendamentosForDay(day);
+              const diaFuncionando = isDiaFuncionando(day);
+              
+              return (
+                <div
+                  key={day.toISOString()}
+                  className={`min-h-[100px] p-2 border-r border-b last:border-r-0 cursor-pointer hover:bg-gray-50 ${
+                    !isSameMonth(day, currentMonth) 
+                      ? 'bg-gray-50 text-gray-400' 
+                      : isToday(day) 
+                        ? 'bg-blue-50' 
+                        : 'bg-white'
+                  } ${!diaFuncionando ? 'bg-red-50' : ''}`}
+                  onClick={() => handleDayClick(day)}
+                >
+                  <div className={`text-sm font-medium mb-1 ${
+                    isToday(day) ? 'text-blue-600 font-bold' : ''
+                  } ${!diaFuncionando ? 'text-red-400' : ''}`}>
+                    {format(day, "d")}
+                    {!diaFuncionando && (
+                      <span className="text-xs text-red-400 block">Fechado</span>
+                    )}
+                  </div>
                   
-                  {/* Mostrar mais agendamentos se houver */}
-                  {filteredAgendamentos.length > 2 && (
-                    <div className="text-xs text-gray-500 text-center">
-                      +{filteredAgendamentos.length - 2}
-                    </div>
-                  )}
+                  {/* Agendamentos do dia */}
+                  <div className="space-y-1">
+                    {agendamentosDay.slice(0, 2).map((agendamento) => (
+                      <div
+                        key={agendamento.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onAgendamentoClick(agendamento);
+                        }}
+                        className="text-xs p-1 rounded cursor-pointer hover:shadow-sm transition-shadow bg-gray-100 hover:bg-gray-200"
+                      >
+                        <div className="flex items-center gap-1">
+                          <div className={`w-2 h-2 rounded-full ${getStatusColor(agendamento.status)}`}></div>
+                          <span className="truncate">{agendamento.horario}</span>
+                        </div>
+                        <div className="truncate text-gray-600">{agendamento.cliente}</div>
+                      </div>
+                    ))}
+                    
+                    {/* Mostrar mais agendamentos se houver */}
+                    {agendamentosDay.length > 2 && (
+                      <div className="text-xs text-gray-500 text-center">
+                        +{agendamentosDay.length - 2}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </CardContent>
       </Card>
