@@ -11,9 +11,11 @@ export type Database = {
     Tables: {
       agendamentos: {
         Row: {
+          cliente_id: string | null
           created_at: string | null
           data_agendamento: string
           empresa_id: string | null
+          equipe_id: string | null
           horario: string
           id: string
           nome_carro: string
@@ -25,9 +27,11 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          cliente_id?: string | null
           created_at?: string | null
           data_agendamento: string
           empresa_id?: string | null
+          equipe_id?: string | null
           horario: string
           id?: string
           nome_carro: string
@@ -39,9 +43,11 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          cliente_id?: string | null
           created_at?: string | null
           data_agendamento?: string
           empresa_id?: string | null
+          equipe_id?: string | null
           horario?: string
           id?: string
           nome_carro?: string
@@ -54,7 +60,68 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "agendamentos_cliente_id_fkey"
+            columns: ["cliente_id"]
+            isOneToOne: false
+            referencedRelation: "clientes"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "agendamentos_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agendamentos_equipe_id_fkey"
+            columns: ["equipe_id"]
+            isOneToOne: false
+            referencedRelation: "equipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clientes: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          email: string | null
+          empresa_id: string | null
+          endereco: string | null
+          id: string
+          nome: string
+          observacoes: string | null
+          telefone: string
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          email?: string | null
+          empresa_id?: string | null
+          endereco?: string | null
+          id?: string
+          nome: string
+          observacoes?: string | null
+          telefone: string
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          email?: string | null
+          empresa_id?: string | null
+          endereco?: string | null
+          id?: string
+          nome?: string
+          observacoes?: string | null
+          telefone?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clientes_empresa_id_fkey"
             columns: ["empresa_id"]
             isOneToOne: false
             referencedRelation: "empresas"
@@ -114,6 +181,41 @@ export type Database = {
             columns: ["plano_id"]
             isOneToOne: false
             referencedRelation: "planos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      equipes: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          empresa_id: string | null
+          id: string
+          nome: string
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          empresa_id?: string | null
+          id?: string
+          nome: string
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          empresa_id?: string | null
+          id?: string
+          nome?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equipes_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
             referencedColumns: ["id"]
           },
         ]

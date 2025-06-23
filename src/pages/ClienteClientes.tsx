@@ -4,8 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, Phone, Mail, Car, Calendar, Users } from "lucide-react";
+import { Search, Plus, Phone, Mail, Car, Calendar, MapPin, FileText } from "lucide-react";
 import { ClientLayout } from "@/components/layout/ClientLayout";
+import { ClienteForm } from "@/components/forms/ClienteForm";
+import { NovoAgendamentoForm } from "@/components/forms/NovoAgendamentoForm";
 
 // Dados de exemplo
 const clientesExemplo = [
@@ -14,39 +16,51 @@ const clientesExemplo = [
     nome: "João Silva",
     telefone: "(11) 99999-9999",
     email: "joao@email.com",
-    carro: "Honda Civic 2020",
+    endereco: "Rua das Flores, 123 - São Paulo/SP",
+    observacoes: "Cliente VIP, prefere lavagem completa",
     ultimoAgendamento: "2024-01-15",
     totalAgendamentos: 8,
-    status: "ativo"
+    status: "ativo",
+    ativo: true
   },
   {
     id: "2",
     nome: "Maria Santos",
     telefone: "(11) 88888-8888",
     email: "maria@email.com",
-    carro: "Toyota Corolla 2019",
+    endereco: "Av. Paulista, 456 - São Paulo/SP",
+    observacoes: "",
     ultimoAgendamento: "2024-01-10",
     totalAgendamentos: 12,
-    status: "ativo"
+    status: "ativo",
+    ativo: true
   },
   {
     id: "3",
     nome: "Pedro Costa",
     telefone: "(11) 77777-7777",
     email: "pedro@email.com",
-    carro: "VW Polo 2021",
+    endereco: "Rua Augusta, 789 - São Paulo/SP",
+    observacoes: "Sempre agenda aos sábados",
     ultimoAgendamento: "2023-12-20",
     totalAgendamentos: 3,
-    status: "inativo"
+    status: "inativo",
+    ativo: false
   }
 ];
 
 export default function ClienteClientes() {
   const [busca, setBusca] = useState("");
+  const [clientes, setClientes] = useState(clientesExemplo);
   const [clienteSelecionado, setClienteSelecionado] = useState<any>(null);
+  const [mostrarDetalhes, setMostrarDetalhes] = useState(false);
+  const [mostrarFormCliente, setMostrarFormCliente] = useState(false);
+  const [mostrarFormAgendamento, setMostrarFormAgendamento] = useState(false);
+  const [clienteParaEditar, setClienteParaEditar] = useState<any>(null);
+  const [clienteParaAgendamento, setClienteParaAgendamento] = useState<any>(null);
 
   // Filtrar clientes pela busca
-  const clientesFiltrados = clientesExemplo.filter(cliente =>
+  const clientesFiltrados = clientes.filter(cliente =>
     cliente.nome.toLowerCase().includes(busca.toLowerCase()) ||
     cliente.telefone.includes(busca) ||
     cliente.email.toLowerCase().includes(busca.toLowerCase())
@@ -54,6 +68,44 @@ export default function ClienteClientes() {
 
   const formatarData = (data: string) => {
     return new Date(data).toLocaleDateString('pt-BR');
+  };
+
+  const handleVerDetalhes = (cliente: any) => {
+    setClienteSelecionado(cliente);
+    setMostrarDetalhes(true);
+  };
+
+  const handleEditarCliente = (cliente: any) => {
+    setClienteParaEditar(cliente);
+    setMostrarFormCliente(true);
+    setMostrarDetalhes(false);
+  };
+
+  const handleNovoAgendamento = (cliente: any) => {
+    setClienteParaAgendamento(cliente);
+    setMostrarFormAgendamento(true);
+    setMostrarDetalhes(false);
+  };
+
+  const handleSalvarCliente = (clienteData: any) => {
+    if (clienteParaEditar) {
+      // Editar cliente existente
+      setClientes(prev => 
+        prev.map(c => c.id === clienteData.id ? clienteData : c)
+      );
+    } else {
+      // Adicionar novo cliente
+      setClientes(prev => [...prev, clienteData]);
+    }
+    setMostrarFormCliente(false);
+    setClienteParaEditar(null);
+  };
+
+  const handleSalvarAgendamento = (agendamento: any) => {
+    // Aqui seria salvo o agendamento no banco
+    console.log("Novo agendamento:", agendamento);
+    setMostrarFormAgendamento(false);
+    setClienteParaAgendamento(null);
   };
 
   return (
@@ -66,7 +118,7 @@ export default function ClienteClientes() {
             <p className="text-gray-600">Gerencie sua base de clientes</p>
           </div>
           
-          <Button>
+          <Button onClick={() => setMostrarFormCliente(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Novo Cliente
           </Button>
@@ -87,14 +139,14 @@ export default function ClienteClientes() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
             <CardContent className="p-4">
-              <div className="text-2xl font-bold text-primary">{clientesExemplo.length}</div>
+              <div className="text-2xl font-bold text-primary">{clientes.length}</div>
               <div className="text-sm text-gray-600">Total de Clientes</div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4">
               <div className="text-2xl font-bold text-green-600">
-                {clientesExemplo.filter(c => c.status === 'ativo').length}
+                {clientes.filter(c => c.status === 'ativo').length}
               </div>
               <div className="text-sm text-gray-600">Clientes Ativos</div>
             </CardContent>
@@ -102,7 +154,7 @@ export default function ClienteClientes() {
           <Card>
             <CardContent className="p-4">
               <div className="text-2xl font-bold text-gray-600">
-                {clientesExemplo.reduce((acc, c) => acc + c.totalAgendamentos, 0)}
+                {clientes.reduce((acc, c) => acc + c.totalAgendamentos, 0)}
               </div>
               <div className="text-sm text-gray-600">Total de Agendamentos</div>
             </CardContent>
@@ -112,7 +164,7 @@ export default function ClienteClientes() {
         {/* Lista de clientes */}
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
           {clientesFiltrados.map((cliente) => (
-            <Card key={cliente.id} className="hover:shadow-md transition-shadow cursor-pointer">
+            <Card key={cliente.id} className="hover:shadow-md transition-shadow">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg">{cliente.nome}</CardTitle>
@@ -130,34 +182,46 @@ export default function ClienteClientes() {
                   <span>{cliente.telefone}</span>
                 </div>
                 
-                <div className="flex items-center gap-2 text-sm">
-                  <Mail className="h-4 w-4 text-gray-400" />
-                  <span className="truncate">{cliente.email}</span>
-                </div>
+                {cliente.email && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Mail className="h-4 w-4 text-gray-400" />
+                    <span className="truncate">{cliente.email}</span>
+                  </div>
+                )}
                 
-                <div className="flex items-center gap-2 text-sm">
-                  <Car className="h-4 w-4 text-gray-400" />
-                  <span>{cliente.carro}</span>
-                </div>
+                {cliente.endereco && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <MapPin className="h-4 w-4 text-gray-400" />
+                    <span className="truncate">{cliente.endereco}</span>
+                  </div>
+                )}
                 
                 <div className="flex items-center gap-2 text-sm">
                   <Calendar className="h-4 w-4 text-gray-400" />
                   <span>Último: {formatarData(cliente.ultimoAgendamento)}</span>
                 </div>
                 
+                {cliente.observacoes && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <FileText className="h-4 w-4 text-gray-400" />
+                    <span className="truncate text-gray-600">{cliente.observacoes}</span>
+                  </div>
+                )}
+                
                 <div className="pt-2 border-t">
-                  <div className="flex justify-between items-center">
+                  <div className="flex justify-between items-center mb-3">
                     <span className="text-sm text-gray-600">
                       {cliente.totalAgendamentos} agendamentos
                     </span>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => setClienteSelecionado(cliente)}
-                    >
-                      Ver Detalhes
-                    </Button>
                   </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleVerDetalhes(cliente)}
+                    className="w-full"
+                  >
+                    Ver Detalhes
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -165,7 +229,7 @@ export default function ClienteClientes() {
         </div>
 
         {/* Modal de detalhes do cliente */}
-        {clienteSelecionado && (
+        {mostrarDetalhes && clienteSelecionado && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <Card className="w-full max-w-lg">
               <CardHeader>
@@ -174,7 +238,7 @@ export default function ClienteClientes() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => setClienteSelecionado(null)}
+                    onClick={() => setMostrarDetalhes(false)}
                   >
                     ✕
                   </Button>
@@ -187,12 +251,16 @@ export default function ClienteClientes() {
                 <div>
                   <strong>Telefone:</strong> {clienteSelecionado.telefone}
                 </div>
-                <div>
-                  <strong>Email:</strong> {clienteSelecionado.email}
-                </div>
-                <div>
-                  <strong>Veículo:</strong> {clienteSelecionado.carro}
-                </div>
+                {clienteSelecionado.email && (
+                  <div>
+                    <strong>Email:</strong> {clienteSelecionado.email}
+                  </div>
+                )}
+                {clienteSelecionado.endereco && (
+                  <div>
+                    <strong>Endereço:</strong> {clienteSelecionado.endereco}
+                  </div>
+                )}
                 <div>
                   <strong>Status:</strong>{" "}
                   <Badge variant={clienteSelecionado.status === 'ativo' ? 'default' : 'secondary'}>
@@ -206,11 +274,27 @@ export default function ClienteClientes() {
                   <strong>Último Agendamento:</strong> {formatarData(clienteSelecionado.ultimoAgendamento)}
                 </div>
                 
+                {clienteSelecionado.observacoes && (
+                  <div>
+                    <strong>Observações:</strong>
+                    <p className="text-sm text-gray-600 mt-1">{clienteSelecionado.observacoes}</p>
+                  </div>
+                )}
+                
                 <div className="flex gap-2 pt-4 border-t">
-                  <Button variant="outline" size="sm" className="flex-1">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={() => handleEditarCliente(clienteSelecionado)}
+                  >
                     Editar
                   </Button>
-                  <Button size="sm" className="flex-1">
+                  <Button 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={() => handleNovoAgendamento(clienteSelecionado)}
+                  >
                     Novo Agendamento
                   </Button>
                 </div>
@@ -223,19 +307,44 @@ export default function ClienteClientes() {
         {clientesFiltrados.length === 0 && (
           <Card>
             <CardContent className="text-center py-8">
-              <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <Search className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">
                 Nenhum cliente encontrado
               </h3>
               <p className="text-gray-600 mb-4">
                 {busca ? 'Tente ajustar os termos de busca.' : 'Comece adicionando seu primeiro cliente.'}
               </p>
-              <Button>
+              <Button onClick={() => setMostrarFormCliente(true)}>
                 <Plus className="h-4 w-4 mr-2" />
                 Adicionar Cliente
               </Button>
             </CardContent>
           </Card>
+        )}
+
+        {/* Formulário de Cliente */}
+        {mostrarFormCliente && (
+          <ClienteForm
+            cliente={clienteParaEditar}
+            isEditing={!!clienteParaEditar}
+            onClose={() => {
+              setMostrarFormCliente(false);
+              setClienteParaEditar(null);
+            }}
+            onSave={handleSalvarCliente}
+          />
+        )}
+
+        {/* Formulário de Agendamento */}
+        {mostrarFormAgendamento && clienteParaAgendamento && (
+          <NovoAgendamentoForm
+            clientePreSelecionado={clienteParaAgendamento}
+            onClose={() => {
+              setMostrarFormAgendamento(false);
+              setClienteParaAgendamento(null);
+            }}
+            onSave={handleSalvarAgendamento}
+          />
         )}
       </div>
     </ClientLayout>
