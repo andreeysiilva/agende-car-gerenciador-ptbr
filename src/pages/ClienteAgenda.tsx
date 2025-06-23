@@ -1,12 +1,10 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar, Clock, User, Car, Phone, FileText, Plus, CalendarDays } from "lucide-react";
 import { WeekView } from "@/components/agenda/WeekView";
 import { MonthView } from "@/components/agenda/MonthView";
 import { ServiceFilter } from "@/components/agenda/ServiceFilter";
+import { AgendaHeader } from "@/components/agenda/AgendaHeader";
+import { AgendaControls } from "@/components/agenda/AgendaControls";
+import { AgendamentosDoDiaModal } from "@/components/agenda/AgendamentosDoDiaModal";
 import { ClientLayout } from "@/components/layout/ClientLayout";
 import { NovoAgendamentoForm } from "@/components/forms/NovoAgendamentoForm";
 import { EditarAgendamentoForm } from "@/components/forms/EditarAgendamentoForm";
@@ -192,61 +190,16 @@ export default function ClienteAgenda() {
   return (
     <ClientLayout>
       <div className="space-y-6">
-        {/* Cabeçalho */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Agenda</h1>
-            <p className="text-gray-600">Gerencie seus agendamentos</p>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <Button onClick={() => setMostrarNovoForm(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Novo Agendamento
-            </Button>
-          </div>
-        </div>
+        <AgendaHeader onNovoAgendamento={() => setMostrarNovoForm(true)} />
 
-        {/* Controles de visualização */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <Button
-              variant={visualizacao === 'semana' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setVisualizacao('semana')}
-            >
-              <Calendar className="h-4 w-4 mr-2" />
-              Semana
-            </Button>
-            <Button
-              variant={visualizacao === 'mes' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setVisualizacao('mes')}
-            >
-              <Calendar className="h-4 w-4 mr-2" />
-              Mês
-            </Button>
-          </div>
+        <AgendaControls
+          visualizacao={visualizacao}
+          onVisualizacaoChange={setVisualizacao}
+          equipeSelecionada={equipeSelecionada}
+          onEquipeChange={setEquipeSelecionada}
+          equipesDisponiveis={equipesDisponiveis}
+        />
 
-          {/* Filtro de Equipes */}
-          <div className="flex items-center gap-2">
-            <label className="text-sm font-medium">Equipe:</label>
-            <Select value={equipeSelecionada} onValueChange={setEquipeSelecionada}>
-              <SelectTrigger className="w-48">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-white">
-                {equipesDisponiveis.map((equipe) => (
-                  <SelectItem key={equipe.id} value={equipe.id}>
-                    {equipe.nome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        {/* Filtros */}
         <ServiceFilter
           availableServices={servicosDisponiveis}
           selectedServices={servicosSelecionados}
@@ -297,97 +250,14 @@ export default function ClienteAgenda() {
         )}
 
         {/* Modal de Agendamentos do Dia */}
-        {mostrarAgendamentosDoDia && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <Card className="w-full max-w-2xl max-h-[80vh] overflow-y-auto">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
-                    <CalendarDays className="h-5 w-5" />
-                    Agendamentos de {formatarData(dataSelecionada)}
-                  </CardTitle>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setMostrarAgendamentosDoDia(false)}
-                  >
-                    ✕
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {agendamentosDoDia.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <CalendarDays className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                    <p>Nenhum agendamento para esta data</p>
-                    <Button 
-                      className="mt-4" 
-                      onClick={() => {
-                        setMostrarAgendamentosDoDia(false);
-                        setMostrarNovoForm(true);
-                      }}
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Criar Agendamento
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {agendamentosDoDia
-                      .sort((a, b) => a.horario.localeCompare(b.horario))
-                      .map((agendamento) => (
-                      <Card key={agendamento.id} className="cursor-pointer hover:shadow-md transition-shadow"
-                            onClick={() => handleAgendamentoClick(agendamento)}>
-                        <CardContent className="p-4">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <Clock className="h-4 w-4 text-gray-400" />
-                              <span className="font-medium">{agendamento.horario}</span>
-                            </div>
-                            <Badge className={getStatusColor(agendamento.status)}>
-                              {getStatusText(agendamento.status)}
-                            </Badge>
-                          </div>
-                          
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-                            <div className="flex items-center gap-2">
-                              <User className="h-4 w-4 text-gray-400" />
-                              <span>{agendamento.cliente}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Phone className="h-4 w-4 text-gray-400" />
-                              <span>{agendamento.telefone}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Car className="h-4 w-4 text-gray-400" />
-                              <span>{agendamento.carro}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium">{agendamento.servico}</span>
-                            </div>
-                          </div>
-                          
-                          {agendamento.equipe_nome && (
-                            <div className="mt-2 text-sm text-gray-600">
-                              <strong>Equipe:</strong> {agendamento.equipe_nome}
-                            </div>
-                          )}
-                          
-                          {agendamento.observacoes && (
-                            <div className="mt-2 text-sm text-gray-600">
-                              <FileText className="h-4 w-4 inline mr-1" />
-                              {agendamento.observacoes}
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        )}
+        <AgendamentosDoDiaModal
+          isOpen={mostrarAgendamentosDoDia}
+          onClose={() => setMostrarAgendamentosDoDia(false)}
+          dataSelecionada={dataSelecionada}
+          agendamentosDoDia={agendamentosDoDia}
+          onAgendamentoClick={handleAgendamentoClick}
+          onNovoAgendamento={() => setMostrarNovoForm(true)}
+        />
       </div>
     </ClientLayout>
   );
