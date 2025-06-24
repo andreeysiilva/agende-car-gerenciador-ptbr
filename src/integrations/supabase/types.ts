@@ -129,6 +129,30 @@ export type Database = {
           },
         ]
       }
+      common_vehicles: {
+        Row: {
+          created_at: string
+          id: string
+          marca: string | null
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          marca?: string | null
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          marca?: string | null
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       empresas: {
         Row: {
           created_at: string | null
