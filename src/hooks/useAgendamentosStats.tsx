@@ -61,7 +61,7 @@ export function useAgendamentosStats(agendamentos: Agendamento[], filtroSelecion
     const totalAgendamentos = agendamentosFiltrados.length;
     const agendamentosConfirmados = agendamentosFiltrados.filter(ag => ag.status === 'confirmado').length;
     const agendamentosPendentes = agendamentosFiltrados.filter(ag => ag.status === 'pendente').length;
-    const agendamentosConcluidos = agendamentosFiltrados.filter(ag => ag.status === 'concluido').length;
+    const agendamentosConcluidos = agendamentosFiltrados.filter(ag => ag.status === 'concluido');
 
     // Calculate revenue (assuming base prices for services)
     const precoServicos = {
@@ -138,7 +138,7 @@ export function useAgendamentosStats(agendamentos: Agendamento[], filtroSelecion
       dadosServicos,
       dadosAgendamentosSemana: agendamentosPorDia,
       dadosFaturamento,
-      taxaConclusao: totalAgendamentos > 0 ? Math.round((agendamentosConcluidos / totalAgendamentos) * 100) : 0,
+      taxaConclusao: totalAgendamentos > 0 ? Math.round((agendamentosConcluidos.length / totalAgendamentos) * 100) : 0,
       avaliacaoMedia: 4.8, // Mock data - would come from reviews
       tempoMedioServico: "2.3h" // Mock data - would be calculated from service times
     };
