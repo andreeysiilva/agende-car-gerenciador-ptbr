@@ -60,8 +60,6 @@ export function DataHorarioSection({
 
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-medium text-gray-700">Data e Horário</h3>
-      
       {/* Data */}
       <div>
         <Label>Data do Agendamento *</Label>

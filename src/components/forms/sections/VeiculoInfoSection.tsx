@@ -10,7 +10,6 @@ interface VeiculoInfoSectionProps {
 export function VeiculoInfoSection({ nomeCarro, onChange }: VeiculoInfoSectionProps) {
   return (
     <div className="space-y-2">
-      <h3 className="text-sm font-medium text-gray-700">Dados do Veículo</h3>
       <div>
         <Label htmlFor="nome_carro">Veículo *</Label>
         <Input

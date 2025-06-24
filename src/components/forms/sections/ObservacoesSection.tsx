@@ -13,8 +13,6 @@ export function ObservacoesSection({
 }: ObservacoesSectionProps) {
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-medium text-gray-700">Observações</h3>
-      
       <div>
         <Label>Observações Adicionais</Label>
         <Textarea

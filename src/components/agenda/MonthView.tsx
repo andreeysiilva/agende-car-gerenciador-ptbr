@@ -85,11 +85,9 @@ export function MonthView({
     if (isPastDate(day)) return;
     
     if (onDayClick) {
-      // Fix timezone issue by using local date string properly
-      const year = day.getFullYear();
-      const month = String(day.getMonth() + 1).padStart(2, '0');
-      const dayOfMonth = String(day.getDate()).padStart(2, '0');
-      const dayStr = `${year}-${month}-${dayOfMonth}`;
+      // Fix timezone issue by ensuring we format the date correctly
+      // Use the actual date components instead of string manipulation
+      const dayStr = format(day, 'yyyy-MM-dd');
       onDayClick(dayStr);
     }
   };
@@ -98,7 +96,7 @@ export function MonthView({
 
   return (
     <div className="space-y-4">
-      {/* Cabeçalho do mês - Removed duplicate "Novo Agendamento" button */}
+      {/* Cabeçalho do mês */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button
