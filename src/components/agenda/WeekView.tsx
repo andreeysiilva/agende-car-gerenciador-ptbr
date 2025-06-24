@@ -32,7 +32,13 @@ export function WeekView({
 
   // Função para formatar data como string
   const formatDateString = (date: Date) => {
-    return date.toISOString().split('T')[0];
+    // Use local timezone to avoid timezone issues
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const day = date.getDate();
+    
+    const localDate = new Date(year, month, day);
+    return localDate.toISOString().split('T')[0];
   };
 
   // Gerar os dias da semana
@@ -85,6 +91,15 @@ export function WeekView({
     return date.toDateString() === today.toDateString();
   };
 
+  const handleDayClick = (date: Date) => {
+    if (onDayClick) {
+      const dateString = formatDateString(date);
+      console.log('Week view day clicked:', date);
+      console.log('Week view formatted date string:', dateString);
+      onDayClick(dateString);
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -124,7 +139,7 @@ export function WeekView({
                     ? 'bg-blue-50 border-blue-200' 
                     : 'bg-white border-gray-200 hover:bg-gray-50'
                 }`}
-                onClick={() => onDayClick && onDayClick(formatDateString(date))}
+                onClick={() => handleDayClick(date)}
               >
                 <div className="text-center mb-3">
                   <div className="text-sm font-medium text-gray-600">

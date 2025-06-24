@@ -45,7 +45,7 @@ const ClienteNavigation: React.FC = () => {
       icon: DollarSign,
       label: 'Financeiro',
       path: '/cliente/financeiro',
-      description: 'Pagamentos e assinatura'
+      description: 'Pagamentos e receitas'
     }
   ];
 

@@ -85,9 +85,18 @@ export function MonthView({
     if (isPastDate(day)) return;
     
     if (onDayClick) {
-      // Fix timezone issue by ensuring we format the date correctly
-      // Use the actual date components instead of string manipulation
-      const dayStr = format(day, 'yyyy-MM-dd');
+      // Correct the date by creating a new date in the local timezone
+      const year = day.getFullYear();
+      const month = day.getMonth();
+      const date = day.getDate();
+      
+      // Create a new date using local timezone to avoid timezone issues
+      const localDate = new Date(year, month, date);
+      const dayStr = format(localDate, 'yyyy-MM-dd');
+      
+      console.log('Day clicked:', day);
+      console.log('Formatted date string:', dayStr);
+      
       onDayClick(dayStr);
     }
   };
