@@ -7,18 +7,22 @@ interface ObservacoesSectionProps {
   onChange: (field: string, value: string) => void;
 }
 
-export function ObservacoesSection({ observacoes, onChange }: ObservacoesSectionProps) {
+export function ObservacoesSection({
+  observacoes,
+  onChange
+}: ObservacoesSectionProps) {
   return (
-    <div className="space-y-2">
+    <div className="space-y-4">
       <h3 className="text-sm font-medium text-gray-700">Observações</h3>
+      
       <div>
-        <Label htmlFor="observacoes">Observações</Label>
+        <Label>Observações Adicionais</Label>
         <Textarea
-          id="observacoes"
           value={observacoes}
-          onChange={(e) => onChange("observacoes", e.target.value)}
-          placeholder="Informações adicionais..."
+          onChange={(e) => onChange('observacoes', e.target.value)}
+          placeholder="Informações adicionais sobre o agendamento..."
           rows={3}
+          className="mt-1"
         />
       </div>
     </div>

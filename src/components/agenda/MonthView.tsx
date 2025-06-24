@@ -2,8 +2,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
-import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isToday, isSameMonth, startOfWeek, endOfWeek } from "date-fns";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isToday, isSameMonth, startOfWeek, endOfWeek, isBefore, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { isBrazilianHoliday, getBrazilianHolidayName } from "@/utils/holidaysAndDates";
 
@@ -75,10 +75,21 @@ export function MonthView({
     return horariosFuncionamento[dayOfWeek]?.funcionando || false;
   };
 
+  const isPastDate = (day: Date) => {
+    const today = startOfDay(new Date());
+    return isBefore(startOfDay(day), today);
+  };
+
   const handleDayClick = (day: Date) => {
+    // Block clicks on past dates
+    if (isPastDate(day)) return;
+    
     if (onDayClick) {
-      // Fix timezone issue by using local date string
-      const dayStr = format(day, 'yyyy-MM-dd');
+      // Fix timezone issue by using local date string properly
+      const year = day.getFullYear();
+      const month = String(day.getMonth() + 1).padStart(2, '0');
+      const dayOfMonth = String(day.getDate()).padStart(2, '0');
+      const dayStr = `${year}-${month}-${dayOfMonth}`;
       onDayClick(dayStr);
     }
   };
@@ -87,7 +98,7 @@ export function MonthView({
 
   return (
     <div className="space-y-4">
-      {/* Cabeçalho do mês */}
+      {/* Cabeçalho do mês - Removed duplicate "Novo Agendamento" button */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button
@@ -110,11 +121,6 @@ export function MonthView({
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
-
-        <Button size="sm">
-          <Plus className="h-4 w-4 mr-2" />
-          Novo Agendamento
-        </Button>
       </div>
 
       {/* Calendário */}
@@ -136,11 +142,12 @@ export function MonthView({
               const diaFuncionando = isDiaFuncionando(day);
               const isHoliday = isBrazilianHoliday(day);
               const holidayName = getBrazilianHolidayName(day);
+              const isPast = isPastDate(day);
               
               return (
                 <div
                   key={day.toISOString()}
-                  className={`min-h-[100px] p-2 border-r border-b last:border-r-0 cursor-pointer hover:bg-gray-50 relative ${
+                  className={`min-h-[100px] p-2 border-r border-b last:border-r-0 relative ${
                     !isSameMonth(day, currentMonth) 
                       ? 'bg-gray-50 text-gray-400' 
                       : isToday(day) 
@@ -148,8 +155,10 @@ export function MonthView({
                         : isHoliday 
                           ? 'bg-gray-25' 
                           : 'bg-white'
-                  } ${!diaFuncionando ? 'bg-red-50' : ''}`}
-                  onClick={() => handleDayClick(day)}
+                  } ${!diaFuncionando ? 'bg-red-50' : ''} ${
+                    isPast ? 'bg-gray-100 cursor-not-allowed opacity-60' : 'cursor-pointer hover:bg-gray-50'
+                  }`}
+                  onClick={() => !isPast && handleDayClick(day)}
                   title={holidayName || undefined}
                 >
                   {/* Indicador de feriado */}
@@ -161,7 +170,9 @@ export function MonthView({
                   
                   <div className={`text-sm font-medium mb-1 ${
                     isToday(day) ? 'text-blue-600 font-bold' : ''
-                  } ${!diaFuncionando ? 'text-red-400' : ''} ${isHoliday ? 'text-gray-600' : ''}`}>
+                  } ${!diaFuncionando ? 'text-red-400' : ''} ${isHoliday ? 'text-gray-600' : ''} ${
+                    isPast ? 'text-gray-400' : ''
+                  }`}>
                     {format(day, "d")}
                     {!diaFuncionando && (
                       <span className="text-xs text-red-400 block">Fechado</span>
@@ -170,6 +181,9 @@ export function MonthView({
                       <span className="text-xs text-gray-500 block truncate" title={holidayName || ''}>
                         {holidayName}
                       </span>
+                    )}
+                    {isPast && (
+                      <span className="text-xs text-gray-400 block">Passado</span>
                     )}
                   </div>
                   

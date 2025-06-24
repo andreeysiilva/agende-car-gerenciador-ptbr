@@ -8,19 +8,23 @@ interface ServicoSelectionSectionProps {
   onChange: (field: string, value: string) => void;
 }
 
-export function ServicoSelectionSection({ 
-  servicoSelecionado, 
-  servicos, 
-  onChange 
+export function ServicoSelectionSection({
+  servicoSelecionado,
+  servicos,
+  onChange
 }: ServicoSelectionSectionProps) {
   return (
-    <div className="space-y-2">
+    <div className="space-y-4">
       <h3 className="text-sm font-medium text-gray-700">Serviço</h3>
+      
       <div>
-        <Label htmlFor="servico">Serviço *</Label>
-        <Select value={servicoSelecionado} onValueChange={(value) => onChange("servico", value)}>
-          <SelectTrigger>
-            <SelectValue placeholder="Selecione um serviço" />
+        <Label>Serviço *</Label>
+        <Select 
+          value={servicoSelecionado} 
+          onValueChange={(value) => onChange('servico', value)}
+        >
+          <SelectTrigger className="mt-1">
+            <SelectValue placeholder="Selecione o serviço" />
           </SelectTrigger>
           <SelectContent className="bg-white">
             {servicos.map((servico) => (

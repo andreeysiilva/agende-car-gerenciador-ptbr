@@ -6,56 +6,64 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import { Calendar, DollarSign, Users, TrendingUp } from "lucide-react";
 import { ClientLayout } from "@/components/layout/ClientLayout";
+import { useAgendamentosStats } from "@/hooks/useAgendamentosStats";
 
-// Dados de exemplo para estatísticas
-const dadosFaturamento = [
-  { periodo: "Jan", valor: 2400 },
-  { periodo: "Fev", valor: 1398 },
-  { periodo: "Mar", valor: 9800 },
-  { periodo: "Abr", valor: 3908 },
-  { periodo: "Mai", valor: 4800 },
-  { periodo: "Jun", valor: 3800 }
-];
-
-const dadosServicos = [
-  { nome: "Lavagem Simples", value: 45, color: "#0088FE" },
-  { nome: "Lavagem Completa", value: 30, color: "#00C49F" },
-  { nome: "Enceramento", value: 20, color: "#FFBB28" },
-  { nome: "Detalhamento", value: 5, color: "#FF8042" }
-];
-
-const dadosAgendamentosSemana = [
-  { dia: "Dom", agendamentos: 12 },
-  { dia: "Seg", agendamentos: 25 },
-  { dia: "Ter", agendamentos: 28 },
-  { dia: "Qua", agendamentos: 32 },
-  { dia: "Qui", agendamentos: 30 },
-  { dia: "Sex", agendamentos: 35 },
-  { dia: "Sáb", agendamentos: 20 }
+// Mock data - in real app, this would come from props or context
+const agendamentosExemplo = [
+  {
+    id: "1",
+    cliente: "João Silva",
+    nome_cliente: "João Silva",
+    telefone: "(11) 99999-9999",
+    email: "joao@email.com",
+    carro: "Honda Civic 2020",
+    nome_carro: "Honda Civic 2020",
+    servico: "Lavagem Completa",
+    horario: "09:00",
+    data_agendamento: "2024-01-22",
+    status: "concluido" as const,
+    observacoes: "Carro muito sujo",
+    equipe_id: "1",
+    equipe_nome: "Equipe Principal"
+  },
+  {
+    id: "2",
+    cliente: "Maria Santos",
+    nome_cliente: "Maria Santos",
+    telefone: "(11) 88888-8888",
+    email: "maria@email.com",
+    carro: "Toyota Corolla 2019",
+    nome_carro: "Toyota Corolla 2019",
+    servico: "Enceramento",
+    horario: "14:30",
+    data_agendamento: "2024-01-22",
+    status: "confirmado" as const,
+    observacoes: "",
+    equipe_id: "2",
+    equipe_nome: "Equipe A - Lavagem Rápida"
+  },
+  {
+    id: "3",
+    cliente: "Pedro Costa",
+    nome_cliente: "Pedro Costa",
+    telefone: "(11) 77777-7777",
+    email: "pedro@email.com",
+    carro: "VW Polo 2021",
+    nome_carro: "VW Polo 2021",
+    servico: "Lavagem Simples",
+    horario: "16:00",
+    data_agendamento: "2024-01-23",
+    status: "concluido" as const,
+    observacoes: "Cliente VIP",
+    equipe_id: "1",
+    equipe_nome: "Equipe Principal"
+  }
 ];
 
 export default function ClienteEstatisticas() {
   const [filtroSelecionado, setFiltroSelecionado] = useState("mes");
-
-  // Simular mudança de dados baseada no filtro
-  const obterEstatisticas = () => {
-    const multiplicador = {
-      "semana": 0.25,
-      "mes": 1,
-      "trimestre": 3,
-      "ano": 12
-    }[filtroSelecionado] || 1;
-
-    return {
-      faturamento: (8542 * multiplicador).toFixed(2),
-      crescimento: 18,
-      clientes: Math.round(248 * multiplicador),
-      ticketMedio: 34.50,
-      agendamentos: Math.round(182 * multiplicador)
-    };
-  };
-
-  const estatisticas = obterEstatisticas();
+  
+  const estatisticas = useAgendamentosStats(agendamentosExemplo, filtroSelecionado);
 
   return (
     <ClientLayout>
@@ -71,7 +79,7 @@ export default function ClienteEstatisticas() {
             <SelectTrigger className="w-48">
               <SelectValue placeholder="Selecione o período" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-white">
               <SelectItem value="semana">Esta Semana</SelectItem>
               <SelectItem value="mes">Este Mês</SelectItem>
               <SelectItem value="trimestre">Trimestre</SelectItem>
@@ -144,7 +152,7 @@ export default function ClienteEstatisticas() {
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={dadosFaturamento}>
+                <LineChart data={estatisticas.dadosFaturamento}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="periodo" />
                   <YAxis />
@@ -170,7 +178,7 @@ export default function ClienteEstatisticas() {
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
                   <Pie
-                    data={dadosServicos}
+                    data={estatisticas.dadosServicos}
                     cx="50%"
                     cy="50%"
                     labelLine={false}
@@ -179,7 +187,7 @@ export default function ClienteEstatisticas() {
                     fill="#8884d8"
                     dataKey="value"
                   >
-                    {dadosServicos.map((entry, index) => (
+                    {estatisticas.dadosServicos.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
@@ -197,7 +205,7 @@ export default function ClienteEstatisticas() {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={dadosAgendamentosSemana}>
+              <BarChart data={estatisticas.dadosAgendamentosSemana}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="dia" />
                 <YAxis />
@@ -216,15 +224,15 @@ export default function ClienteEstatisticas() {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="text-center p-4 bg-green-50 rounded-lg">
-                <div className="text-2xl font-bold text-green-600">89%</div>
+                <div className="text-2xl font-bold text-green-600">{estatisticas.taxaConclusao}%</div>
                 <div className="text-sm text-gray-600">Taxa de Conclusão</div>
               </div>
               <div className="text-center p-4 bg-blue-50 rounded-lg">
-                <div className="text-2xl font-bold text-blue-600">4.8</div>
+                <div className="text-2xl font-bold text-blue-600">{estatisticas.avaliacaoMedia}</div>
                 <div className="text-sm text-gray-600">Avaliação Média</div>
               </div>
               <div className="text-center p-4 bg-purple-50 rounded-lg">
-                <div className="text-2xl font-bold text-purple-600">2.3h</div>
+                <div className="text-2xl font-bold text-purple-600">{estatisticas.tempoMedioServico}</div>
                 <div className="text-sm text-gray-600">Tempo Médio de Serviço</div>
               </div>
             </div>

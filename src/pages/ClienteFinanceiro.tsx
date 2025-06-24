@@ -4,8 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { DollarSign, Calendar, CreditCard, CheckCircle, AlertTriangle, Car } from 'lucide-react';
+import { DollarSign, Calendar, CreditCard, CheckCircle, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
+import { ClientLayout } from '@/components/layout/ClientLayout';
 
 // Interface para histórico de pagamentos do cliente
 interface PagamentoCliente {
@@ -74,24 +75,16 @@ const ClienteFinanceiro: React.FC = () => {
   const statusVencimento = dias < 0 ? 'Atrasado' : dias <= 5 ? 'Próximo ao vencimento' : 'Em dia';
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
-        <div className="px-4 py-3">
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <Car className="h-8 w-8 text-primary" />
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-secondary rounded-full opacity-70"></div>
-            </div>
-            <h1 className="text-xl font-bold text-primary">AgendCar</h1>
+    <ClientLayout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Financeiro</h1>
+            <p className="text-gray-600">Gerencie sua assinatura e pagamentos</p>
           </div>
-          <h2 className="text-lg font-semibold text-text-primary mt-2">Financeiro</h2>
-          <p className="text-sm text-text-secondary">Gerencie sua assinatura e pagamentos</p>
         </div>
-      </header>
 
-      {/* Conteúdo principal */}
-      <main className="p-4 max-w-4xl mx-auto space-y-6">
         {/* Status da assinatura */}
         <Card>
           <CardHeader>
@@ -285,8 +278,8 @@ const ClienteFinanceiro: React.FC = () => {
             </div>
           </CardContent>
         </Card>
-      </main>
-    </div>
+      </div>
+    </ClientLayout>
   );
 };
 
