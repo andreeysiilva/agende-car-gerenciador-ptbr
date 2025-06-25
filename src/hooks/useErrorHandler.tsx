@@ -121,4 +121,4 @@ export const ERROR_MESSAGES = {
   PAST_DATE_ERROR: 'Não é possível agendar para datas anteriores ao dia de hoje.',
   INVALID_TIME_ERROR: 'Horário inválido selecionado.',
   DUPLICATE_APPOINTMENT_ERROR: 'Já existe um agendamento para este horário.'
-} as const;
+};
