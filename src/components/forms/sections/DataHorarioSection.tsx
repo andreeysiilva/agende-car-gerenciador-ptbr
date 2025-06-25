@@ -4,12 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar as CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { Calendar as CalendarIcon, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TimeSlotPicker } from "../TimeSlotPicker";
-import { isPastDate } from "@/utils/holidaysAndDates";
+import { formatDateBR, dateToUTCString, stringToLocalDate, validateAppointmentDate } from "@/utils/dateTimeUtils";
+import { useErrorHandler } from "@/hooks/useErrorHandler";
 
 interface DataHorarioSectionProps {
   selectedDate: string;
@@ -28,6 +27,10 @@ interface DataHorarioSectionProps {
   setDateError: (error: string) => void;
 }
 
+/**
+ * Componente para seleção de data e horário no formulário de agendamento
+ * Integrado com sistema de timezone e validações
+ */
 export function DataHorarioSection({
   selectedDate,
   selectedTime,
@@ -40,27 +43,57 @@ export function DataHorarioSection({
 }: DataHorarioSectionProps) {
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [internalSelectedDate, setInternalSelectedDate] = useState<Date | undefined>(
-    selectedDate ? new Date(selectedDate + 'T00:00:00') : undefined
+    selectedDate ? stringToLocalDate(selectedDate) : undefined
   );
+  
+  const { handleError } = useErrorHandler();
 
+  /**
+   * Manipula a seleção de data no calendário
+   * Aplica validações e converte para formato correto
+   */
   const handleDateSelect = (date: Date | undefined) => {
-    if (!date) return;
+    try {
+      if (!date) return;
 
-    if (isPastDate(date)) {
-      setDateError("Não é possível agendar para datas anteriores ao dia de hoje.");
-      return;
+      // Validar a data selecionada
+      const validation = validateAppointmentDate(date);
+      if (!validation.isValid) {
+        setDateError(validation.error || 'Data inválida');
+        return;
+      }
+
+      // Limpar erro anterior
+      setDateError("");
+      
+      // Atualizar estado interno
+      setInternalSelectedDate(date);
+      
+      // Converter para string UTC para armazenamento
+      const dateStr = dateToUTCString(date);
+      if (dateStr) {
+        onDateChange(dateStr);
+        setDatePickerOpen(false);
+        
+        console.log('Data selecionada:', {
+          original: date,
+          formatted: formatDateBR(date),
+          utcString: dateStr
+        });
+      } else {
+        setDateError('Erro ao processar data selecionada');
+        handleError('Erro ao converter data para UTC', { date }, false);
+      }
+    } catch (error) {
+      const errorMessage = 'Erro ao selecionar data';
+      setDateError(errorMessage);
+      handleError(error as Error, { date }, false);
     }
-
-    setDateError("");
-    setInternalSelectedDate(date);
-    const dateStr = format(date, 'yyyy-MM-dd');
-    onDateChange(dateStr);
-    setDatePickerOpen(false);
   };
 
   return (
     <div className="space-y-4">
-      {/* Data */}
+      {/* Seleção de Data */}
       <div>
         <Label>Data do Agendamento *</Label>
         <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
@@ -69,11 +102,12 @@ export function DataHorarioSection({
               variant="outline"
               className={cn(
                 "w-full justify-start text-left font-normal",
-                !internalSelectedDate && "text-muted-foreground"
+                !internalSelectedDate && "text-muted-foreground",
+                dateError && "border-red-500"
               )}
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
-              {internalSelectedDate ? format(internalSelectedDate, "dd/MM/yyyy", { locale: ptBR }) : "Selecione uma data"}
+              {internalSelectedDate ? formatDateBR(internalSelectedDate) : "Selecione uma data"}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
@@ -81,18 +115,22 @@ export function DataHorarioSection({
               mode="single"
               selected={internalSelectedDate}
               onSelect={handleDateSelect}
-              disabled={(date) => isPastDate(date)}
-              locale={ptBR}
+              disabled={(date) => validateAppointmentDate(date).isValid === false}
               className="pointer-events-auto"
             />
           </PopoverContent>
         </Popover>
+        
+        {/* Exibição de erro */}
         {dateError && (
-          <div className="text-sm text-red-500 mt-1">{dateError}</div>
+          <div className="flex items-center gap-2 text-sm text-red-500 mt-1">
+            <AlertCircle className="h-4 w-4" />
+            <span>{dateError}</span>
+          </div>
         )}
       </div>
 
-      {/* Horário */}
+      {/* Seleção de Horário */}
       <TimeSlotPicker
         selectedDate={selectedDate}
         selectedTime={selectedTime}

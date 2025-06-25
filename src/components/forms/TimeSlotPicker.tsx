@@ -2,8 +2,10 @@
 import { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Clock } from "lucide-react";
+import { Clock, AlertTriangle } from "lucide-react";
 import { generateTimeSlots, getAvailableTimeSlots } from "@/utils/holidaysAndDates";
+import { stringToLocalDate } from "@/utils/dateTimeUtils";
+import { useErrorHandler } from "@/hooks/useErrorHandler";
 
 interface TimeSlotPickerProps {
   selectedDate: string;
@@ -19,6 +21,10 @@ interface TimeSlotPickerProps {
   };
 }
 
+/**
+ * Componente para seleção de horários disponíveis
+ * Integrado com validações de funcionamento e conflitos
+ */
 export function TimeSlotPicker({
   selectedDate,
   selectedTime,
@@ -27,58 +33,97 @@ export function TimeSlotPicker({
   horariosFuncionamento
 }: TimeSlotPickerProps) {
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const { handleError } = useErrorHandler();
 
+  /**
+   * Atualiza os horários disponíveis quando a data muda
+   */
   useEffect(() => {
-    if (!selectedDate) {
-      setAvailableSlots([]);
-      return;
-    }
+    const updateAvailableSlots = async () => {
+      try {
+        setIsLoading(true);
 
-    // Determinar horários de funcionamento para o dia selecionado
-    const dayOfWeek = new Date(selectedDate + 'T00:00:00').getDay();
-    const workingHours = horariosFuncionamento?.[dayOfWeek];
-    
-    if (!workingHours?.funcionando) {
-      setAvailableSlots([]);
-      return;
-    }
+        if (!selectedDate) {
+          setAvailableSlots([]);
+          return;
+        }
 
-    // Gerar todos os horários possíveis
-    const allSlots = generateTimeSlots(
-      workingHours.abertura || "08:00",
-      workingHours.fechamento || "18:00",
-      30 // intervalos de 30 minutos
-    );
+        // Converter string para Date para obter dia da semana
+        const dateObj = stringToLocalDate(selectedDate);
+        if (!dateObj) {
+          console.warn('Data inválida para seleção de horários:', selectedDate);
+          setAvailableSlots([]);
+          return;
+        }
 
-    // Encontrar horários já ocupados
-    const bookedSlots = agendamentos
-      .filter(ag => ag.data_agendamento === selectedDate)
-      .map(ag => ag.horario);
+        const dayOfWeek = dateObj.getDay();
+        const workingHours = horariosFuncionamento?.[dayOfWeek];
+        
+        if (!workingHours?.funcionando) {
+          setAvailableSlots([]);
+          return;
+        }
 
-    // Filtrar horários disponíveis
-    const available = getAvailableTimeSlots(allSlots, bookedSlots);
-    setAvailableSlots(available);
-  }, [selectedDate, agendamentos, horariosFuncionamento]);
+        // Gerar todos os horários possíveis
+        const allSlots = generateTimeSlots(
+          workingHours.abertura || "08:00",
+          workingHours.fechamento || "18:00",
+          30 // intervalos de 30 minutos
+        );
 
+        // Encontrar horários já ocupados
+        const bookedSlots = agendamentos
+          .filter(ag => ag.data_agendamento === selectedDate)
+          .map(ag => ag.horario);
+
+        // Filtrar horários disponíveis
+        const available = getAvailableTimeSlots(allSlots, bookedSlots);
+        setAvailableSlots(available);
+
+        console.log('Horários atualizados:', {
+          selectedDate,
+          dayOfWeek,
+          workingHours,
+          totalSlots: allSlots.length,
+          bookedSlots: bookedSlots.length,
+          availableSlots: available.length
+        });
+
+      } catch (error) {
+        handleError(error as Error, { selectedDate, agendamentos: agendamentos.length }, false);
+        setAvailableSlots([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    updateAvailableSlots();
+  }, [selectedDate, agendamentos, horariosFuncionamento, handleError]);
+
+  // Verificar se é necessário selecionar data primeiro
   if (!selectedDate) {
     return (
       <div>
         <Label>Horário *</Label>
-        <div className="text-sm text-gray-500 mt-1">
+        <div className="text-sm text-gray-500 mt-1 p-3 bg-gray-50 rounded-md">
           Selecione uma data primeiro
         </div>
       </div>
     );
   }
 
-  const dayOfWeek = new Date(selectedDate + 'T00:00:00').getDay();
+  // Verificar se o estabelecimento funciona na data selecionada
+  const dateObj = stringToLocalDate(selectedDate);
+  const dayOfWeek = dateObj?.getDay() ?? 0;
   const workingHours = horariosFuncionamento?.[dayOfWeek];
 
   if (!workingHours?.funcionando) {
     return (
       <div>
         <Label>Horário *</Label>
-        <div className="text-sm text-red-500 mt-1">
+        <div className="flex items-center gap-2 text-sm text-red-600 mt-1 p-3 bg-red-50 rounded-md">
+          <AlertTriangle className="h-4 w-4" />
           Estabelecimento fechado neste dia
         </div>
       </div>
@@ -91,9 +136,15 @@ export function TimeSlotPicker({
         <Clock className="h-4 w-4" />
         Horário Disponível *
       </Label>
+      
       <div className="mt-2">
-        {availableSlots.length === 0 ? (
-          <div className="text-sm text-yellow-600 p-3 bg-yellow-50 rounded-md">
+        {isLoading ? (
+          <div className="text-sm text-gray-500 p-3 bg-gray-50 rounded-md">
+            Carregando horários disponíveis...
+          </div>
+        ) : availableSlots.length === 0 ? (
+          <div className="flex items-center gap-2 text-sm text-yellow-600 p-3 bg-yellow-50 rounded-md">
+            <AlertTriangle className="h-4 w-4" />
             Nenhum horário disponível para este dia
           </div>
         ) : (
@@ -113,6 +164,8 @@ export function TimeSlotPicker({
           </div>
         )}
       </div>
+      
+      {/* Informações de funcionamento */}
       {workingHours && (
         <div className="text-xs text-gray-500 mt-2">
           Funcionamento: {workingHours.abertura} às {workingHours.fechamento}

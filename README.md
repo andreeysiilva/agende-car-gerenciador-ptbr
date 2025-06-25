@@ -1,194 +1,261 @@
 
-# AgendiCar - Sistema de Agendamento para Lava-Jatos
+# Sistema de Agendamento - Lava Jato
 
-Sistema completo de agendamento online para empresas de lava-jatos e estética automotiva.
+Sistema completo de agendamento para lava-jatos com interface moderna e intuitiva.
 
-## 🚗 Sobre o AgendiCar
+## 🚀 Funcionalidades Principais
 
-O AgendiCar é uma plataforma SaaS multi-tenant que permite que empresas de lava-jatos gerenciem seus agendamentos de forma eficiente e profissional. O sistema oferece tanto um painel administrativo para os donos de empresa quanto uma interface cliente-friendly para visualização e gestão de agendamentos.
+### ✅ Gestão de Agendamentos
+- Calendário mensal e semanal
+- Seleção inteligente de datas e horários
+- Validação automática de conflitos
+- Suporte a timezone brasileiro
+- Filtros por serviço e equipe
 
-## 🌟 Principais Funcionalidades
+### ✅ Cadastro de Clientes
+- Autocompletar de veículos brasileiros
+- Histórico de agendamentos
+- Dados de contato organizados
 
-### Painel Administrativo (CRM)
-- **Dashboard completo** com métricas e estatísticas
-- **Gestão de empresas** cadastradas na plataforma
-- **Controle de planos** de assinatura (Básico, Premium, Empresarial)
-- **Financeiro** com controle de pagamentos e transações
-- **Autenticação segura** para administradores
+### ✅ Gestão de Equipes
+- Atribuição automática por serviço
+- Controle de disponibilidade
+- Relatórios de performance
 
-### Portal do Cliente
-- **Dashboard personalizado** com métricas da empresa
-- **Agenda avançada** com visualizações de semana e mês
-- **Filtros inteligentes** por tipo de serviço
-- **Gestão de serviços** oferecidos
-- **Estatísticas detalhadas** de desempenho
-- **Controle de clientes** e histórico
-- **Configurações de conta**
-
-### Funcionalidades da Agenda
-- 📅 **Visualização dupla**: Semana e Mês
-- 🔍 **Filtros por serviço** com seleção múltipla
-- ✏️ **Edição e cancelamento** de agendamentos
-- 📱 **Design responsivo** para mobile
-- 🎨 **Códigos de cores** por status do agendamento
+### ✅ Sistema Financeiro
+- Controle de receitas e despesas
+- Relatórios detalhados
+- Múltiplas formas de pagamento
 
 ## 🛠️ Tecnologias Utilizadas
 
-### Frontend
-- **React 18** com TypeScript
-- **Tailwind CSS** para estilização
-- **Shadcn/ui** para componentes
-- **React Router DOM** para navegação
-- **Lucide React** para ícones
-- **Date-fns** para manipulação de datas
+- **Frontend**: React 18 + TypeScript + Vite
+- **UI**: Tailwind CSS + Shadcn/UI
+- **Backend**: Supabase (PostgreSQL + Auth + Storage)
+- **Datas**: date-fns com suporte a timezone brasileiro
+- **Estado**: React Query para cache inteligente
+- **Roteamento**: React Router DOM
 
-### Backend
-- **Supabase** como Backend-as-a-Service
-- **PostgreSQL** como banco de dados
-- **Row Level Security (RLS)** para segurança multi-tenant
-- **Supabase Auth** para autenticação
+## 📅 Sistema de Timezone e Datas
 
-### Deploy e Hospedagem
-- **Vercel** para hospedagem do frontend
-- **Supabase** para infraestrutura backend
+### Principais Utilitários (`src/utils/dateTimeUtils.ts`)
 
-## 🔧 Configuração e Instalação
+```typescript
+// Formatação para padrão brasileiro
+formatDateBR(date, "dd/MM/yyyy") // 25/12/2024
+
+// Conversão segura para UTC (banco de dados)
+dateToUTCString(date) // "2024-12-25"
+
+// Conversão de string para Date local
+stringToLocalDate("2024-12-25") // Date object
+
+// Validação de datas para agendamento
+validateAppointmentDate(date) // { isValid: boolean, error?: string }
+```
+
+### Tratamento de Erros (`src/hooks/useErrorHandler.tsx`)
+
+```typescript
+const { handleError, executeWithErrorHandling } = useErrorHandler();
+
+// Execução segura com tratamento automático
+const result = await executeWithErrorHandling(
+  () => apiCall(),
+  'contexto da operação'
+);
+```
+
+## 🗃️ Estrutura do Banco de Dados
+
+### Tabelas Principais
+
+- **agendamentos**: Dados dos agendamentos
+- **clientes**: Informações dos clientes
+- **equipes**: Equipes de trabalho
+- **servicos**: Serviços oferecidos
+- **common_vehicles**: Veículos brasileiros para autocompletar
+- **horarios_funcionamento**: Horários por dia da semana
+
+### Políticas de Segurança (RLS)
+
+Todas as tabelas implementam Row Level Security para garantir isolamento de dados por empresa.
+
+## 🚀 Como Executar
 
 ### Pré-requisitos
+
 - Node.js 18+
-- NPM ou Yarn
 - Conta no Supabase
+- Git
 
-### Passo a Passo
+### Instalação
 
-1. **Clone o repositório**
 ```bash
-git clone https://github.com/seu-usuario/agendicar.git
-cd agendicar
-```
+# Clonar repositório
+git clone [url-do-repositorio]
+cd sistema-agendamento
 
-2. **Instale as dependências**
-```bash
+# Instalar dependências
 npm install
-```
 
-3. **Configure as variáveis de ambiente**
-Crie um arquivo `.env.local` na raiz do projeto:
-```env
-VITE_SUPABASE_URL=sua_url_do_supabase
-VITE_SUPABASE_ANON_KEY=sua_chave_anonima_do_supabase
-```
+# Configurar variáveis de ambiente
+cp .env.example .env.local
+# Editar .env.local com dados do Supabase
 
-4. **Execute as migrações do banco de dados**
-Execute os comandos SQL fornecidos no arquivo de migração no painel do Supabase.
+# Executar migrações do banco
+npm run db:reset
 
-5. **Inicie o servidor de desenvolvimento**
-```bash
+# Iniciar servidor de desenvolvimento
 npm run dev
 ```
 
-6. **Acesse a aplicação**
-- Painel Admin: `http://localhost:5173/`
-- Portal Cliente: `http://localhost:5173/cliente/`
+### Variáveis de Ambiente
 
-## 🔐 Credenciais de Teste
+```env
+VITE_SUPABASE_URL=sua_url_do_supabase
+VITE_SUPABASE_ANON_KEY=sua_chave_anonima
+```
 
-### Administrador
-- **Email:** `admin@agendicar.com`
-- **Senha:** `admin123`
+## 📁 Estrutura do Projeto
 
-*Use essas credenciais para acessar o painel administrativo e testar todas as funcionalidades.*
+```
+src/
+├── components/          # Componentes reutilizáveis
+│   ├── agenda/         # Componentes da agenda
+│   ├── forms/          # Formulários e inputs
+│   ├── layout/         # Layouts e navegação
+│   └── ui/             # Componentes base (Shadcn)
+├── hooks/              # Hooks customizados
+├── pages/              # Páginas da aplicação
+├── utils/              # Utilitários e helpers
+├── integrations/       # Configurações do Supabase
+└── types/              # Definições de tipos TypeScript
+```
 
-## 📊 Estrutura do Banco de Dados
+## 🔧 Principais Componentes
 
-### Tabelas Principais
-- **empresas**: Dados das empresas cadastradas
-- **usuarios**: Usuários vinculados às empresas
-- **agendamentos**: Agendamentos dos clientes
-- **servicos**: Serviços oferecidos por cada empresa
-- **planos**: Planos de assinatura disponíveis
-- **transacoes**: Transações financeiras
-- **horarios_funcionamento**: Horários de funcionamento
+### Agenda (`src/components/agenda/`)
+- `MonthView.tsx`: Visualização mensal do calendário
+- `WeekView.tsx`: Visualização semanal
+- `AgendaHeader.tsx`: Cabeçalho com controles
+- `ServiceFilter.tsx`: Filtros de serviços
 
-### Segurança
-- **RLS (Row Level Security)** ativado em todas as tabelas
-- **Políticas de acesso** baseadas em empresa_id
-- **Autenticação JWT** via Supabase Auth
+### Formulários (`src/components/forms/`)
+- `NovoAgendamentoForm.tsx`: Criação de agendamentos
+- `VehicleAutocomplete.tsx`: Autocompletar de veículos
+- `TimeSlotPicker.tsx`: Seleção de horários
 
-## 🎨 Design e UX
+## 🔍 Debugging e Logs
 
-### Características do Design
-- **Mobile-first**: Otimizado para dispositivos móveis
-- **Sidebar responsiva**: Colapsável em telas pequenas
-- **Interface intuitiva**: Fácil navegação e uso
-- **Cores consistentes**: Paleta harmoniosa em todo o sistema
-- **Tipografia**: Font Inter para melhor legibilidade
+### Console Logs Estruturados
 
-### Paleta de Cores
-- **Primary**: Azul (#3B82F6)
-- **Secondary**: Verde (#10B981)
-- **Success**: Verde (#22C55E)
-- **Warning**: Amarelo (#F59E0B)
-- **Error**: Vermelho (#EF4444)
+O sistema implementa logs detalhados para facilitar o debugging:
 
-## 📱 Responsividade
+```typescript
+console.log('Data selecionada:', {
+  original: date,
+  formatted: formatDateBR(date),
+  utcString: dateToUTCString(date)
+});
+```
 
-O sistema é totalmente responsivo e otimizado para:
-- **Desktop** (1024px+)
-- **Tablet** (768px - 1023px)
-- **Mobile** (até 767px)
+### Error Handling
 
-### Funcionalidades Mobile
-- Sidebar colapsável com botão toggle
-- Cards adaptáveis ao tamanho da tela
-- Navegação por gestos
-- Filtros otimizados para touch
+Todos os erros são capturados e tratados de forma consistente:
 
-## 🚀 Deploy
+```typescript
+// Logs automáticos de erro
+console.error('Erro capturado:', {
+  message: errorMessage,
+  context,
+  stack: error.stack,
+  timestamp: new Date()
+});
+```
 
-### Vercel (Recomendado)
-1. Conecte seu repositório GitHub ao Vercel
-2. Configure as variáveis de ambiente
-3. Deploy automático a cada push
+## 📊 Performance
 
-### Netlify
-1. Conecte o repositório
-2. Configure build command: `npm run build`
-3. Configure publish directory: `dist`
+### Cache Inteligente
 
-## 📈 Roadmap
+- Cache de operações de data frequentes
+- React Query para cache de dados da API
+- Lazy loading de componentes pesados
 
-### Próximas Funcionalidades
-- [ ] Sistema de notificações por SMS/WhatsApp
-- [ ] Integração com sistemas de pagamento
-- [ ] API pública para integrações
-- [ ] App mobile nativo
-- [ ] Sistema de avaliações de clientes
-- [ ] Relatórios avançados em PDF
-- [ ] Multi-idioma (inglês, espanhol)
+### Otimizações
 
-## 🤝 Contribuição
+- Debounce em campos de busca
+- Paginação automática em listas grandes
+- Compressão de imagens uploaded
 
-1. Faça um fork do projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
-3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
-4. Push para a branch (`git push origin feature/AmazingFeature`)
-5. Abra um Pull Request
+## 🧪 Testes
 
-## 📝 Licença
+```bash
+# Executar testes unitários
+npm run test
 
-Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+# Executar testes com coverage
+npm run test:coverage
+
+# Executar testes e2e
+npm run test:e2e
+```
+
+## 📝 Contribuição
+
+1. Fork do projeto
+2. Criar branch para feature (`git checkout -b feature/nova-funcionalidade`)
+3. Commit das mudanças (`git commit -m 'Adicionar nova funcionalidade'`)
+4. Push para branch (`git push origin feature/nova-funcionalidade`)
+5. Abrir Pull Request
+
+### Padrões de Código
+
+- TypeScript strict mode
+- ESLint + Prettier
+- Commit messages em português
+- Documentação JSDoc em funções públicas
+
+## 🐛 Problemas Conhecidos
+
+### Timezone
+- Todas as datas são armazenadas em UTC no banco
+- Conversão automática para timezone brasileiro na interface
+- Cache de operações de data para melhor performance
+
+### Compatibilidade
+- Testado no Chrome, Firefox e Safari
+- Responsivo para mobile e desktop
+- Suporte a telas de alta resolução
 
 ## 📞 Suporte
 
-Para suporte técnico ou dúvidas:
-- **Email**: admin@agendicar.com
-- **GitHub Issues**: [Criar Issue](https://github.com/seu-usuario/agendicar/issues)
+- Documentação: [Link da documentação]
+- Issues: [Link do repositório]/issues
+- Email: suporte@exemplo.com
 
-## 👥 Autores
+## 📄 Licença
 
-- **Equipe AgendiCar** - *Desenvolvimento inicial* - [GitHub](https://github.com/seu-usuario)
+Este projeto está licenciado sob a Licença MIT - veja o arquivo [LICENSE](LICENSE) para detalhes.
 
 ---
 
-**AgendiCar** - Transformando a gestão de lava-jatos com tecnologia moderna e design intuitivo.
+## 🔄 Changelog
+
+### v1.2.0 (Atual)
+- ✅ Sistema de timezone brasileiro
+- ✅ Validações de data em tempo real
+- ✅ Cache inteligente de datas
+- ✅ Tratamento de erros padronizado
+- ✅ Documentação completa
+- ✅ Autocompletar de veículos brasileiros
+
+### v1.1.0
+- ✅ Visualização semanal da agenda
+- ✅ Sistema de equipes
+- ✅ Filtros avançados
+
+### v1.0.0
+- ✅ Sistema básico de agendamentos
+- ✅ Cadastro de clientes
+- ✅ Integração com Supabase
