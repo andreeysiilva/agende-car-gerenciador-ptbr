@@ -1,8 +1,8 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CalendarDays, Plus, Clock, User, Phone, Car, FileText } from "lucide-react";
+import { formatDateBR, stringToLocalDate } from "@/utils/dateTimeUtils";
 
 interface AgendamentosDoDiaModalProps {
   isOpen: boolean;
@@ -24,7 +24,23 @@ export function AgendamentosDoDiaModal({
   if (!isOpen) return null;
 
   const formatarData = (data: string) => {
-    return new Date(data).toLocaleDateString('pt-BR');
+    console.log('Data recebida no modal:', data);
+    
+    // Usar a função utilitária para converter e formatar corretamente
+    const dateObj = stringToLocalDate(data);
+    if (dateObj) {
+      const formatted = formatDateBR(dateObj);
+      console.log('Data formatada:', formatted);
+      return formatted;
+    }
+    
+    // Fallback caso a conversão falhe
+    try {
+      return new Date(data + 'T00:00:00').toLocaleDateString('pt-BR');
+    } catch (error) {
+      console.error('Erro ao formatar data:', error);
+      return data;
+    }
   };
 
   const getStatusColor = (status: string) => {
