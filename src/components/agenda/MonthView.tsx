@@ -80,22 +80,22 @@ export function MonthView({
     return isBefore(startOfDay(day), today);
   };
 
+  /**
+   * Função atualizada para lidar com clique do dia
+   * Agora apenas exibe agendamentos do dia, não abre formulário
+   */
   const handleDayClick = (day: Date) => {
-    // Block clicks on past dates
-    if (isPastDate(day)) return;
-    
     if (onDayClick) {
-      // Correct the date by creating a new date in the local timezone
+      // Criar data local para evitar problemas de timezone
       const year = day.getFullYear();
       const month = day.getMonth();
       const date = day.getDate();
       
-      // Create a new date using local timezone to avoid timezone issues
       const localDate = new Date(year, month, date);
       const dayStr = format(localDate, 'yyyy-MM-dd');
       
-      console.log('Day clicked:', day);
-      console.log('Formatted date string:', dayStr);
+      console.log('Dia selecionado para visualizar agendamentos:', day);
+      console.log('Data formatada para busca:', dayStr);
       
       onDayClick(dayStr);
     }
@@ -163,10 +163,10 @@ export function MonthView({
                           ? 'bg-gray-25' 
                           : 'bg-white'
                   } ${!diaFuncionando ? 'bg-red-50' : ''} ${
-                    isPast ? 'bg-gray-100 cursor-not-allowed opacity-60' : 'cursor-pointer hover:bg-gray-50'
+                    'cursor-pointer hover:bg-gray-50'
                   }`}
-                  onClick={() => !isPast && handleDayClick(day)}
-                  title={holidayName || undefined}
+                  onClick={() => handleDayClick(day)}
+                  title={`${holidayName || ''} - Clique para ver agendamentos`}
                 >
                   {/* Indicador de feriado */}
                   {isHoliday && (

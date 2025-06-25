@@ -91,11 +91,15 @@ export function WeekView({
     return date.toDateString() === today.toDateString();
   };
 
+  /**
+   * Função atualizada para lidar com clique do dia
+   * Agora apenas exibe agendamentos do dia, não abre formulário
+   */
   const handleDayClick = (date: Date) => {
     if (onDayClick) {
       const dateString = formatDateString(date);
-      console.log('Week view day clicked:', date);
-      console.log('Week view formatted date string:', dateString);
+      console.log('Visualização semanal - dia selecionado:', date);
+      console.log('Data formatada para busca:', dateString);
       onDayClick(dateString);
     }
   };
@@ -140,6 +144,7 @@ export function WeekView({
                     : 'bg-white border-gray-200 hover:bg-gray-50'
                 }`}
                 onClick={() => handleDayClick(date)}
+                title="Clique para ver todos os agendamentos do dia"
               >
                 <div className="text-center mb-3">
                   <div className="text-sm font-medium text-gray-600">
