@@ -2,8 +2,60 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, Clock, Users, DollarSign, TrendingUp, Car } from "lucide-react";
 import { ClientLayout } from "@/components/layout/ClientLayout";
+import { useNavigate } from "react-router-dom";
 
 export default function ClienteDashboard() {
+  const navigate = useNavigate();
+
+  // Dados mockados dos agendamentos de hoje
+  const agendamentosHoje = [
+    { 
+      id: "1",
+      horario: "09:00", 
+      cliente: "Maria Silva", 
+      servico: "Lavagem Completa", 
+      status: "confirmado",
+      data_agendamento: new Date().toISOString().split('T')[0]
+    },
+    { 
+      id: "2",
+      horario: "11:30", 
+      cliente: "João Santos", 
+      servico: "Enceramento", 
+      status: "em_andamento",
+      data_agendamento: new Date().toISOString().split('T')[0]
+    },
+    { 
+      id: "3",
+      horario: "14:30", 
+      cliente: "Pedro Costa", 
+      servico: "Lavagem Simples", 
+      status: "agendado",
+      data_agendamento: new Date().toISOString().split('T')[0]
+    },
+  ];
+
+  // Função para navegar para a agenda com a data atual
+  const handleVerAgendamentos = () => {
+    navigate('/cliente/agenda', { 
+      state: { 
+        selectedDate: new Date().toISOString().split('T')[0],
+        showDayModal: true 
+      } 
+    });
+  };
+
+  // Função para navegar para a agenda ao clicar em um agendamento específico
+  const handleAgendamentoClick = (agendamento: any) => {
+    navigate('/cliente/agenda', { 
+      state: { 
+        selectedDate: agendamento.data_agendamento,
+        showDayModal: true,
+        selectedAppointment: agendamento
+      } 
+    });
+  };
+
   return (
     <ClientLayout>
       <div className="space-y-6">
@@ -21,7 +73,7 @@ export default function ClienteDashboard() {
               <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">12</div>
+              <div className="text-2xl font-bold">{agendamentosHoje.length}</div>
               <p className="text-xs text-muted-foreground">+2 desde ontem</p>
             </CardContent>
           </Card>
@@ -64,19 +116,27 @@ export default function ClienteDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
-                Agendamentos de Hoje
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5" />
+                  Agendamentos de Hoje
+                </CardTitle>
+                <button 
+                  onClick={handleVerAgendamentos}
+                  className="text-sm text-primary hover:underline"
+                >
+                  Ver todos
+                </button>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {[
-                  { horario: "09:00", cliente: "Maria Silva", servico: "Lavagem Completa", status: "confirmado" },
-                  { horario: "11:30", cliente: "João Santos", servico: "Enceramento", status: "em_andamento" },
-                  { horario: "14:30", cliente: "Pedro Costa", servico: "Lavagem Simples", status: "agendado" },
-                ].map((agendamento, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                {agendamentosHoje.map((agendamento) => (
+                  <div 
+                    key={agendamento.id} 
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+                    onClick={() => handleAgendamentoClick(agendamento)}
+                  >
                     <div>
                       <div className="font-medium">{agendamento.horario} - {agendamento.cliente}</div>
                       <div className="text-sm text-gray-600">{agendamento.servico}</div>

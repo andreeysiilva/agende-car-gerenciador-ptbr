@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { WeekView } from "@/components/agenda/WeekView";
 import { MonthView } from "@/components/agenda/MonthView";
 import { ServiceFilter } from "@/components/agenda/ServiceFilter";
@@ -89,6 +90,7 @@ const horariosFuncionamento = {
 };
 
 export default function ClienteAgenda() {
+  const location = useLocation();
   const [visualizacao, setVisualizacao] = useState<'semana' | 'mes'>('semana');
   const [servicosSelecionados, setServicosSelecionados] = useState<string[]>([]);
   const [equipeSelecionada, setEquipeSelecionada] = useState<string>("all");
@@ -99,6 +101,26 @@ export default function ClienteAgenda() {
   const [dataSelecionada, setDataSelecionada] = useState<string>("");
   const [agendamentosDoDia, setAgendamentosDoDia] = useState<any[]>([]);
   const [mostrarAgendamentosDoDia, setMostrarAgendamentosDoDia] = useState(false);
+
+  // Processar parâmetros vindos do Dashboard
+  useEffect(() => {
+    if (location.state) {
+      const { selectedDate, showDayModal, selectedAppointment } = location.state;
+      
+      if (selectedDate && showDayModal) {
+        // Buscar agendamentos para a data selecionada
+        const agendamentosNaData = agendamentos.filter(ag => ag.data_agendamento === selectedDate);
+        setAgendamentosDoDia(agendamentosNaData);
+        setDataSelecionada(selectedDate);
+        setMostrarAgendamentosDoDia(true);
+        
+        // Se um agendamento específico foi selecionado, destacá-lo
+        if (selectedAppointment) {
+          console.log('Agendamento específico selecionado:', selectedAppointment);
+        }
+      }
+    }
+  }, [location.state, agendamentos]);
 
   // Função para alternar seleção de serviço
   const toggleServico = (servico: string) => {
