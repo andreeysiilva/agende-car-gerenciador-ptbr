@@ -1,5 +1,5 @@
 
-import { Home, Calendar, Wrench, BarChart3, Users, User, Menu, Car } from "lucide-react";
+import { Home, Calendar, Wrench, BarChart3, Users, User, Menu, Car, DollarSign } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   Sidebar,
@@ -32,6 +32,11 @@ const menuItems = [
     title: "Serviços",
     url: "/cliente/servicos",
     icon: Wrench,
+  },
+  {
+    title: "Financeiro",
+    url: "/cliente/financeiro",
+    icon: DollarSign,
   },
   {
     title: "Estatísticas",
@@ -89,23 +94,28 @@ export function ClientSidebar() {
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {menuItems.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton 
-                      asChild
-                      isActive={location.pathname === item.url}
-                      className="w-full"
-                    >
-                      <a 
-                        href={item.url}
-                        className="flex items-center gap-3 px-3 py-2 rounded-lg transition-colors hover:bg-gray-100"
+                {menuItems.map((item) => {
+                  console.log(`Rendering item: ${item.title}`);
+                  return (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton 
+                        asChild
+                        isActive={location.pathname === item.url}
+                        className="w-full"
                       >
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.title}</span>
-                      </a>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
+                        <a 
+                          href={item.url}
+                          className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors hover:bg-gray-100 ${
+                            item.title === 'Financeiro' ? 'bg-yellow-50 border border-yellow-200' : ''
+                          }`}
+                        >
+                          <item.icon className="h-4 w-4" />
+                          <span>{item.title}</span>
+                        </a>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
