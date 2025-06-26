@@ -2,12 +2,9 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { X, Trash2 } from "lucide-react";
+import { FormField } from "./FormField";
 
 interface EditarAgendamentoFormProps {
   agendamento: any;
@@ -30,7 +27,8 @@ export function EditarAgendamentoForm({ agendamento, onClose, onSave, onDelete }
     status: agendamento.status || "confirmado"
   });
 
-  // Dados mockados - serão substituídos por dados do Supabase
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
   const servicos = [
     "Lavagem Completa",
     "Lavagem Simples",
@@ -53,25 +51,52 @@ export function EditarAgendamentoForm({ agendamento, onClose, onSave, onDelete }
     { value: "cancelado", label: "Cancelado", color: "bg-red-100 text-red-800" }
   ];
 
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.cliente_nome.trim()) {
+      newErrors.cliente_nome = "Nome do cliente é obrigatório";
+    }
+
+    if (!formData.cliente_telefone.trim()) {
+      newErrors.cliente_telefone = "Telefone é obrigatório";
+    }
+
+    if (!formData.nome_carro.trim()) {
+      newErrors.nome_carro = "Nome do carro é obrigatório";
+    }
+
+    if (!formData.servico) {
+      newErrors.servico = "Serviço é obrigatório";
+    }
+
+    if (!formData.data_agendamento) {
+      newErrors.data_agendamento = "Data é obrigatória";
+    }
+
+    if (!formData.horario) {
+      newErrors.horario = "Horário é obrigatório";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validação básica
-    if (!formData.cliente_nome || !formData.cliente_telefone || !formData.nome_carro || 
-        !formData.servico || !formData.data_agendamento || !formData.horario) {
-      alert("Por favor, preencha todos os campos obrigatórios.");
+    if (!validateForm()) {
       return;
     }
 
-    // Criar objeto do agendamento atualizado
     const agendamentoAtualizado = {
       ...agendamento,
       nome_cliente: formData.cliente_nome,
-      cliente: formData.cliente_nome, // Para compatibilidade
+      cliente: formData.cliente_nome,
       telefone: formData.cliente_telefone,
       email: formData.cliente_email,
       nome_carro: formData.nome_carro,
-      carro: formData.nome_carro, // Para compatibilidade
+      carro: formData.nome_carro,
       servico: formData.servico,
       data_agendamento: formData.data_agendamento,
       horario: formData.horario,
@@ -86,6 +111,9 @@ export function EditarAgendamentoForm({ agendamento, onClose, onSave, onDelete }
 
   const handleChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: "" }));
+    }
   };
 
   const handleDelete = () => {
@@ -121,144 +149,120 @@ export function EditarAgendamentoForm({ agendamento, onClose, onSave, onDelete }
             </div>
           </div>
         </CardHeader>
+        
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Status */}
-            <div>
-              <Label htmlFor="status">Status</Label>
-              <Select value={formData.status} onValueChange={(value) => handleChange("status", value)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-white">
-                  {statusOptions.map((status) => (
-                    <SelectItem key={status.value} value={status.value}>
-                      {status.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <FormField
+              type="select"
+              label="Status"
+              value={formData.status}
+              onChange={(value) => handleChange("status", value)}
+              options={statusOptions.map(s => ({ value: s.value, label: s.label }))}
+              error={errors.status}
+            />
 
-            {/* Dados do Cliente */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="cliente_nome">Nome do Cliente *</Label>
-                <Input
-                  id="cliente_nome"
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-gray-900">Dados do Cliente</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  type="input"
+                  label="Nome do Cliente"
                   value={formData.cliente_nome}
-                  onChange={(e) => handleChange("cliente_nome", e.target.value)}
+                  onChange={(value) => handleChange("cliente_nome", value)}
                   placeholder="Nome completo"
                   required
+                  error={errors.cliente_nome}
                 />
-              </div>
-              <div>
-                <Label htmlFor="cliente_telefone">Telefone *</Label>
-                <Input
-                  id="cliente_telefone"
+                <FormField
+                  type="input"
+                  label="Telefone"
                   value={formData.cliente_telefone}
-                  onChange={(e) => handleChange("cliente_telefone", e.target.value)}
+                  onChange={(value) => handleChange("cliente_telefone", value)}
                   placeholder="(11) 99999-9999"
                   required
+                  error={errors.cliente_telefone}
                 />
               </div>
-            </div>
-
-            <div>
-              <Label htmlFor="cliente_email">Email</Label>
-              <Input
-                id="cliente_email"
-                type="email"
+              <FormField
+                type="input"
+                inputType="email"
+                label="Email"
                 value={formData.cliente_email}
-                onChange={(e) => handleChange("cliente_email", e.target.value)}
+                onChange={(value) => handleChange("cliente_email", value)}
                 placeholder="cliente@email.com"
+                error={errors.cliente_email}
               />
             </div>
 
-            {/* Dados do Veículo */}
-            <div>
-              <Label htmlFor="nome_carro">Veículo *</Label>
-              <Input
-                id="nome_carro"
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-gray-900">Dados do Veículo</h3>
+              <FormField
+                type="input"
+                label="Veículo"
                 value={formData.nome_carro}
-                onChange={(e) => handleChange("nome_carro", e.target.value)}
+                onChange={(value) => handleChange("nome_carro", value)}
                 placeholder="Ex: Honda Civic 2020"
                 required
+                error={errors.nome_carro}
               />
             </div>
 
-            {/* Serviço */}
-            <div>
-              <Label htmlFor="servico">Serviço *</Label>
-              <Select value={formData.servico} onValueChange={(value) => handleChange("servico", value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um serviço" />
-                </SelectTrigger>
-                <SelectContent className="bg-white">
-                  {servicos.map((servico) => (
-                    <SelectItem key={servico} value={servico}>
-                      {servico}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-gray-900">Detalhes do Agendamento</h3>
+              <FormField
+                type="select"
+                label="Serviço"
+                value={formData.servico}
+                onChange={(value) => handleChange("servico", value)}
+                placeholder="Selecione um serviço"
+                options={servicos.map(s => ({ value: s, label: s }))}
+                required
+                error={errors.servico}
+              />
 
-            {/* Data e Horário */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="data_agendamento">Data *</Label>
-                <Input
-                  id="data_agendamento"
-                  type="date"
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  type="input"
+                  inputType="date"
+                  label="Data"
                   value={formData.data_agendamento}
-                  onChange={(e) => handleChange("data_agendamento", e.target.value)}
+                  onChange={(value) => handleChange("data_agendamento", value)}
                   required
+                  error={errors.data_agendamento}
                 />
-              </div>
-              <div>
-                <Label htmlFor="horario">Horário *</Label>
-                <Input
-                  id="horario"
-                  type="time"
+                <FormField
+                  type="input"
+                  inputType="time"
+                  label="Horário"
                   value={formData.horario}
-                  onChange={(e) => handleChange("horario", e.target.value)}
+                  onChange={(value) => handleChange("horario", value)}
                   required
+                  error={errors.horario}
                 />
               </div>
-            </div>
 
-            {/* Equipe */}
-            <div>
-              <Label htmlFor="equipe">Equipe</Label>
-              <Select value={formData.equipe_id} onValueChange={(value) => handleChange("equipe_id", value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione uma equipe" />
-                </SelectTrigger>
-                <SelectContent className="bg-white">
-                  {equipes.map((equipe) => (
-                    <SelectItem key={equipe.id} value={equipe.id}>
-                      {equipe.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+              <FormField
+                type="select"
+                label="Equipe"
+                value={formData.equipe_id}
+                onChange={(value) => handleChange("equipe_id", value)}
+                placeholder="Selecione uma equipe"
+                options={equipes.map(e => ({ value: e.id, label: e.nome }))}
+                error={errors.equipe_id}
+              />
 
-            {/* Observações */}
-            <div>
-              <Label htmlFor="observacoes">Observações</Label>
-              <Textarea
-                id="observacoes"
+              <FormField
+                type="textarea"
+                label="Observações"
                 value={formData.observacoes}
-                onChange={(e) => handleChange("observacoes", e.target.value)}
+                onChange={(value) => handleChange("observacoes", value)}
                 placeholder="Informações adicionais..."
                 rows={3}
+                error={errors.observacoes}
               />
             </div>
 
-            {/* Botões */}
-            <div className="flex gap-2 pt-4">
+            <div className="flex gap-2 pt-4 border-t">
               <Button type="button" variant="outline" onClick={onClose} className="flex-1">
                 Cancelar
               </Button>
