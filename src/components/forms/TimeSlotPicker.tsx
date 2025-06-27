@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Clock, AlertTriangle } from "lucide-react";
 import { generateTimeSlots, getAvailableTimeSlots } from "@/utils/holidaysAndDates";
 import { stringToLocalDate } from "@/utils/dateTimeUtils";
-import { useErrorHandler } from "@/hooks/useErrorHandler";
 
 interface TimeSlotPickerProps {
   selectedDate: string;
@@ -34,7 +33,6 @@ export function TimeSlotPicker({
 }: TimeSlotPickerProps) {
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const { handleError } = useErrorHandler();
 
   /**
    * Atualiza os horários disponíveis quando a data muda
@@ -91,7 +89,7 @@ export function TimeSlotPicker({
         });
 
       } catch (error) {
-        handleError(error as Error, { selectedDate, agendamentos: agendamentos.length }, false);
+        console.error('Erro ao atualizar horários disponíveis:', error);
         setAvailableSlots([]);
       } finally {
         setIsLoading(false);
@@ -99,7 +97,7 @@ export function TimeSlotPicker({
     };
 
     updateAvailableSlots();
-  }, [selectedDate, agendamentos, horariosFuncionamento, handleError]);
+  }, [selectedDate, agendamentos, horariosFuncionamento]);
 
   // Verificar se é necessário selecionar data primeiro
   if (!selectedDate) {

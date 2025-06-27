@@ -1,5 +1,4 @@
 
-import { useErrorHandler } from './useErrorHandler';
 import { validateAppointmentDate } from '@/utils/dateValidation';
 
 interface AppointmentData {
@@ -17,8 +16,6 @@ interface ValidationResult {
 }
 
 export function useAppointmentValidation() {
-  const { setFieldError, clearError, errors } = useErrorHandler();
-
   const validateAppointment = (data: AppointmentData, existingAppointments: any[] = []): ValidationResult => {
     const validationErrors: Record<string, string> = {};
 
@@ -65,26 +62,14 @@ export function useAppointmentValidation() {
       }
     }
 
-    // Atualizar erros no hook
-    Object.keys(validationErrors).forEach(field => {
-      setFieldError(field, validationErrors[field]);
-    });
-
     return {
       isValid: Object.keys(validationErrors).length === 0,
       errors: validationErrors
     };
   };
 
-  const clearValidationErrors = () => {
-    ['cliente', 'servico', 'data_agendamento', 'horario'].forEach(field => {
-      clearError(field);
-    });
-  };
-
   return {
     validateAppointment,
-    clearValidationErrors,
-    errors
+    errors: {}
   };
 }

@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useErrorHandler } from './useErrorHandler';
 import { toast } from 'sonner';
 
 export interface SupabaseAgendamento {
@@ -24,7 +23,6 @@ export interface SupabaseAgendamento {
 export function useSupabaseAgendamentos() {
   const [agendamentos, setAgendamentos] = useState<SupabaseAgendamento[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { handleError } = useErrorHandler();
 
   const fetchAgendamentos = async () => {
     try {
@@ -38,16 +36,17 @@ export function useSupabaseAgendamentos() {
 
       if (error) {
         console.error('Erro ao buscar agendamentos:', error);
-        handleError(error, { operation: 'fetch' });
+        toast.error('Erro ao carregar agendamentos');
         return;
       }
 
       console.log('Agendamentos encontrados:', data);
-      setAgendamentos(data || []);
+      // Type assertion para garantir compatibilidade
+      setAgendamentos((data || []) as SupabaseAgendamento[]);
       
     } catch (error) {
       console.error('Erro inesperado ao buscar agendamentos:', error);
-      handleError(error, { operation: 'fetch' });
+      toast.error('Erro inesperado ao carregar agendamentos');
     } finally {
       setIsLoading(false);
     }
@@ -65,18 +64,18 @@ export function useSupabaseAgendamentos() {
 
       if (error) {
         console.error('Erro ao criar agendamento:', error);
-        handleError(error, { operation: 'create', data: novoAgendamento });
+        toast.error('Erro ao criar agendamento');
         return null;
       }
 
       console.log('Agendamento criado com sucesso:', data);
-      setAgendamentos(prev => [...prev, data]);
+      setAgendamentos(prev => [...prev, data as SupabaseAgendamento]);
       toast.success('Agendamento criado com sucesso!');
-      return data;
+      return data as SupabaseAgendamento;
       
     } catch (error) {
       console.error('Erro inesperado ao criar agendamento:', error);
-      handleError(error, { operation: 'create', data: novoAgendamento });
+      toast.error('Erro inesperado ao criar agendamento');
       return null;
     }
   };
@@ -94,18 +93,18 @@ export function useSupabaseAgendamentos() {
 
       if (error) {
         console.error('Erro ao atualizar agendamento:', error);
-        handleError(error, { operation: 'update', id, data: dadosAtualizados });
+        toast.error('Erro ao atualizar agendamento');
         return null;
       }
 
       console.log('Agendamento atualizado com sucesso:', data);
-      setAgendamentos(prev => prev.map(ag => ag.id === id ? data : ag));
+      setAgendamentos(prev => prev.map(ag => ag.id === id ? data as SupabaseAgendamento : ag));
       toast.success('Agendamento atualizado com sucesso!');
-      return data;
+      return data as SupabaseAgendamento;
       
     } catch (error) {
       console.error('Erro inesperado ao atualizar agendamento:', error);
-      handleError(error, { operation: 'update', id, data: dadosAtualizados });
+      toast.error('Erro inesperado ao atualizar agendamento');
       return null;
     }
   };
@@ -121,7 +120,7 @@ export function useSupabaseAgendamentos() {
 
       if (error) {
         console.error('Erro ao deletar agendamento:', error);
-        handleError(error, { operation: 'delete', id });
+        toast.error('Erro ao deletar agendamento');
         return false;
       }
 
@@ -132,7 +131,7 @@ export function useSupabaseAgendamentos() {
       
     } catch (error) {
       console.error('Erro inesperado ao deletar agendamento:', error);
-      handleError(error, { operation: 'delete', id });
+      toast.error('Erro inesperado ao deletar agendamento');
       return false;
     }
   };

@@ -10,11 +10,27 @@ import { AgendamentosDoDiaModal } from "@/components/agenda/AgendamentosDoDiaMod
 import { ClientLayout } from "@/components/layout/ClientLayout";
 import { NovoAgendamentoForm } from "@/components/forms/NovoAgendamentoForm";
 import { EditarAgendamentoForm } from "@/components/forms/EditarAgendamentoForm";
-import { useSupabaseAgendamentos } from "@/hooks/useSupabaseAgendamentos";
+import { useSupabaseAgendamentos, SupabaseAgendamento } from "@/hooks/useSupabaseAgendamentos";
 import { useAgendaFilters } from "@/hooks/useAgendaFilters";
 import { useAgendaModals } from "@/hooks/useAgendaModals";
 import { servicosDisponiveis, equipesDisponiveis, horariosFuncionamento } from "@/constants/agendaConstants";
-import { toast } from "sonner";
+
+// Função para converter SupabaseAgendamento para o formato esperado pelos componentes
+const convertSupabaseToAgendamento = (supabaseAgendamento: SupabaseAgendamento) => ({
+  id: supabaseAgendamento.id,
+  cliente: supabaseAgendamento.nome_cliente,
+  email: '', // Campo não disponível no Supabase, usando string vazia
+  telefone: supabaseAgendamento.telefone,
+  carro: supabaseAgendamento.nome_carro,
+  servico: supabaseAgendamento.servico,
+  data_agendamento: supabaseAgendamento.data_agendamento,
+  horario: supabaseAgendamento.horario,
+  status: supabaseAgendamento.status,
+  observacoes: supabaseAgendamento.observacoes || '',
+  equipe_nome: '', // Campo não disponível, usando string vazia
+  nome_cliente: supabaseAgendamento.nome_cliente,
+  nome_carro: supabaseAgendamento.nome_carro
+});
 
 export default function ClienteAgenda() {
   const location = useLocation();
@@ -60,7 +76,9 @@ export default function ClienteAgenda() {
       const { selectedDate, showDayModal, selectedAppointment } = location.state;
       
       if (selectedDate && showDayModal) {
-        const agendamentosNaData = agendamentos.filter(ag => ag.data_agendamento === selectedDate);
+        const agendamentosNaData = agendamentos
+          .filter(ag => ag.data_agendamento === selectedDate)
+          .map(convertSupabaseToAgendamento);
         setAgendamentosDoDia(agendamentosNaData);
         setDataSelecionada(selectedDate);
         setMostrarAgendamentosDoDia(true);
@@ -72,12 +90,16 @@ export default function ClienteAgenda() {
     }
   }, [location.state, agendamentos, setAgendamentosDoDia, setDataSelecionada, setMostrarAgendamentosDoDia]);
 
-  // Filtrar agendamentos
-  const agendamentosFiltrados = filtrarAgendamentos(agendamentos);
+  // Filtrar agendamentos convertidos
+  const agendamentosConvertidos = agendamentos.map(convertSupabaseToAgendamento);
+  const agendamentosFiltrados = filtrarAgendamentos(agendamentosConvertidos);
 
   // Handlers
   const handleDiaClickWithData = (data: string) => {
-    handleDiaClick(data, agendamentos);
+    const agendamentosConvertidosParaData = agendamentos
+      .filter(ag => ag.data_agendamento === data)
+      .map(convertSupabaseToAgendamento);
+    handleDiaClick(data, agendamentosConvertidosParaData);
   };
 
   const handleSalvarNovoAgendamento = async (dadosAgendamento: any) => {

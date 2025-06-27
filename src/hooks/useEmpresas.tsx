@@ -18,7 +18,8 @@ export function useEmpresas() {
     setIsLoading(true);
     const data = await fetchEmpresasService();
     if (data) {
-      setEmpresas(data);
+      // Type assertion para garantir compatibilidade
+      setEmpresas(data as Empresa[]);
     }
     setIsLoading(false);
   };
@@ -26,7 +27,7 @@ export function useEmpresas() {
   const criarEmpresa = async (dadosEmpresa: NovaEmpresaData) => {
     const result = await criarEmpresaService(dadosEmpresa);
     if (result) {
-      setEmpresas(prev => [result.empresa, ...prev]);
+      setEmpresas(prev => [result.empresa as Empresa, ...prev]);
     }
     return result;
   };
@@ -34,7 +35,7 @@ export function useEmpresas() {
   const atualizarEmpresa = async (id: string, dadosAtualizados: Partial<Empresa>) => {
     const data = await atualizarEmpresaService(id, dadosAtualizados);
     if (data) {
-      setEmpresas(prev => prev.map(emp => emp.id === id ? data : emp));
+      setEmpresas(prev => prev.map(emp => emp.id === id ? data as Empresa : emp));
     }
     return data;
   };
