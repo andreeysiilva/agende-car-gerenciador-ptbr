@@ -10,23 +10,24 @@ import { AgendamentosDoDiaModal } from "@/components/agenda/AgendamentosDoDiaMod
 import { ClientLayout } from "@/components/layout/ClientLayout";
 import { NovoAgendamentoForm } from "@/components/forms/NovoAgendamentoForm";
 import { EditarAgendamentoForm } from "@/components/forms/EditarAgendamentoForm";
-import { useAgendamentos } from "@/hooks/useAgendamentos";
+import { useSupabaseAgendamentos } from "@/hooks/useSupabaseAgendamentos";
 import { useAgendaFilters } from "@/hooks/useAgendaFilters";
 import { useAgendaModals } from "@/hooks/useAgendaModals";
 import { servicosDisponiveis, equipesDisponiveis, horariosFuncionamento } from "@/constants/agendaConstants";
-import { isDiaFuncionando } from "@/utils/agendaUtils";
+import { toast } from "sonner";
 
 export default function ClienteAgenda() {
   const location = useLocation();
   const [visualizacao, setVisualizacao] = useState<'semana' | 'mes'>('semana');
   
-  // Custom hooks
+  // Hook do Supabase para agendamentos reais
   const { 
     agendamentos, 
-    handleSalvarNovoAgendamento, 
-    handleSalvarAgendamentoEditado, 
-    handleDeletarAgendamento 
-  } = useAgendamentos();
+    isLoading,
+    criarAgendamento, 
+    atualizarAgendamento, 
+    deletarAgendamento 
+  } = useSupabaseAgendamentos();
   
   const { 
     servicosSelecionados, 
@@ -79,15 +80,66 @@ export default function ClienteAgenda() {
     handleDiaClick(data, agendamentos);
   };
 
-  const handleSalvarAgendamentoEditadoAndClose = (agendamentoAtualizado: any) => {
-    handleSalvarAgendamentoEditado(agendamentoAtualizado);
-    fecharModals();
+  const handleSalvarNovoAgendamento = async (dadosAgendamento: any) => {
+    // Converter dados do formulário para formato do Supabase
+    const novoAgendamento = {
+      empresa_id: '00000000-0000-0000-0000-000000000001', // TODO: Obter da autenticação
+      nome_cliente: dadosAgendamento.nome_cliente || dadosAgendamento.cliente_nome,
+      telefone: dadosAgendamento.cliente_telefone || dadosAgendamento.telefone,
+      nome_carro: dadosAgendamento.nome_carro,
+      servico: dadosAgendamento.servico,
+      observacoes: dadosAgendamento.observacoes || '',
+      data_agendamento: dadosAgendamento.data_agendamento,
+      horario: dadosAgendamento.horario,
+      status: 'confirmado' as const,
+      equipe_id: dadosAgendamento.equipe_id || undefined,
+      cliente_id: undefined // TODO: Implementar relação com clientes
+    };
+
+    const resultado = await criarAgendamento(novoAgendamento);
+    if (resultado) {
+      fecharModals();
+    }
   };
 
-  const handleDeletarAgendamentoAndClose = (agendamentoId: string) => {
-    handleDeletarAgendamento(agendamentoId);
-    fecharModals();
+  const handleSalvarAgendamentoEditado = async (agendamentoAtualizado: any) => {
+    const dadosAtualizados = {
+      nome_cliente: agendamentoAtualizado.nome_cliente || agendamentoAtualizado.cliente,
+      telefone: agendamentoAtualizado.telefone,
+      nome_carro: agendamentoAtualizado.nome_carro || agendamentoAtualizado.carro,
+      servico: agendamentoAtualizado.servico,
+      observacoes: agendamentoAtualizado.observacoes || '',
+      data_agendamento: agendamentoAtualizado.data_agendamento,
+      horario: agendamentoAtualizado.horario,
+      status: agendamentoAtualizado.status,
+      equipe_id: agendamentoAtualizado.equipe_id || undefined
+    };
+
+    const resultado = await atualizarAgendamento(agendamentoAtualizado.id, dadosAtualizados);
+    if (resultado) {
+      fecharModals();
+    }
   };
+
+  const handleDeletarAgendamento = async (agendamentoId: string) => {
+    const sucesso = await deletarAgendamento(agendamentoId);
+    if (sucesso) {
+      fecharModals();
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <ClientLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-gray-600">Carregando agendamentos...</p>
+          </div>
+        </div>
+      </ClientLayout>
+    );
+  }
 
   return (
     <ClientLayout>
@@ -143,8 +195,8 @@ export default function ClienteAgenda() {
           <EditarAgendamentoForm
             agendamento={agendamentoSelecionado}
             onClose={fecharModals}
-            onSave={handleSalvarAgendamentoEditadoAndClose}
-            onDelete={handleDeletarAgendamentoAndClose}
+            onSave={handleSalvarAgendamentoEditado}
+            onDelete={handleDeletarAgendamento}
           />
         )}
 
