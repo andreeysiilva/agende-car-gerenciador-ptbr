@@ -81,7 +81,7 @@ export const criarEmpresa = async (dadosEmpresa: NovaEmpresaData): Promise<Criar
       endereco: dadosEmpresa.endereco || null,
       subdominio: subdominio,
       plano_id: planoData.id,
-      status: 'Ativo',
+      status: 'Ativo' as const,
       data_vencimento: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       logo_url: dadosEmpresa.logoUrl || null,
       senha_temporaria: senhaTemporaria,
@@ -145,7 +145,7 @@ export const criarEmpresa = async (dadosEmpresa: NovaEmpresaData): Promise<Criar
     console.log('Empresa criada com sucesso:', empresaCriada);
 
     return {
-      empresa: empresaCriada,
+      empresa: empresaCriada as Empresa, // Type assertion para garantir compatibilidade
       credenciais: {
         email: dadosEmpresa.email,
         senha: senhaTemporaria,
@@ -179,7 +179,7 @@ export const atualizarEmpresa = async (id: string, dadosAtualizados: Partial<Emp
 
     console.log('Empresa atualizada com sucesso:', data);
     toast.success('Empresa atualizada com sucesso!');
-    return data;
+    return data as Empresa; // Type assertion para garantir compatibilidade
     
   } catch (error) {
     console.error('Erro inesperado ao atualizar empresa:', error);

@@ -9,7 +9,6 @@ import { cn } from "@/lib/utils";
 import { TimeSlotPicker } from "../TimeSlotPicker";
 import { formatDateBR, dateToUTCString, stringToLocalDate } from "@/utils/dateTimeUtils";
 import { validateAppointmentDate, isDateInPast } from "@/utils/dateValidation";
-import { useErrorHandler } from "@/hooks/useErrorHandler";
 
 interface DataHorarioSectionProps {
   selectedDate: string;
@@ -42,8 +41,6 @@ export function DataHorarioSection({
   const [internalSelectedDate, setInternalSelectedDate] = useState<Date | undefined>(
     selectedDate ? stringToLocalDate(selectedDate) : undefined
   );
-  
-  const { handleError } = useErrorHandler();
 
   // Verificar se há conflitos de horário
   const hasTimeConflict = selectedDate && selectedTime && agendamentos.some(ag => 
@@ -82,12 +79,12 @@ export function DataHorarioSection({
         });
       } else {
         setDateError('Erro ao processar data selecionada');
-        handleError('Erro ao converter data para UTC', { date }, { showToast: false });
+        console.error('Erro ao converter data para UTC', { date });
       }
     } catch (error) {
       const errorMessage = 'Erro ao selecionar data';
       setDateError(errorMessage);
-      handleError(error as Error, { date }, { showToast: false });
+      console.error(error, { date });
     }
   };
 

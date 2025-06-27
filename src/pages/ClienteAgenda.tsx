@@ -29,7 +29,8 @@ const convertSupabaseToAgendamento = (supabaseAgendamento: SupabaseAgendamento) 
   observacoes: supabaseAgendamento.observacoes || '',
   equipe_nome: '', // Campo não disponível, usando string vazia
   nome_cliente: supabaseAgendamento.nome_cliente,
-  nome_carro: supabaseAgendamento.nome_carro
+  nome_carro: supabaseAgendamento.nome_carro,
+  equipe_id: supabaseAgendamento.equipe_id || '' // Adicionando equipe_id obrigatório
 });
 
 export default function ClienteAgenda() {
