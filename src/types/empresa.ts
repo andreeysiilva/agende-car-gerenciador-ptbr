@@ -6,13 +6,14 @@ export interface Empresa {
   telefone: string;
   endereco?: string;
   subdominio: string;
-  plano_id?: string;
-  status: string;
+  status: 'Ativo' | 'Inativo' | 'Suspenso';
   data_vencimento?: string;
+  created_at: string;
+  updated_at: string;
   logo_url?: string;
   senha_temporaria?: string;
-  created_at?: string;
-  updated_at?: string;
+  plano_id?: string;
+  telegram_chat_id?: string;
 }
 
 export interface NovaEmpresaData {
@@ -22,6 +23,7 @@ export interface NovaEmpresaData {
   endereco?: string;
   plano: string;
   logoUrl?: string;
+  telegramChatId?: string;
 }
 
 export interface CriarEmpresaResult {

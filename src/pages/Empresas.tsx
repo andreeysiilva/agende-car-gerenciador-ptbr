@@ -8,7 +8,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Building2, Calendar, DollarSign, Users, ExternalLink, Upload, Image, Copy, Eye, EyeOff } from 'lucide-react';
+import { Plus, Building2, Calendar, DollarSign, Users, ExternalLink, Upload, Image, Copy, Eye, EyeOff, HelpCircle } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import { useEmpresas, NovaEmpresaData } from '@/hooks/useEmpresas';
 
@@ -33,7 +34,8 @@ const Empresas: React.FC = () => {
     email: '',
     telefone: '',
     endereco: '',
-    plano: ''
+    plano: '',
+    telegramChatId: ''
   });
 
   // Função para gerar subdomínio automaticamente
@@ -44,7 +46,7 @@ const Empresas: React.FC = () => {
       .replace(/[\u0300-\u036f]/g, '')
       .replace(/[^a-z0-9\s]/g, '')
       .trim()
-      .split(' ')[0] + '.agendicar.com';
+      .split(' ')[0] + '.agendicar.com.br';
   };
 
   // Função para lidar com upload de logo
@@ -96,7 +98,8 @@ const Empresas: React.FC = () => {
           email: '',
           telefone: '',
           endereco: '',
-          plano: ''
+          plano: '',
+          telegramChatId: ''
         });
         setLogoFile(null);
         setLogoPreview('');
@@ -122,7 +125,7 @@ const Empresas: React.FC = () => {
 
   // Função para abrir link do subdomínio
   const abrirSubdominio = (subdominio: string) => {
-    window.open(`https://${subdominio}.agendicar.com`, '_blank');
+    window.open(`https://${subdominio}.agendicar.com.br`, '_blank');
   };
 
   // Filtrar empresas por status
@@ -340,6 +343,33 @@ const Empresas: React.FC = () => {
                     disabled={criandoEmpresa}
                   />
                 </div>
+
+                <div className="grid gap-2">
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="telegramChatId">Chat ID do Telegram</Label>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <HelpCircle className="h-4 w-4 text-gray-400" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="max-w-xs">
+                            Chat ID para envio automático da senha via Telegram.
+                            <br />
+                            Para obter: envie /start para @userinfobot no Telegram
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                  <Input
+                    id="telegramChatId"
+                    value={novaEmpresa.telegramChatId}
+                    onChange={(e) => setNovaEmpresa({...novaEmpresa, telegramChatId: e.target.value})}
+                    placeholder="Ex: 123456789 (opcional)"
+                    disabled={criandoEmpresa}
+                  />
+                </div>
                 
                 <div className="grid gap-2">
                   <Label htmlFor="plano">Plano *</Label>
@@ -520,7 +550,7 @@ const Empresas: React.FC = () => {
                             className="text-blue-600 hover:text-blue-800"
                           >
                             <ExternalLink className="h-4 w-4 mr-1" />
-                            {empresa.subdominio}.agendicar.com
+                            {empresa.subdominio}.agendicar.com.br
                           </Button>
                         </TableCell>
                       </TableRow>

@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { useErrorHandler } from './useErrorHandler';
+import { toast } from 'sonner';
 import { Empresa, NovaEmpresaData } from '@/types/empresa';
 import { verificarEmailUnico, verificarSubdominioUnico } from '@/services/empresaValidation';
 import {
@@ -13,11 +13,10 @@ import {
 export function useEmpresas() {
   const [empresas, setEmpresas] = useState<Empresa[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { handleError } = useErrorHandler();
 
   const fetchEmpresas = async () => {
     setIsLoading(true);
-    const data = await fetchEmpresasService(handleError);
+    const data = await fetchEmpresasService();
     if (data) {
       setEmpresas(data);
     }
@@ -25,7 +24,7 @@ export function useEmpresas() {
   };
 
   const criarEmpresa = async (dadosEmpresa: NovaEmpresaData) => {
-    const result = await criarEmpresaService(dadosEmpresa, handleError);
+    const result = await criarEmpresaService(dadosEmpresa);
     if (result) {
       setEmpresas(prev => [result.empresa, ...prev]);
     }
@@ -33,7 +32,7 @@ export function useEmpresas() {
   };
 
   const atualizarEmpresa = async (id: string, dadosAtualizados: Partial<Empresa>) => {
-    const data = await atualizarEmpresaService(id, dadosAtualizados, handleError);
+    const data = await atualizarEmpresaService(id, dadosAtualizados);
     if (data) {
       setEmpresas(prev => prev.map(emp => emp.id === id ? data : emp));
     }
@@ -41,7 +40,7 @@ export function useEmpresas() {
   };
 
   const deletarEmpresa = async (id: string) => {
-    const success = await deletarEmpresaService(id, handleError);
+    const success = await deletarEmpresaService(id);
     if (success) {
       setEmpresas(prev => prev.filter(emp => emp.id !== id));
     }

@@ -4,9 +4,9 @@ import { toast } from 'sonner';
 import { Empresa, NovaEmpresaData, CriarEmpresaResult } from '@/types/empresa';
 import { gerarSubdominio, gerarSenhaTemporaria } from '@/utils/empresaUtils';
 import { verificarEmailUnico, verificarSubdominioUnico } from './empresaValidation';
-import { useErrorHandler } from '@/hooks/useErrorHandler';
+import { telegramService } from './telegramService';
 
-export const fetchEmpresas = async (handleError: ReturnType<typeof useErrorHandler>['handleError']) => {
+export const fetchEmpresas = async () => {
   try {
     console.log('Buscando empresas do Supabase...');
     
@@ -17,7 +17,7 @@ export const fetchEmpresas = async (handleError: ReturnType<typeof useErrorHandl
 
     if (error) {
       console.error('Erro ao buscar empresas:', error);
-      handleError(error, { operation: 'fetch' });
+      toast.error('Erro ao carregar empresas');
       return null;
     }
 
@@ -26,15 +26,12 @@ export const fetchEmpresas = async (handleError: ReturnType<typeof useErrorHandl
     
   } catch (error) {
     console.error('Erro inesperado ao buscar empresas:', error);
-    handleError(error, { operation: 'fetch' });
+    toast.error('Erro inesperado ao carregar empresas');
     return null;
   }
 };
 
-export const criarEmpresa = async (
-  dadosEmpresa: NovaEmpresaData,
-  handleError: ReturnType<typeof useErrorHandler>['handleError']
-): Promise<CriarEmpresaResult | null> => {
+export const criarEmpresa = async (dadosEmpresa: NovaEmpresaData): Promise<CriarEmpresaResult | null> => {
   try {
     console.log('Iniciando criação de empresa:', dadosEmpresa);
 
@@ -87,7 +84,8 @@ export const criarEmpresa = async (
       status: 'Ativo',
       data_vencimento: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       logo_url: dadosEmpresa.logoUrl || null,
-      senha_temporaria: senhaTemporaria
+      senha_temporaria: senhaTemporaria,
+      telegram_chat_id: dadosEmpresa.telegramChatId || null
     };
 
     // Criar empresa
@@ -99,7 +97,7 @@ export const criarEmpresa = async (
 
     if (empresaError) {
       console.error('Erro ao criar empresa:', empresaError);
-      handleError(empresaError, { operation: 'create', data: novaEmpresa });
+      toast.error('Erro ao criar empresa');
       return null;
     }
 
@@ -119,37 +117,50 @@ export const criarEmpresa = async (
       // Não falhar a operação, apenas loggar o erro
     }
 
+    // Tentar enviar via Telegram se Chat ID foi fornecido
+    if (dadosEmpresa.telegramChatId) {
+      try {
+        const enviadoTelegram = await telegramService.enviarSenhaTemporaria(
+          dadosEmpresa.telegramChatId,
+          dadosEmpresa.nome,
+          senhaTemporaria,
+          subdominio
+        );
+
+        if (enviadoTelegram) {
+          console.log('Senha enviada via Telegram com sucesso');
+          toast.success(`Empresa criada e senha enviada via Telegram!`);
+        } else {
+          console.error('Falha ao enviar via Telegram');
+          toast.warning('Empresa criada, mas falha no envio via Telegram');
+        }
+      } catch (error) {
+        console.error('Erro na integração Telegram:', error);
+        toast.warning('Empresa criada, mas erro na comunicação com Telegram');
+      }
+    } else {
+      toast.success(`Empresa ${dadosEmpresa.nome} criada com sucesso!`);
+    }
+
     console.log('Empresa criada com sucesso:', empresaCriada);
-    
-    toast.success(
-      `Empresa ${dadosEmpresa.nome} criada com sucesso!\n` +
-      `Subdomínio: ${subdominio}.agendicar.com\n` +
-      `Login: ${dadosEmpresa.email}\n` +
-      `Senha temporária: ${senhaTemporaria}`,
-      { duration: 10000 }
-    );
 
     return {
       empresa: empresaCriada,
       credenciais: {
         email: dadosEmpresa.email,
         senha: senhaTemporaria,
-        subdominio: `${subdominio}.agendicar.com`
+        subdominio: `${subdominio}.agendicar.com.br`
       }
     };
     
   } catch (error) {
     console.error('Erro inesperado ao criar empresa:', error);
-    handleError(error, { operation: 'create', data: dadosEmpresa });
+    toast.error('Erro inesperado ao criar empresa');
     return null;
   }
 };
 
-export const atualizarEmpresa = async (
-  id: string,
-  dadosAtualizados: Partial<Empresa>,
-  handleError: ReturnType<typeof useErrorHandler>['handleError']
-) => {
+export const atualizarEmpresa = async (id: string, dadosAtualizados: Partial<Empresa>) => {
   try {
     console.log('Atualizando empresa:', id, dadosAtualizados);
     
@@ -162,7 +173,7 @@ export const atualizarEmpresa = async (
 
     if (error) {
       console.error('Erro ao atualizar empresa:', error);
-      handleError(error, { operation: 'update', id, data: dadosAtualizados });
+      toast.error('Erro ao atualizar empresa');
       return null;
     }
 
@@ -172,15 +183,12 @@ export const atualizarEmpresa = async (
     
   } catch (error) {
     console.error('Erro inesperado ao atualizar empresa:', error);
-    handleError(error, { operation: 'update', id, data: dadosAtualizados });
+    toast.error('Erro inesperado ao atualizar empresa');
     return null;
   }
 };
 
-export const deletarEmpresa = async (
-  id: string,
-  handleError: ReturnType<typeof useErrorHandler>['handleError']
-) => {
+export const deletarEmpresa = async (id: string) => {
   try {
     console.log('Deletando empresa:', id);
     
@@ -191,7 +199,7 @@ export const deletarEmpresa = async (
 
     if (error) {
       console.error('Erro ao deletar empresa:', error);
-      handleError(error, { operation: 'delete', id });
+      toast.error('Erro ao deletar empresa');
       return false;
     }
 
@@ -201,7 +209,7 @@ export const deletarEmpresa = async (
     
   } catch (error) {
     console.error('Erro inesperado ao deletar empresa:', error);
-    handleError(error, { operation: 'delete', id });
+    toast.error('Erro inesperado ao deletar empresa');
     return false;
   }
 };
