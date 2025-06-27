@@ -50,7 +50,7 @@ const ERROR_MESSAGES = {
     SAVE_ERROR: 'Erro ao salvar. Tente novamente.',
     DELETE_ERROR: 'Erro ao excluir. Tente novamente.'
   }
-};
+} as const;
 
 export function useErrorHandler() {
   const [errors, setErrors] = useState<Record<string, string>>({});

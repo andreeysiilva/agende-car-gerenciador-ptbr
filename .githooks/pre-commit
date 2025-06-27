@@ -1,0 +1,15 @@
+
+#!/bin/sh
+
+echo "🔍 Executando verificações antes do commit..."
+
+# Executa verificação de qualidade
+npm run quality-check
+
+if [ $? -ne 0 ]; then
+  echo "❌ Commit cancelado devido a problemas de qualidade de código."
+  echo "💡 Execute 'npm run fix-code' para corrigir automaticamente alguns problemas."
+  exit 1
+fi
+
+echo "✅ Verificações passaram! Prosseguindo com o commit."

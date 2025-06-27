@@ -1,0 +1,14 @@
+
+{
+  "scripts": {
+    "type-check": "tsc --noEmit",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix",
+    "prettier": "prettier --check \"src/**/*.{ts,tsx,js,jsx}\"",
+    "prettier:fix": "prettier --write \"src/**/*.{ts,tsx,js,jsx}\"",
+    "quality-check": "node scripts/quality-check.js",
+    "fix-code": "node scripts/fix-code.js",
+    "setup-hooks": "git config core.hooksPath .githooks && chmod +x .githooks/pre-commit",
+    "dev:clean": "npm run fix-code && npm run dev"
+  }
+}

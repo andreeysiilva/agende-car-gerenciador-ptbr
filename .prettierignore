@@ -1,0 +1,9 @@
+
+dist/
+node_modules/
+*.config.js
+*.config.ts
+package-lock.json
+bun.lockb
+.gitignore
+*.md
