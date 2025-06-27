@@ -38,7 +38,8 @@ const ERROR_MESSAGES = {
     INVALID_TIME_SLOT: 'Horário não disponível.',
     CUSTOMER_NOT_FOUND: 'Cliente não encontrado.',
     SERVICE_UNAVAILABLE: 'Serviço não disponível.',
-    TEAM_UNAVAILABLE: 'Equipe não disponível neste horário.'
+    TEAM_UNAVAILABLE: 'Equipe não disponível neste horário.',
+    PAST_DATE_ERROR: 'Não é possível agendar para datas passadas.'
   },
   GENERIC: {
     UNKNOWN_ERROR: 'Erro inesperado. Tente novamente.',
@@ -78,6 +79,7 @@ export function useErrorHandler() {
   // Handle error with enhanced categorization
   const handleError = useCallback((
     error: any,
+    context?: any,
     config: ErrorHandlerConfig = {}
   ) => {
     const {
@@ -135,6 +137,7 @@ export function useErrorHandler() {
       console.error('Error handled:', {
         originalError: error,
         processedMessage: errorMessage,
+        context,
         config
       });
     }
@@ -160,7 +163,7 @@ export function useErrorHandler() {
       const result = await operation();
       return result;
     } catch (error) {
-      handleError(error, config);
+      handleError(error, undefined, config);
       return null;
     } finally {
       setIsLoading(false);

@@ -6,6 +6,8 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isToday, isSameMonth, startOfWeek, endOfWeek, isBefore, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { isBrazilianHoliday, getBrazilianHolidayName } from "@/utils/holidaysAndDates";
+import { isDateInPast } from "@/utils/dateValidation";
+import { toast } from "sonner";
 
 interface Agendamento {
   id: string;
@@ -75,16 +77,23 @@ export function MonthView({
     return horariosFuncionamento[dayOfWeek]?.funcionando || false;
   };
 
-  const isPastDate = (day: Date) => {
-    const today = startOfDay(new Date());
-    return isBefore(startOfDay(day), today);
-  };
-
   /**
    * Função atualizada para lidar com clique do dia
-   * Agora apenas exibe agendamentos do dia, não abre formulário
+   * Agora bloqueia datas passadas
    */
   const handleDayClick = (day: Date) => {
+    // Verificar se a data está no passado
+    if (isDateInPast(day)) {
+      toast.error('Não é possível agendar para datas passadas. Selecione uma data futura.');
+      return;
+    }
+
+    // Verificar se o dia está funcionando
+    if (!isDiaFuncionando(day)) {
+      toast.error('Este dia não está disponível para agendamentos.');
+      return;
+    }
+
     if (onDayClick) {
       // Criar data local para evitar problemas de timezone
       const year = day.getFullYear();
@@ -128,6 +137,11 @@ export function MonthView({
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
+        
+        {/* Indicador de restrição de datas */}
+        <div className="text-sm text-gray-500">
+          💡 Apenas datas futuras podem ser selecionadas
+        </div>
       </div>
 
       {/* Calendário */}
@@ -149,7 +163,7 @@ export function MonthView({
               const diaFuncionando = isDiaFuncionando(day);
               const isHoliday = isBrazilianHoliday(day);
               const holidayName = getBrazilianHolidayName(day);
-              const isPast = isPastDate(day);
+              const isPast = isDateInPast(day);
               
               return (
                 <div
@@ -163,15 +177,32 @@ export function MonthView({
                           ? 'bg-gray-25' 
                           : 'bg-white'
                   } ${!diaFuncionando ? 'bg-red-50' : ''} ${
-                    'cursor-pointer hover:bg-gray-50'
+                    isPast 
+                      ? 'bg-gray-100 cursor-not-allowed opacity-60' 
+                      : 'cursor-pointer hover:bg-gray-50'
                   }`}
-                  onClick={() => handleDayClick(day)}
-                  title={`${holidayName || ''} - Clique para ver agendamentos`}
+                  onClick={() => !isPast && handleDayClick(day)}
+                  title={
+                    isPast 
+                      ? 'Data passada - não disponível para agendamento'
+                      : !diaFuncionando 
+                        ? 'Dia não funcionando'
+                        : holidayName 
+                          ? `${holidayName} - Clique para ver agendamentos` 
+                          : 'Clique para ver agendamentos'
+                  }
                 >
                   {/* Indicador de feriado */}
                   {isHoliday && (
                     <div className="absolute top-1 right-1 text-xs text-gray-400">
                       🇧🇷
+                    </div>
+                  )}
+                  
+                  {/* Indicador de data passada */}
+                  {isPast && (
+                    <div className="absolute top-1 left-1 text-xs text-red-400">
+                      🚫
                     </div>
                   )}
                   
@@ -190,7 +221,7 @@ export function MonthView({
                       </span>
                     )}
                     {isPast && (
-                      <span className="text-xs text-gray-400 block">Passado</span>
+                      <span className="text-xs text-red-400 block">Passado</span>
                     )}
                   </div>
                   

@@ -4,6 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Clock, User, Car } from "lucide-react";
 import { useState } from "react";
+import { isDateInPast } from "@/utils/dateValidation";
+import { toast } from "sonner";
 
 interface WeekViewProps {
   agendamentos: any[];
@@ -93,9 +95,21 @@ export function WeekView({
 
   /**
    * Função atualizada para lidar com clique do dia
-   * Agora apenas exibe agendamentos do dia, não abre formulário
+   * Agora bloqueia datas passadas
    */
   const handleDayClick = (date: Date) => {
+    // Verificar se a data está no passado
+    if (isDateInPast(date)) {
+      toast.error('Não é possível agendar para datas passadas. Selecione uma data futura.');
+      return;
+    }
+
+    // Verificar se o dia está funcionando
+    if (!isDiaFuncionando(date)) {
+      toast.error('Este dia não está disponível para agendamentos.');
+      return;
+    }
+
     if (onDayClick) {
       const dateString = formatDateString(date);
       console.log('Visualização semanal - dia selecionado:', date);
@@ -125,6 +139,10 @@ export function WeekView({
             </Button>
           </div>
         </div>
+        {/* Indicador de restrição de datas */}
+        <div className="text-sm text-gray-500 mt-2">
+          💡 Apenas datas futuras podem ser selecionadas para novos agendamentos
+        </div>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
@@ -132,28 +150,44 @@ export function WeekView({
             const agendamentosDoDia = getAgendamentosDoDia(date);
             const funcionando = isDiaFuncionando(date);
             const today = isToday(date);
+            const isPast = isDateInPast(date);
 
             return (
               <div
                 key={index}
-                className={`border rounded-lg p-4 min-h-[200px] cursor-pointer transition-colors ${
+                className={`border rounded-lg p-4 min-h-[200px] transition-colors ${
                   !funcionando 
                     ? 'bg-gray-50 border-gray-200' 
                     : today 
                     ? 'bg-blue-50 border-blue-200' 
+                    : isPast
+                    ? 'bg-gray-100 border-gray-300 opacity-60'
                     : 'bg-white border-gray-200 hover:bg-gray-50'
+                } ${
+                  isPast 
+                    ? 'cursor-not-allowed' 
+                    : 'cursor-pointer'
                 }`}
-                onClick={() => handleDayClick(date)}
-                title="Clique para ver todos os agendamentos do dia"
+                onClick={() => !isPast && handleDayClick(date)}
+                title={
+                  isPast 
+                    ? 'Data passada - visualização apenas'
+                    : !funcionando
+                    ? 'Dia não funcionando'
+                    : 'Clique para ver todos os agendamentos do dia'
+                }
               >
                 <div className="text-center mb-3">
                   <div className="text-sm font-medium text-gray-600">
                     {diasSemana[index]}
                   </div>
                   <div className={`text-lg font-bold ${
-                    today ? 'text-blue-600' : 'text-gray-900'
+                    today ? 'text-blue-600' : isPast ? 'text-gray-400' : 'text-gray-900'
                   }`}>
                     {date.getDate()}
+                    {isPast && (
+                      <span className="text-xs text-red-400 block">🚫 Passado</span>
+                    )}
                   </div>
                   {!funcionando && (
                     <div className="text-xs text-red-500 mt-1">
@@ -166,7 +200,7 @@ export function WeekView({
                   <div className="space-y-2">
                     {agendamentosDoDia.length === 0 ? (
                       <div className="text-center text-gray-400 text-sm py-4">
-                        Nenhum agendamento
+                        {isPast ? 'Nenhum histórico' : 'Nenhum agendamento'}
                       </div>
                     ) : (
                       agendamentosDoDia

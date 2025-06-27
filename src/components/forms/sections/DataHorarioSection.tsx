@@ -7,7 +7,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarIcon, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TimeSlotPicker } from "../TimeSlotPicker";
-import { formatDateBR, dateToUTCString, stringToLocalDate, validateAppointmentDate } from "@/utils/dateTimeUtils";
+import { formatDateBR, dateToUTCString, stringToLocalDate } from "@/utils/dateTimeUtils";
+import { validateAppointmentDate, isDateInPast } from "@/utils/dateValidation";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
 
 interface DataHorarioSectionProps {
@@ -29,7 +30,7 @@ interface DataHorarioSectionProps {
 
 /**
  * Componente para seleção de data e horário no formulário de agendamento
- * Integrado com sistema de timezone e validações
+ * Integrado com sistema de timezone e validações de data passada
  */
 export function DataHorarioSection({
   selectedDate,
@@ -51,12 +52,13 @@ export function DataHorarioSection({
   /**
    * Manipula a seleção de data no calendário
    * Aplica validações e converte para formato correto
+   * Agora inclui bloqueio de datas passadas
    */
   const handleDateSelect = (date: Date | undefined) => {
     try {
       if (!date) return;
 
-      // Validar a data selecionada
+      // Validar a data selecionada (inclui verificação de data passada)
       const validation = validateAppointmentDate(date);
       if (!validation.isValid) {
         setDateError(validation.error || 'Data inválida');
@@ -82,12 +84,12 @@ export function DataHorarioSection({
         });
       } else {
         setDateError('Erro ao processar data selecionada');
-        handleError('Erro ao converter data para UTC', { date }, false);
+        handleError('Erro ao converter data para UTC', { date }, { showToast: false });
       }
     } catch (error) {
       const errorMessage = 'Erro ao selecionar data';
       setDateError(errorMessage);
-      handleError(error as Error, { date }, false);
+      handleError(error as Error, { date }, { showToast: false });
     }
   };
 
@@ -96,6 +98,9 @@ export function DataHorarioSection({
       {/* Seleção de Data */}
       <div>
         <Label>Data do Agendamento *</Label>
+        <div className="text-xs text-gray-500 mb-2">
+          💡 Apenas datas futuras podem ser selecionadas
+        </div>
         <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
           <PopoverTrigger asChild>
             <Button
@@ -115,7 +120,7 @@ export function DataHorarioSection({
               mode="single"
               selected={internalSelectedDate}
               onSelect={handleDateSelect}
-              disabled={(date) => validateAppointmentDate(date).isValid === false}
+              disabled={(date) => isDateInPast(date)}
               className="pointer-events-auto"
             />
           </PopoverContent>
