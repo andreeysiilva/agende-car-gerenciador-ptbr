@@ -3,21 +3,6 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, Calendar, TrendingUp, Building } from 'lucide-react';
 
-// Dados mockados para demonstração
-const dashboardData = {
-  totalEmpresas: 24,
-  totalAgendamentos: 156,
-  registrosRecentes: 8,
-  crescimentoMensal: 12.5
-};
-
-const empresasRecentes = [
-  { id: 1, nome: 'Auto Lavagem Premium', email: 'contato@autopremium.com', plano: 'Premium', status: 'Ativo' },
-  { id: 2, nome: 'Lava Car Express', email: 'admin@lavacarexpress.com', plano: 'Básico', status: 'Ativo' },
-  { id: 3, nome: 'Detailing Master', email: 'contato@detailingmaster.com', plano: 'Premium', status: 'Pendente' },
-  { id: 4, nome: 'Quick Wash', email: 'info@quickwash.com', plano: 'Básico', status: 'Ativo' },
-];
-
 // Página principal do dashboard com métricas e informações gerais
 const Dashboard: React.FC = () => {
   return (
@@ -40,11 +25,9 @@ const Dashboard: React.FC = () => {
             <Building className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">
-              {dashboardData.totalEmpresas}
-            </div>
+            <div className="text-2xl font-bold text-gray-900">0</div>
             <p className="text-xs text-green-600 mt-1">
-              +{dashboardData.registrosRecentes} novos este mês
+              Cadastre suas primeiras empresas
             </p>
           </CardContent>
         </Card>
@@ -57,11 +40,9 @@ const Dashboard: React.FC = () => {
             <Calendar className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">
-              {dashboardData.totalAgendamentos}
-            </div>
-            <p className="text-xs text-green-600 mt-1">
-              +{dashboardData.crescimentoMensal}% vs mês anterior
+            <div className="text-2xl font-bold text-gray-900">0</div>
+            <p className="text-xs text-gray-500 mt-1">
+              Aguardando primeiros agendamentos
             </p>
           </CardContent>
         </Card>
@@ -74,11 +55,9 @@ const Dashboard: React.FC = () => {
             <Users className="h-4 w-4 text-purple-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">
-              {dashboardData.totalEmpresas - 2}
-            </div>
+            <div className="text-2xl font-bold text-gray-900">0</div>
             <p className="text-xs text-gray-500 mt-1">
-              91.7% de taxa de ativação
+              Nenhuma empresa ativa ainda
             </p>
           </CardContent>
         </Card>
@@ -91,51 +70,29 @@ const Dashboard: React.FC = () => {
             <TrendingUp className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900">
-              +{dashboardData.crescimentoMensal}%
-            </div>
-            <p className="text-xs text-green-600 mt-1">
-              Tendência positiva
+            <div className="text-2xl font-bold text-gray-900">--</div>
+            <p className="text-xs text-gray-500 mt-1">
+              Dados insuficientes
             </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Seção de Empresas Recentes */}
+      {/* Seção de Empresas e Resumo */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="dashboard-card">
           <CardHeader>
             <CardTitle className="text-lg font-semibold text-gray-900">
-              Empresas Registradas Recentemente
+              Empresas Registradas
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {empresasRecentes.map((empresa) => (
-                <div
-                  key={empresa.id}
-                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                >
-                  <div className="flex-1">
-                    <h4 className="font-medium text-gray-900">{empresa.nome}</h4>
-                    <p className="text-sm text-gray-600">{empresa.email}</p>
-                    <span className="inline-block px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800 mt-1">
-                      {empresa.plano}
-                    </span>
-                  </div>
-                  <div className="text-right">
-                    <span
-                      className={`inline-block px-2 py-1 text-xs rounded-full ${
-                        empresa.status === 'Ativo'
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-yellow-100 text-yellow-800'
-                      }`}
-                    >
-                      {empresa.status}
-                    </span>
-                  </div>
-                </div>
-              ))}
+            <div className="text-center py-8">
+              <Building className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+              <p className="text-gray-500 mb-4">Nenhuma empresa cadastrada ainda</p>
+              <p className="text-sm text-gray-400">
+                As empresas cadastradas aparecerão aqui
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -155,12 +112,12 @@ const Dashboard: React.FC = () => {
               
               <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
                 <span className="text-gray-700">Taxa de Conversão</span>
-                <span className="font-semibold text-green-600">85%</span>
+                <span className="font-semibold text-green-600">--</span>
               </div>
               
               <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
                 <span className="text-gray-700">Satisfação do Cliente</span>
-                <span className="font-semibold text-purple-600">4.8/5</span>
+                <span className="font-semibold text-purple-600">--</span>
               </div>
               
               <div className="flex justify-between items-center p-3 bg-orange-50 rounded-lg">
