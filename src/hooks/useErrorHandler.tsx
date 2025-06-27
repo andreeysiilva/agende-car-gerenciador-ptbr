@@ -2,7 +2,7 @@
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
 
-// Types for error handling
+// Tipos para tratamento de erros
 interface ErrorInfo {
   message: string;
   code?: string;
@@ -15,7 +15,7 @@ interface ErrorHandlerConfig {
   customMessage?: string;
 }
 
-// Enhanced error messages with better categorization
+// Mensagens de erro aprimoradas com melhor categorização
 const ERROR_MESSAGES = {
   NETWORK: {
     CONNECTION_FAILED: 'Falha na conexão. Verifique sua internet.',
@@ -53,10 +53,12 @@ const ERROR_MESSAGES = {
 } as const;
 
 export function useErrorHandler() {
+  // Estado para armazenar erros por campo
   const [errors, setErrors] = useState<Record<string, string>>({});
+  // Estado para controlar loading durante operações
   const [isLoading, setIsLoading] = useState(false);
 
-  // Clear specific error
+  // Função para limpar erro específico de um campo
   const clearError = useCallback((field: string) => {
     setErrors(prev => {
       const newErrors = { ...prev };
@@ -65,12 +67,12 @@ export function useErrorHandler() {
     });
   }, []);
 
-  // Clear all errors
+  // Função para limpar todos os erros
   const clearAllErrors = useCallback(() => {
     setErrors({});
   }, []);
 
-  // Set field error
+  // Função para definir erro em um campo específico
   const setFieldError = useCallback((field: string, message: string) => {
     setErrors(prev => ({
       ...prev,
@@ -78,7 +80,7 @@ export function useErrorHandler() {
     }));
   }, []);
 
-  // Handle error with enhanced categorization
+  // Função principal para tratamento de erros com categorização aprimorada
   const handleError = useCallback((
     error: any,
     context?: any,
@@ -90,9 +92,10 @@ export function useErrorHandler() {
       customMessage
     } = config;
 
+    // Mensagem padrão caso não seja possível categorizar o erro
     let errorMessage = customMessage || ERROR_MESSAGES.GENERIC.UNKNOWN_ERROR;
 
-    // Enhanced error parsing
+    // Análise aprimorada de erros baseada no status HTTP
     if (error?.response?.status) {
       const status = error.response.status;
       switch (status) {
@@ -126,6 +129,7 @@ export function useErrorHandler() {
           errorMessage = ERROR_MESSAGES.GENERIC.UNKNOWN_ERROR;
       }
     } else if (error?.message) {
+      // Análise de erros baseada na mensagem de erro
       if (error.message.includes('Network Error') || error.message.includes('fetch')) {
         errorMessage = ERROR_MESSAGES.NETWORK.CONNECTION_FAILED;
       } else if (error.message.includes('timeout')) {
@@ -137,8 +141,9 @@ export function useErrorHandler() {
       }
     }
 
+    // Log do erro no console se habilitado
     if (logToConsole) {
-      console.error('Error handled:', {
+      console.error('Erro tratado:', {
         originalError: error,
         processedMessage: errorMessage,
         context,
@@ -146,42 +151,50 @@ export function useErrorHandler() {
       });
     }
 
+    // Exibir toast de erro se habilitado
     if (showToast) {
       toast.error(errorMessage);
     }
 
+    // Retornar informações do erro processado
     return {
       message: errorMessage,
       originalError: error
     };
   }, []);
 
-  // Async operation handler
+  // Função para executar operações assíncronas com tratamento de erro automático
   const handleAsyncOperation = useCallback(async <T>(
     operation: () => Promise<T>,
     config: ErrorHandlerConfig = {}
   ): Promise<T | null> => {
     try {
+      // Ativar loading e limpar erros anteriores
       setIsLoading(true);
       clearAllErrors();
+      
+      // Executar a operação
       const result = await operation();
       return result;
     } catch (error) {
+      // Tratar erro automaticamente
       handleError(error, undefined, config);
       return null;
     } finally {
+      // Desativar loading sempre
       setIsLoading(false);
     }
   }, [handleError, clearAllErrors]);
 
+  // Retornar todas as funções e estados disponíveis
   return {
-    errors,
-    isLoading,
-    clearError,
-    clearAllErrors,
-    setFieldError,
-    handleError,
-    handleAsyncOperation,
-    ERROR_MESSAGES
+    errors,                    // Objeto com erros por campo
+    isLoading,                 // Estado de loading
+    clearError,                // Limpar erro específico
+    clearAllErrors,            // Limpar todos os erros
+    setFieldError,             // Definir erro em campo
+    handleError,               // Tratar erro manualmente
+    handleAsyncOperation,      // Executar operação com tratamento automático
+    ERROR_MESSAGES             // Constantes de mensagens de erro
   };
 }
