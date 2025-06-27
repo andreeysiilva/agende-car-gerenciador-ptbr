@@ -75,11 +75,11 @@ class TelegramService {
     const mensagem = `
 🔑 <b>Agende Car - Senha Temporária</b>
 
-Olá! Sua empresa <b>${empresa}</b> foi cadastrada com sucesso na plataforma Agende Car.
+Olá! Sua empresa <b>${empresa}</b> foi cadastrada com sucesso na plataforma AgendiCar.
 
 <b>Sua senha temporária é: ${senha}</b>
 
-Acesse: https://${empresa.toLowerCase().replace(/\s+/g, '')}.agendecar.com
+Acesse: https://${empresa.toLowerCase().replace(/\s+/g, '')}.agendicar.com.br
 
 ⚠️ <i>Esta é uma senha temporária. Altere-a após o primeiro acesso.</i>
 
