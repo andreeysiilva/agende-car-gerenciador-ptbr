@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,7 +13,7 @@ const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login, isAuthenticated } = useAuth();
+  const { signIn, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
   // Redirecionar se já estiver autenticado
@@ -30,13 +29,13 @@ const Login: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const success = await login(email, password);
+      const { error } = await signIn(email, password);
       
-      if (success) {
+      if (error) {
+        toast.error(`Erro no login: ${error}`);
+      } else {
         toast.success('Login administrativo realizado com sucesso!');
         navigate('/');
-      } else {
-        toast.error('Credenciais inválidas. Verifique email e senha.');
       }
     } catch (error) {
       console.error('Erro no login administrativo:', error);
@@ -132,7 +131,7 @@ const Login: React.FC = () => {
               
               <div className="mt-4 text-center">
                 <a 
-                  href="/cliente/login"
+                  href="/auth"
                   className="text-sm text-primary hover:text-primary-hover underline"
                 >
                   Acessar como empresa/cliente
