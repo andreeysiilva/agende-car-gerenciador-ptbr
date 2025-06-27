@@ -39,7 +39,9 @@ const ERROR_MESSAGES = {
     CUSTOMER_NOT_FOUND: 'Cliente não encontrado.',
     SERVICE_UNAVAILABLE: 'Serviço não disponível.',
     TEAM_UNAVAILABLE: 'Equipe não disponível neste horário.',
-    PAST_DATE_ERROR: 'Não é possível agendar para datas passadas.'
+    PAST_DATE_ERROR: 'Não é possível agendar para datas passadas.',
+    EMAIL_ALREADY_EXISTS: 'Este email já está cadastrado.',
+    SUBDOMAIN_ALREADY_EXISTS: 'Este subdomínio já está em uso.'
   },
   GENERIC: {
     UNKNOWN_ERROR: 'Erro inesperado. Tente novamente.',
@@ -128,6 +130,8 @@ export function useErrorHandler() {
         errorMessage = ERROR_MESSAGES.NETWORK.CONNECTION_FAILED;
       } else if (error.message.includes('timeout')) {
         errorMessage = ERROR_MESSAGES.NETWORK.TIMEOUT;
+      } else if (error.message.includes('duplicate') || error.message.includes('already exists')) {
+        errorMessage = ERROR_MESSAGES.BUSINESS.EMAIL_ALREADY_EXISTS;
       } else {
         errorMessage = error.message;
       }
