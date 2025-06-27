@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Clock, User, Car } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock, User, Car, CalendarDays } from "lucide-react";
 import { useState } from "react";
 import { isDateInPast } from "@/utils/dateValidation";
 import { toast } from "sonner";
@@ -23,6 +23,7 @@ export function WeekView({
   horariosFuncionamento = {}
 }: WeekViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [isGoingToToday, setIsGoingToToday] = useState(false);
 
   // Função para obter o início da semana (segunda-feira)
   const getStartOfWeek = (date: Date) => {
@@ -34,7 +35,6 @@ export function WeekView({
 
   // Função para formatar data como string
   const formatDateString = (date: Date) => {
-    // Use local timezone to avoid timezone issues
     const year = date.getFullYear();
     const month = date.getMonth();
     const day = date.getDate();
@@ -66,6 +66,15 @@ export function WeekView({
     setCurrentDate(newDate);
   };
 
+  const goToToday = () => {
+    setIsGoingToToday(true);
+    setCurrentDate(new Date());
+    toast.success('Navegado para a semana atual');
+    
+    // Reset animation state after a brief moment
+    setTimeout(() => setIsGoingToToday(false), 300);
+  };
+
   // Função para verificar se um dia está funcionando
   const isDiaFuncionando = (date: Date) => {
     const dayOfWeek = date.getDay();
@@ -93,18 +102,12 @@ export function WeekView({
     return date.toDateString() === today.toDateString();
   };
 
-  /**
-   * Função atualizada para lidar com clique do dia
-   * Agora bloqueia datas passadas
-   */
   const handleDayClick = (date: Date) => {
-    // Verificar se a data está no passado
     if (isDateInPast(date)) {
       toast.error('Não é possível agendar para datas passadas. Selecione uma data futura.');
       return;
     }
 
-    // Verificar se o dia está funcionando
     if (!isDiaFuncionando(date)) {
       toast.error('Este dia não está disponível para agendamentos.');
       return;
@@ -121,27 +124,44 @@ export function WeekView({
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
-            Visualização Semanal
-          </CardTitle>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={previousWeek}>
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="text-sm font-medium px-4">
-              {startOfWeek.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} - {' '}
-              {weekDays[6].toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
-            </span>
-            <Button variant="outline" size="sm" onClick={nextWeek}>
-              <ChevronRight className="h-4 w-4" />
+        <div className="space-y-4">
+          {/* Botão Voltar para Hoje */}
+          <div className="flex justify-center">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={goToToday}
+              className={`flex items-center gap-2 transition-all duration-300 ${
+                isGoingToToday ? 'bg-primary text-primary-foreground scale-105' : 'hover:bg-primary/10'
+              }`}
+            >
+              <CalendarDays className={`h-4 w-4 ${isGoingToToday ? 'animate-pulse' : ''}`} />
+              Voltar para Hoje
             </Button>
           </div>
-        </div>
-        {/* Indicador de restrição de datas */}
-        <div className="text-sm text-gray-500 mt-2">
-          💡 Apenas datas futuras podem ser selecionadas para novos agendamentos
+
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5" />
+              Visualização Semanal
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={previousWeek}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="text-sm font-medium px-4">
+                {startOfWeek.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })} - {' '}
+                {weekDays[6].toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+              </span>
+              <Button variant="outline" size="sm" onClick={nextWeek}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+          
+          <div className="text-sm text-gray-500">
+            💡 Apenas datas futuras podem ser selecionadas para novos agendamentos
+          </div>
         </div>
       </CardHeader>
       <CardContent>

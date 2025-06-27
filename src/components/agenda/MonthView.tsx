@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isToday, isSameMonth, startOfWeek, endOfWeek, isBefore, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { isBrazilianHoliday, getBrazilianHolidayName } from "@/utils/holidaysAndDates";
@@ -40,6 +40,7 @@ export function MonthView({
   horariosFuncionamento 
 }: MonthViewProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [isGoingToToday, setIsGoingToToday] = useState(false);
   
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
@@ -49,6 +50,15 @@ export function MonthView({
 
   const navigateMonth = (direction: 'prev' | 'next') => {
     setCurrentMonth(prev => direction === 'prev' ? subMonths(prev, 1) : addMonths(prev, 1));
+  };
+
+  const goToToday = () => {
+    setIsGoingToToday(true);
+    setCurrentMonth(new Date());
+    toast.success('Navegado para o mês atual');
+    
+    // Reset animation state after a brief moment
+    setTimeout(() => setIsGoingToToday(false), 300);
   };
 
   // Filtrar agendamentos por serviços selecionados
@@ -77,25 +87,18 @@ export function MonthView({
     return horariosFuncionamento[dayOfWeek]?.funcionando || false;
   };
 
-  /**
-   * Função atualizada para lidar com clique do dia
-   * Agora bloqueia datas passadas
-   */
   const handleDayClick = (day: Date) => {
-    // Verificar se a data está no passado
     if (isDateInPast(day)) {
       toast.error('Não é possível agendar para datas passadas. Selecione uma data futura.');
       return;
     }
 
-    // Verificar se o dia está funcionando
     if (!isDiaFuncionando(day)) {
       toast.error('Este dia não está disponível para agendamentos.');
       return;
     }
 
     if (onDayClick) {
-      // Criar data local para evitar problemas de timezone
       const year = day.getFullYear();
       const month = day.getMonth();
       const date = day.getDate();
@@ -114,6 +117,21 @@ export function MonthView({
 
   return (
     <div className="space-y-4">
+      {/* Botão Voltar para Hoje */}
+      <div className="flex justify-center">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={goToToday}
+          className={`flex items-center gap-2 transition-all duration-300 ${
+            isGoingToToday ? 'bg-primary text-primary-foreground scale-105' : 'hover:bg-primary/10'
+          }`}
+        >
+          <CalendarDays className={`h-4 w-4 ${isGoingToToday ? 'animate-pulse' : ''}`} />
+          Voltar para Hoje
+        </Button>
+      </div>
+
       {/* Cabeçalho do mês */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -138,7 +156,6 @@ export function MonthView({
           </Button>
         </div>
         
-        {/* Indicador de restrição de datas */}
         <div className="text-sm text-gray-500">
           💡 Apenas datas futuras podem ser selecionadas
         </div>
@@ -244,7 +261,6 @@ export function MonthView({
                       </div>
                     ))}
                     
-                    {/* Mostrar mais agendamentos se houver */}
                     {agendamentosDay.length > 2 && (
                       <div className="text-xs text-gray-500 text-center">
                         +{agendamentosDay.length - 2}

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar as CalendarIcon, AlertCircle } from "lucide-react";
+import { Calendar as CalendarIcon, AlertCircle, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TimeSlotPicker } from "../TimeSlotPicker";
 import { formatDateBR, dateToUTCString, stringToLocalDate } from "@/utils/dateTimeUtils";
@@ -28,10 +28,6 @@ interface DataHorarioSectionProps {
   setDateError: (error: string) => void;
 }
 
-/**
- * Componente para seleção de data e horário no formulário de agendamento
- * Integrado com sistema de timezone e validações de data passada
- */
 export function DataHorarioSection({
   selectedDate,
   selectedTime,
@@ -49,11 +45,13 @@ export function DataHorarioSection({
   
   const { handleError } = useErrorHandler();
 
-  /**
-   * Manipula a seleção de data no calendário
-   * Aplica validações e converte para formato correto
-   * Agora inclui bloqueio de datas passadas
-   */
+  // Verificar se há conflitos de horário
+  const hasTimeConflict = selectedDate && selectedTime && agendamentos.some(ag => 
+    ag.data_agendamento === selectedDate && 
+    ag.horario === selectedTime &&
+    ag.status !== 'cancelado'
+  );
+
   const handleDateSelect = (date: Date | undefined) => {
     try {
       if (!date) return;
@@ -97,7 +95,12 @@ export function DataHorarioSection({
     <div className="space-y-4">
       {/* Seleção de Data */}
       <div>
-        <Label>Data do Agendamento *</Label>
+        <Label className="flex items-center gap-2">
+          Data do Agendamento *
+          {selectedDate && !dateError && (
+            <CheckCircle2 className="h-4 w-4 text-green-500" />
+          )}
+        </Label>
         <div className="text-xs text-gray-500 mb-2">
           💡 Apenas datas futuras podem ser selecionadas
         </div>
@@ -108,7 +111,8 @@ export function DataHorarioSection({
               className={cn(
                 "w-full justify-start text-left font-normal",
                 !internalSelectedDate && "text-muted-foreground",
-                dateError && "border-red-500"
+                dateError && "border-red-500",
+                selectedDate && !dateError && "border-green-500"
               )}
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
@@ -133,16 +137,49 @@ export function DataHorarioSection({
             <span>{dateError}</span>
           </div>
         )}
+
+        {/* Confirmação visual */}
+        {selectedDate && !dateError && (
+          <div className="flex items-center gap-2 text-sm text-green-600 mt-1">
+            <CheckCircle2 className="h-4 w-4" />
+            <span>Data selecionada: {internalSelectedDate && formatDateBR(internalSelectedDate)}</span>
+          </div>
+        )}
       </div>
 
       {/* Seleção de Horário */}
-      <TimeSlotPicker
-        selectedDate={selectedDate}
-        selectedTime={selectedTime}
-        onTimeChange={onTimeChange}
-        agendamentos={agendamentos}
-        horariosFuncionamento={horariosFuncionamento}
-      />
+      <div>
+        <Label className="flex items-center gap-2">
+          Horário do Agendamento *
+          {selectedTime && !hasTimeConflict && (
+            <CheckCircle2 className="h-4 w-4 text-green-500" />
+          )}
+        </Label>
+        
+        {/* Alerta de conflito de horário */}
+        {hasTimeConflict && (
+          <div className="flex items-center gap-2 text-sm text-red-500 mt-1 mb-2">
+            <AlertCircle className="h-4 w-4" />
+            <span>Já existe um agendamento neste horário</span>
+          </div>
+        )}
+
+        <TimeSlotPicker
+          selectedDate={selectedDate}
+          selectedTime={selectedTime}
+          onTimeChange={onTimeChange}
+          agendamentos={agendamentos}
+          horariosFuncionamento={horariosFuncionamento}
+        />
+
+        {/* Confirmação visual do horário */}
+        {selectedTime && !hasTimeConflict && (
+          <div className="flex items-center gap-2 text-sm text-green-600 mt-1">
+            <CheckCircle2 className="h-4 w-4" />
+            <span>Horário disponível: {selectedTime}</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
