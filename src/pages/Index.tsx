@@ -1,279 +1,302 @@
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useNavigate } from "react-router-dom";
-import { Calendar, Car, Users, BarChart3, CheckCircle, Star, ArrowRight } from "lucide-react";
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import {
+  Car,
+  Calendar,
+  Users,
+  Wrench,
+  BarChart3,
+  Shield,
+  Clock,
+  CheckCircle,
+  ArrowRight,
+  Building2,
+} from 'lucide-react';
 
-export default function Index() {
+const Index: React.FC = () => {
   const navigate = useNavigate();
+  const { isAuthenticated, isGlobalAdmin, isCompanyUser } = useAuth();
 
-  const planos = [
-    {
-      nome: "Básico",
-      preco: "R$ 99,90",
-      periodo: "/mês",
-      descricao: "Ideal para pequenos negócios",
-      caracteristicas: [
-        "Até 100 agendamentos/mês",
-        "1 usuário",
-        "Agenda online",
-        "Suporte via email",
-        "Relatórios básicos"
-      ],
-      popular: false
-    },
-    {
-      nome: "Premium",
-      preco: "R$ 199,90",
-      periodo: "/mês",
-      descricao: "Perfeito para empresas em crescimento",
-      caracteristicas: [
-        "Até 500 agendamentos/mês",
-        "3 usuários",
-        "Agenda personalizada",
-        "Notificações SMS",
-        "Suporte prioritário",
-        "Relatórios avançados"
-      ],
-      popular: true
-    },
-    {
-      nome: "Empresarial",
-      preco: "R$ 299,90",
-      periodo: "/mês",
-      descricao: "Para grandes operações",
-      caracteristicas: [
-        "Agendamentos ilimitados",
-        "Usuários ilimitados",
-        "API personalizada",
-        "Suporte 24/7",
-        "Multi-localização",
-        "Dashboard executivo"
-      ],
-      popular: false
+  const handleGetStarted = () => {
+    if (isAuthenticated) {
+      if (isGlobalAdmin) {
+        navigate('/admin/dashboard');
+      } else if (isCompanyUser) {
+        navigate('/app/dashboard');
+      } else {
+        navigate('/auth');
+      }
+    } else {
+      navigate('/auth');
     }
-  ];
+  };
 
-  const funcionalidades = [
+  const features = [
     {
       icon: Calendar,
-      titulo: "Agenda Inteligente",
-      descricao: "Gerencie todos os agendamentos em uma interface intuitiva com visualização semanal e mensal."
-    },
-    {
-      icon: Car,
-      titulo: "Gestão de Serviços",
-      descricao: "Cadastre e organize todos os serviços automotivos com preços, duração e descrições."
+      title: 'Gestão de Agendamentos',
+      description: 'Sistema completo para agendar e gerenciar serviços automotivos',
     },
     {
       icon: Users,
-      titulo: "Base de Clientes",
-      descricao: "Mantenha um cadastro completo dos seus clientes com histórico de atendimentos."
+      title: 'Controle de Clientes',
+      description: 'Cadastro e histórico completo de todos os seus clientes',
+    },
+    {
+      icon: Wrench,
+      title: 'Catálogo de Serviços',
+      description: 'Organize todos os serviços oferecidos pela sua empresa',
     },
     {
       icon: BarChart3,
-      titulo: "Relatórios e Estatísticas",
-      descricao: "Acompanhe o crescimento do seu negócio com relatórios detalhados e gráficos."
-    }
+      title: 'Relatórios e Estatísticas',
+      description: 'Acompanhe o desempenho do seu negócio com dashboards',
+    },
+    {
+      icon: Shield,
+      title: 'Segurança Avançada',
+      description: 'Controle de acesso por usuário e proteção de dados',
+    },
+    {
+      icon: Clock,
+      title: 'Disponibilidade 24/7',
+      description: 'Sistema sempre disponível para você e seus clientes',
+    },
+  ];
+
+  const plans = [
+    {
+      name: 'Básico',
+      price: 'R$ 49',
+      period: '/mês',
+      features: [
+        'Até 100 agendamentos/mês',
+        '2 usuários',
+        'Suporte por email',
+        'Relatórios básicos',
+      ],
+      popular: false,
+    },
+    {
+      name: 'Profissional',
+      price: 'R$ 99',
+      period: '/mês',
+      features: [
+        'Agendamentos ilimitados',
+        '5 usuários',
+        'Suporte prioritário',
+        'Relatórios avançados',
+        'Integração WhatsApp',
+      ],
+      popular: true,
+    },
+    {
+      name: 'Empresarial',
+      price: 'R$ 199',
+      period: '/mês',
+      features: [
+        'Tudo do Profissional',
+        'Usuários ilimitados',
+        'Suporte telefônico',
+        'API personalizada',
+        'Treinamento incluído',
+      ],
+      popular: false,
+    },
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center">
-              <Car className="h-8 w-8 text-blue-600 mr-3" />
-              <h1 className="text-2xl font-bold text-gray-900">AgendiCar</h1>
+    <div className="min-h-screen bg-background">
+      {/* Navigation */}
+      <nav className="border-b bg-white/50 backdrop-blur-sm sticky top-0 z-50">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+              <Car className="h-5 w-5 text-white" />
             </div>
-            <div className="flex items-center gap-4">
-              <Button variant="outline" onClick={() => navigate('/cliente/login')}>
-                Área do Cliente
+            <span className="text-xl font-bold">AgendiCar</span>
+          </div>
+          
+          <div className="flex items-center gap-4">
+            {isAuthenticated ? (
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary">
+                  {isGlobalAdmin ? 'Admin' : 'Empresa'}
+                </Badge>
+                <Button onClick={handleGetStarted}>
+                  Ir para Dashboard
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </Button>
+              </div>
+            ) : (
+              <Button onClick={() => navigate('/auth')}>
+                Entrar
               </Button>
-              <Button onClick={() => navigate('/login')}>
-                Admin
-              </Button>
-            </div>
+            )}
           </div>
         </div>
-      </header>
+      </nav>
 
       {/* Hero Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="text-center">
-          <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
-            Transforme sua
-            <span className="text-blue-600"> Lava-Jato </span>
-            em um Negócio Digital
+      <section className="py-20 px-4 bg-gradient-to-br from-primary-50 to-secondary-50">
+        <div className="container mx-auto text-center">
+          <div className="w-20 h-20 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-8 relative">
+            <Car className="h-10 w-10 text-white" />
+            <div className="absolute -top-2 -right-2 w-8 h-8 bg-secondary rounded-full flex items-center justify-center">
+              <CheckCircle className="h-4 w-4 text-white" />
+            </div>
+          </div>
+          
+          <h1 className="text-5xl font-bold text-text-primary mb-6">
+            Sistema de Gestão para
+            <span className="text-primary block">Oficinas e Estéticas</span>
           </h1>
-          <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-            Plataforma completa para gestão de agendamentos, clientes e serviços automotivos. 
-            Simplifique sua operação e aumente seus lucros.
+          
+          <p className="text-xl text-text-secondary mb-8 max-w-2xl mx-auto">
+            Gerencie agendamentos, clientes e serviços da sua empresa automotiva 
+            de forma simples e eficiente. Tudo em um só lugar.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="text-lg px-8 py-4" onClick={() => navigate('/cliente/login')}>
-              Começar Gratuitamente
-              <ArrowRight className="ml-2 h-5 w-5" />
+          
+          <div className="flex gap-4 justify-center">
+            <Button size="lg" onClick={handleGetStarted} className="h-12 px-8">
+              {isAuthenticated ? 'Acessar Sistema' : 'Começar Agora'}
+              <ArrowRight className="h-5 w-5 ml-2" />
             </Button>
-            <Button variant="outline" size="lg" className="text-lg px-8 py-4">
+            <Button size="lg" variant="outline" className="h-12 px-8">
+              <Building2 className="h-5 w-5 mr-2" />
               Ver Demonstração
             </Button>
           </div>
         </div>
       </section>
 
-      {/* Funcionalidades */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">
-            Tudo que sua Lava-Jato Precisa
-          </h2>
-          <p className="text-xl text-gray-600">
-            Ferramentas profissionais para gerenciar seu negócio automotivo
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {funcionalidades.map((funcionalidade, index) => (
-            <Card key={index} className="text-center hover:shadow-lg transition-shadow">
-              <CardContent className="p-6">
-                <funcionalidade.icon className="h-12 w-12 text-blue-600 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  {funcionalidade.titulo}
-                </h3>
-                <p className="text-gray-600">
-                  {funcionalidade.descricao}
-                </p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      {/* Planos */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">
-            Escolha o Plano Ideal
-          </h2>
-          <p className="text-xl text-gray-600">
-            Planos flexíveis para todos os tamanhos de negócio
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {planos.map((plano, index) => (
-            <Card key={index} className={`relative hover:shadow-lg transition-shadow ${
-              plano.popular ? 'border-blue-500 shadow-lg transform scale-105' : ''
-            }`}>
-              {plano.popular && (
-                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                  <div className="bg-blue-600 text-white px-4 py-1 rounded-full text-sm font-medium flex items-center">
-                    <Star className="h-4 w-4 mr-1" />
-                    Mais Popular
+      {/* Features Section */}
+      <section className="py-20 px-4 bg-white">
+        <div className="container mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-text-primary mb-4">
+              Tudo que você precisa para gerenciar seu negócio
+            </h2>
+            <p className="text-text-secondary max-w-2xl mx-auto">
+              Funcionalidades completas para otimizar seus processos e aumentar sua produtividade
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {features.map((feature, index) => (
+              <Card key={index} className="border-0 shadow-lg hover:shadow-xl transition-shadow">
+                <CardHeader>
+                  <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+                    <feature.icon className="h-6 w-6 text-primary" />
                   </div>
-                </div>
-              )}
-              
-              <CardHeader className="text-center">
-                <CardTitle className="text-2xl font-bold">{plano.nome}</CardTitle>
-                <div className="text-4xl font-bold text-blue-600">
-                  {plano.preco}
-                  <span className="text-lg text-gray-500">{plano.periodo}</span>
-                </div>
-                <p className="text-gray-600">{plano.descricao}</p>
-              </CardHeader>
-              
-              <CardContent>
-                <ul className="space-y-3 mb-6">
-                  {plano.caracteristicas.map((caracteristica, idx) => (
-                    <li key={idx} className="flex items-center">
-                      <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                      <span className="text-gray-700">{caracteristica}</span>
-                    </li>
-                  ))}
-                </ul>
-                
-                <Button 
-                  className="w-full" 
-                  variant={plano.popular ? 'default' : 'outline'}
-                  onClick={() => navigate('/cliente/login')}
-                >
-                  Começar Agora
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
+                  <CardTitle className="text-xl">{feature.title}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription className="text-base">
+                    {feature.description}
+                  </CardDescription>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* CTA Final */}
-      <section className="bg-blue-600 text-white py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      {/* Pricing Section */}
+      <section className="py-20 px-4 bg-gray-50">
+        <div className="container mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-text-primary mb-4">
+              Escolha o plano ideal para sua empresa
+            </h2>
+            <p className="text-text-secondary max-w-2xl mx-auto">
+              Planos flexíveis que crescem junto com o seu negócio
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            {plans.map((plan, index) => (
+              <Card key={index} className={`relative ${plan.popular ? 'border-primary shadow-xl' : 'border-0 shadow-lg'}`}>
+                {plan.popular && (
+                  <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                    Mais Popular
+                  </Badge>
+                )}
+                <CardHeader className="text-center">
+                  <CardTitle className="text-2xl">{plan.name}</CardTitle>
+                  <div className="flex items-baseline justify-center gap-1">
+                    <span className="text-3xl font-bold">{plan.price}</span>
+                    <span className="text-text-secondary">{plan.period}</span>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-3 mb-6">
+                    {plan.features.map((feature, idx) => (
+                      <li key={idx} className="flex items-center gap-2">
+                        <CheckCircle className="h-4 w-4 text-green-500" />
+                        <span className="text-sm">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <Button 
+                    className="w-full" 
+                    variant={plan.popular ? 'default' : 'outline'}
+                    onClick={() => navigate('/auth')}
+                  >
+                    Começar Teste Grátis
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20 px-4 bg-primary text-white">
+        <div className="container mx-auto text-center">
           <h2 className="text-3xl font-bold mb-4">
-            Pronto para Revolucionar sua Lava-Jato?
+            Pronto para digitalizar sua empresa?
           </h2>
-          <p className="text-xl mb-8 text-blue-100">
-            Junte-se a centenas de empresas que já transformaram seus negócios com o AgendiCar
+          <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
+            Junte-se a centenas de empresas que já transformaram sua gestão com o AgendiCar
           </p>
-          <Button size="lg" variant="secondary" className="text-lg px-8 py-4" onClick={() => navigate('/cliente/login')}>
-            Iniciar Teste Gratuito
-            <ArrowRight className="ml-2 h-5 w-5" />
+          <Button 
+            size="lg" 
+            variant="secondary" 
+            className="h-12 px-8"
+            onClick={handleGetStarted}
+          >
+            {isAuthenticated ? 'Acessar Minha Conta' : 'Criar Conta Gratuita'}
+            <ArrowRight className="h-5 w-5 ml-2" />
           </Button>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div>
-              <div className="flex items-center mb-4">
-                <Car className="h-8 w-8 text-blue-400 mr-3" />
-                <span className="text-xl font-bold">AgendiCar</span>
-              </div>
-              <p className="text-gray-400">
-                A solução completa para gestão de lava-jatos e serviços automotivos.
-              </p>
+      <footer className="py-12 px-4 bg-gray-900 text-white">
+        <div className="container mx-auto text-center">
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+              <Car className="h-5 w-5 text-white" />
             </div>
-            
-            <div>
-              <h3 className="font-semibold mb-4">Produto</h3>
-              <ul className="space-y-2 text-gray-400">
-                <li>Funcionalidades</li>
-                <li>Preços</li>
-                <li>API</li>
-                <li>Integrações</li>
-              </ul>
-            </div>
-            
-            <div>
-              <h3 className="font-semibold mb-4">Suporte</h3>
-              <ul className="space-y-2 text-gray-400">
-                <li>Central de Ajuda</li>
-                <li>Contato</li>
-                <li>Status do Sistema</li>
-                <li>Treinamentos</li>
-              </ul>
-            </div>
-            
-            <div>
-              <h3 className="font-semibold mb-4">Empresa</h3>
-              <ul className="space-y-2 text-gray-400">
-                <li>Sobre</li>
-                <li>Blog</li>
-                <li>Carreiras</li>
-                <li>Termos de Uso</li>
-              </ul>
-            </div>
+            <span className="text-xl font-bold">AgendiCar</span>
           </div>
-          
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-            <p>&copy; 2024 AgendiCar. Todos os direitos reservados.</p>
-          </div>
+          <p className="text-gray-400 mb-4">
+            Sistema de Gestão para Oficinas e Estéticas Automotivas
+          </p>
+          <p className="text-sm text-gray-500">
+            © 2024 AgendiCar. Todos os direitos reservados.
+          </p>
         </div>
       </footer>
     </div>
   );
-}
+};
+
+export default Index;
