@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useErrorHandler } from './useErrorHandler';
@@ -86,20 +85,15 @@ export function useEmpresas() {
         .from('empresas')
         .select('id')
         .eq('email', email)
-        .single();
-
-      if (error && error.code === 'PGRST116') {
-        // Nenhum registro encontrado - email único
-        return true;
-      }
+        .maybeSingle();
 
       if (error) {
         console.error('Erro ao verificar email:', error);
         return false;
       }
 
-      // Email já existe
-      return false;
+      // Se não encontrou nenhum registro, email é único
+      return !data;
     } catch (error) {
       console.error('Erro inesperado ao verificar email:', error);
       return false;
@@ -112,20 +106,15 @@ export function useEmpresas() {
         .from('empresas')
         .select('id')
         .eq('subdominio', subdominio)
-        .single();
-
-      if (error && error.code === 'PGRST116') {
-        // Nenhum registro encontrado - subdomínio único
-        return true;
-      }
+        .maybeSingle();
 
       if (error) {
         console.error('Erro ao verificar subdomínio:', error);
         return false;
       }
 
-      // Subdomínio já existe
-      return false;
+      // Se não encontrou nenhum registro, subdomínio é único
+      return !data;
     } catch (error) {
       console.error('Erro inesperado ao verificar subdomínio:', error);
       return false;
