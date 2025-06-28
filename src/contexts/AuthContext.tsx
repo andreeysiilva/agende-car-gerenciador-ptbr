@@ -9,9 +9,11 @@ interface UserProfile {
   id: string;
   nome: string;
   email: string;
-  role: 'super_admin' | 'admin' | 'funcionario';
+  role: 'super_admin' | 'admin' | 'funcionario' | 'moderador' | 'suporte';
+  nivel_acesso: 'super_admin' | 'admin' | 'moderador' | 'suporte';
   empresa_id: string | null;
   ativo: boolean;
+  ultimo_acesso: string | null;
 }
 
 interface AuthContextType {
@@ -26,6 +28,7 @@ interface AuthContextType {
   isSuperAdmin: boolean;
   isGlobalAdmin: boolean;
   isCompanyUser: boolean;
+  updateLastAccess: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -65,6 +68,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Atualizar último acesso
+  const updateLastAccess = async () => {
+    try {
+      await supabase.rpc('update_last_access');
+    } catch (error) {
+      console.error('Erro ao atualizar último acesso:', error);
+    }
+  };
+
   // Função de login
   const signIn = async (email: string, password: string) => {
     try {
@@ -75,6 +87,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) {
         return { error: error.message };
+      }
+
+      // Atualizar último acesso após login bem-sucedido
+      if (data.user) {
+        setTimeout(() => updateLastAccess(), 1000);
       }
 
       return { error: null };
@@ -166,7 +183,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   // Verificações de papel
-  const isSuperAdmin = profile?.role === 'super_admin' && profile?.empresa_id === null;
+  const isSuperAdmin = profile?.role === 'super_admin' && profile?.nivel_acesso === 'super_admin' && profile?.empresa_id === null;
   const isGlobalAdmin = (profile?.role === 'admin' || profile?.role === 'super_admin') && profile?.empresa_id === null;
   const isCompanyUser = profile?.empresa_id !== null;
   const isAuthenticated = !!user && !!profile;
@@ -183,6 +200,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isSuperAdmin,
     isGlobalAdmin,
     isCompanyUser,
+    updateLastAccess,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

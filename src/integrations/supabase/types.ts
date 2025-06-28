@@ -432,8 +432,10 @@ export type Database = {
           email: string
           empresa_id: string | null
           id: string
+          nivel_acesso: string | null
           nome: string
           role: string | null
+          ultimo_acesso: string | null
           updated_at: string | null
         }
         Insert: {
@@ -443,8 +445,10 @@ export type Database = {
           email: string
           empresa_id?: string | null
           id?: string
+          nivel_acesso?: string | null
           nome: string
           role?: string | null
+          ultimo_acesso?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -454,8 +458,10 @@ export type Database = {
           email?: string
           empresa_id?: string | null
           id?: string
+          nivel_acesso?: string | null
           nome?: string
           role?: string | null
+          ultimo_acesso?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -480,6 +486,14 @@ export type Database = {
       is_global_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
+      }
+      is_super_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      update_last_access: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
     }
     Enums: {

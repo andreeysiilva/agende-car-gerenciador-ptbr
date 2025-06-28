@@ -33,10 +33,11 @@ import {
   Wrench,
   UserCheck,
   ChevronUp,
+  Shield,
 } from 'lucide-react';
 
 // Menu items para diferentes tipos de usuário
-const adminMenuItems = [
+const getAdminMenuItems = (isSuperAdmin: boolean) => [
   {
     title: 'Dashboard',
     url: '/admin/dashboard',
@@ -56,6 +57,16 @@ const adminMenuItems = [
     title: 'Financeiro',
     url: '/admin/financeiro',
     icon: CreditCard,
+  },
+  ...(isSuperAdmin ? [{
+    title: 'Administradores',
+    url: '/admin/administradores',
+    icon: Shield,
+  }] : []),
+  {
+    title: 'Configurações',
+    url: '/admin/configuracoes',
+    icon: Settings,
   },
 ];
 
@@ -100,7 +111,7 @@ const companyMenuItems = [
 export function AppSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { profile, signOut, isGlobalAdmin, isCompanyUser } = useAuth();
+  const { profile, signOut, isGlobalAdmin, isCompanyUser, isSuperAdmin } = useAuth();
 
   const handleSignOut = async () => {
     await signOut();
@@ -109,7 +120,7 @@ export function AppSidebar() {
 
   const getMenuItems = () => {
     if (isGlobalAdmin) {
-      return adminMenuItems;
+      return getAdminMenuItems(isSuperAdmin);
     } else if (isCompanyUser) {
       return companyMenuItems;
     }
@@ -123,6 +134,14 @@ export function AppSidebar() {
       .join('')
       .toUpperCase()
       .slice(0, 2);
+  };
+
+  const getRoleLabel = (role: string, nivelAcesso?: string) => {
+    if (role === 'super_admin' || nivelAcesso === 'super_admin') return 'Super Admin';
+    if (role === 'admin' || nivelAcesso === 'admin') return 'Administrador';
+    if (role === 'moderador' || nivelAcesso === 'moderador') return 'Moderador';
+    if (role === 'suporte' || nivelAcesso === 'suporte') return 'Suporte';
+    return 'Funcionário';
   };
 
   const menuItems = getMenuItems();
@@ -188,9 +207,8 @@ export function AppSidebar() {
             <DropdownMenuItem disabled>
               <div className="flex flex-col">
                 <span className="font-medium">{profile?.nome}</span>
-                <span className="text-xs text-muted-foreground capitalize">
-                  {profile?.role === 'super_admin' ? 'Super Admin' : 
-                   profile?.role === 'admin' ? 'Administrador' : 'Funcionário'}
+                <span className="text-xs text-muted-foreground">
+                  {getRoleLabel(profile?.role || '', profile?.nivel_acesso)}
                 </span>
               </div>
             </DropdownMenuItem>
