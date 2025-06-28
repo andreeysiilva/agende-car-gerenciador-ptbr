@@ -13,6 +13,7 @@ import NotFound from '@/pages/NotFound';
 import Auth from '@/pages/Auth';
 import Login from '@/pages/Login';
 import Unauthorized from '@/pages/Unauthorized';
+import ResetPassword from '@/pages/ResetPassword';
 
 // Páginas administrativas (rotas /admin/*)
 import Dashboard from '@/pages/Dashboard';
