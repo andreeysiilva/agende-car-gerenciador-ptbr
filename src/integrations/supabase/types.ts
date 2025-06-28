@@ -155,6 +155,7 @@ export type Database = {
       }
       empresas: {
         Row: {
+          cnpj_cpf: string | null
           created_at: string | null
           data_vencimento: string | null
           email: string
@@ -163,13 +164,16 @@ export type Database = {
           logo_url: string | null
           nome: string
           plano_id: string | null
+          primeiro_acesso_concluido: boolean | null
           senha_temporaria: string | null
           status: string | null
           subdominio: string
           telefone: string
+          telegram_chat_id: string | null
           updated_at: string | null
         }
         Insert: {
+          cnpj_cpf?: string | null
           created_at?: string | null
           data_vencimento?: string | null
           email: string
@@ -178,13 +182,16 @@ export type Database = {
           logo_url?: string | null
           nome: string
           plano_id?: string | null
+          primeiro_acesso_concluido?: boolean | null
           senha_temporaria?: string | null
           status?: string | null
           subdominio: string
           telefone: string
+          telegram_chat_id?: string | null
           updated_at?: string | null
         }
         Update: {
+          cnpj_cpf?: string | null
           created_at?: string | null
           data_vencimento?: string | null
           email?: string
@@ -193,10 +200,12 @@ export type Database = {
           logo_url?: string | null
           nome?: string
           plano_id?: string | null
+          primeiro_acesso_concluido?: boolean | null
           senha_temporaria?: string | null
           status?: string | null
           subdominio?: string
           telefone?: string
+          telegram_chat_id?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -434,6 +443,7 @@ export type Database = {
           id: string
           nivel_acesso: string | null
           nome: string
+          primeiro_acesso_concluido: boolean | null
           role: string | null
           ultimo_acesso: string | null
           updated_at: string | null
@@ -447,6 +457,7 @@ export type Database = {
           id?: string
           nivel_acesso?: string | null
           nome: string
+          primeiro_acesso_concluido?: boolean | null
           role?: string | null
           ultimo_acesso?: string | null
           updated_at?: string | null
@@ -460,6 +471,7 @@ export type Database = {
           id?: string
           nivel_acesso?: string | null
           nome?: string
+          primeiro_acesso_concluido?: boolean | null
           role?: string | null
           ultimo_acesso?: string | null
           updated_at?: string | null
@@ -479,6 +491,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      criar_usuario_empresa: {
+        Args: {
+          p_email: string
+          p_senha_temporaria: string
+          p_nome_empresa: string
+          p_empresa_id: string
+        }
+        Returns: string
+      }
       get_current_empresa_id: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -488,6 +509,14 @@ export type Database = {
         Returns: boolean
       }
       is_super_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      marcar_primeiro_acesso_concluido: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      precisa_trocar_senha: {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }

@@ -4,7 +4,6 @@ import { toast } from 'sonner';
 import { Empresa, NovaEmpresaData, CriarEmpresaResult } from '@/types/empresa';
 import { gerarSubdominio, gerarSenhaTemporaria } from '@/utils/empresaUtils';
 import { verificarEmailUnico, verificarSubdominioUnico } from './empresaValidation';
-import { telegramService } from './telegramService';
 
 export const fetchEmpresas = async () => {
   try {
@@ -36,7 +35,7 @@ export const criarEmpresa = async (dadosEmpresa: NovaEmpresaData): Promise<Criar
     console.log('Iniciando criação de empresa:', dadosEmpresa);
 
     // Validações
-    if (!dadosEmpresa.nome || !dadosEmpresa.email || !dadosEmpresa.telefone || !dadosEmpresa.plano) {
+    if (!dadosEmpresa.nome || !dadosEmpresa.email || !dadosEmpresa.telefone || !dadosEmpresa.cnpj_cpf || !dadosEmpresa.plano) {
       toast.error('Preencha todos os campos obrigatórios');
       return null;
     }
@@ -79,13 +78,14 @@ export const criarEmpresa = async (dadosEmpresa: NovaEmpresaData): Promise<Criar
       email: dadosEmpresa.email,
       telefone: dadosEmpresa.telefone,
       endereco: dadosEmpresa.endereco || null,
+      cnpj_cpf: dadosEmpresa.cnpj_cpf,
       subdominio: subdominio,
       plano_id: planoData.id,
       status: 'Ativo' as const,
       data_vencimento: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       logo_url: dadosEmpresa.logoUrl || null,
       senha_temporaria: senhaTemporaria,
-      telegram_chat_id: dadosEmpresa.telegramChatId || null
+      primeiro_acesso_concluido: false
     };
 
     // Criar empresa
@@ -97,55 +97,54 @@ export const criarEmpresa = async (dadosEmpresa: NovaEmpresaData): Promise<Criar
 
     if (empresaError) {
       console.error('Erro ao criar empresa:', empresaError);
-      toast.error('Erro ao criar empresa');
+      toast.error('Erro ao criar empresa: ' + empresaError.message);
       return null;
     }
 
-    // Criar usuário administrador da empresa
-    const { error: usuarioError } = await supabase
-      .from('usuarios')
-      .insert([{
-        nome: dadosEmpresa.nome,
-        email: dadosEmpresa.email,
-        empresa_id: empresaCriada.id,
-        role: 'admin',
-        ativo: true
-      }]);
+    // Criar usuário administrador da empresa usando a função do banco
+    const { error: usuarioError } = await supabase.rpc('criar_usuario_empresa', {
+      p_email: dadosEmpresa.email,
+      p_senha_temporaria: senhaTemporaria,
+      p_nome_empresa: dadosEmpresa.nome,
+      p_empresa_id: empresaCriada.id
+    });
 
     if (usuarioError) {
       console.error('Erro ao criar usuário da empresa:', usuarioError);
-      // Não falhar a operação, apenas loggar o erro
+      toast.error('Erro ao criar usuário administrador: ' + usuarioError.message);
+      // Não falhar a operação completamente, mas avisar
     }
 
-    // Tentar enviar via Telegram se Chat ID foi fornecido
-    if (dadosEmpresa.telegramChatId) {
-      try {
-        const enviadoTelegram = await telegramService.enviarSenhaTemporaria(
-          dadosEmpresa.telegramChatId,
-          dadosEmpresa.nome,
-          senhaTemporaria,
-          subdominio
-        );
-
-        if (enviadoTelegram) {
-          console.log('Senha enviada via Telegram com sucesso');
-          toast.success(`Empresa criada e senha enviada via Telegram!`);
-        } else {
-          console.error('Falha ao enviar via Telegram');
-          toast.warning('Empresa criada, mas falha no envio via Telegram');
+    // Criar usuário no Supabase Auth com convite
+    try {
+      const { data: authData, error: authError } = await supabase.auth.admin.inviteUserByEmail(
+        dadosEmpresa.email,
+        {
+          data: {
+            nome: dadosEmpresa.nome,
+            empresa_id: empresaCriada.id,
+            senha_temporaria: senhaTemporaria,
+            primeiro_acesso: true
+          },
+          redirectTo: `${window.location.origin}/cliente/login`
         }
-      } catch (error) {
-        console.error('Erro na integração Telegram:', error);
-        toast.warning('Empresa criada, mas erro na comunicação com Telegram');
+      );
+
+      if (authError) {
+        console.error('Erro ao enviar convite:', authError);
+        toast.warning('Empresa criada, mas erro ao enviar e-mail de convite');
+      } else {
+        toast.success(`Empresa ${dadosEmpresa.nome} criada! E-mail com credenciais enviado.`);
       }
-    } else {
-      toast.success(`Empresa ${dadosEmpresa.nome} criada com sucesso!`);
+    } catch (authError) {
+      console.error('Erro na criação do usuário auth:', authError);
+      toast.warning('Empresa criada, mas erro no envio do e-mail');
     }
 
     console.log('Empresa criada com sucesso:', empresaCriada);
 
     return {
-      empresa: empresaCriada as Empresa, // Type assertion para garantir compatibilidade
+      empresa: empresaCriada as Empresa,
       credenciais: {
         email: dadosEmpresa.email,
         senha: senhaTemporaria,
@@ -179,7 +178,7 @@ export const atualizarEmpresa = async (id: string, dadosAtualizados: Partial<Emp
 
     console.log('Empresa atualizada com sucesso:', data);
     toast.success('Empresa atualizada com sucesso!');
-    return data as Empresa; // Type assertion para garantir compatibilidade
+    return data as Empresa;
     
   } catch (error) {
     console.error('Erro inesperado ao atualizar empresa:', error);

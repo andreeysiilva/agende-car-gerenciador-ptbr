@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -7,23 +8,16 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Car, Lock, Mail } from 'lucide-react';
 import { toast } from 'sonner';
+import ForgotPasswordForm from '@/components/auth/ForgotPasswordForm';
 
-// Página de login para administradores do CRM
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { signIn, isAuthenticated } = useAuth();
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const { signIn } = useAuth();
   const navigate = useNavigate();
 
-  // Redirecionar se já estiver autenticado
-  React.useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/');
-    }
-  }, [isAuthenticated, navigate]);
-
-  // Função para lidar com o envio do formulário de login
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -32,18 +26,22 @@ const Login: React.FC = () => {
       const { error } = await signIn(email, password);
       
       if (error) {
-        toast.error(`Erro no login: ${error}`);
+        toast.error(error);
       } else {
-        toast.success('Login administrativo realizado com sucesso!');
-        navigate('/');
+        toast.success('Login realizado com sucesso!');
+        navigate('/admin/dashboard');
       }
     } catch (error) {
-      console.error('Erro no login administrativo:', error);
+      console.error('Erro no login:', error);
       toast.error('Erro interno. Tente novamente.');
     } finally {
       setIsLoading(false);
     }
   };
+
+  if (showForgotPassword) {
+    return <ForgotPasswordForm onBack={() => setShowForgotPassword(false)} />;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-secondary-50 px-4">
@@ -57,10 +55,10 @@ const Login: React.FC = () => {
               </div>
             </div>
             <CardTitle className="text-2xl font-bold text-text-primary">
-              AgendiCar
+              Painel Administrativo
             </CardTitle>
             <CardDescription className="text-text-secondary">
-              Acesso ao CRM Administrativo
+              Acesse o painel de administração do AgendiCar
             </CardDescription>
           </CardHeader>
           
@@ -68,7 +66,7 @@ const Login: React.FC = () => {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-text-primary font-medium">
-                  E-mail do Administrador
+                  E-mail
                 </Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-text-secondary" />
@@ -104,6 +102,18 @@ const Login: React.FC = () => {
                 </div>
               </div>
               
+              <div className="flex justify-end">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="text-sm text-primary hover:text-primary-hover"
+                  onClick={() => setShowForgotPassword(true)}
+                  disabled={isLoading}
+                >
+                  Esqueci minha senha
+                </Button>
+              </div>
+              
               <Button 
                 type="submit" 
                 className="w-full h-11 bg-primary hover:bg-primary-hover text-white font-medium"
@@ -115,26 +125,24 @@ const Login: React.FC = () => {
                     Entrando...
                   </div>
                 ) : (
-                  'Entrar no CRM'
+                  'Entrar no Sistema'
                 )}
               </Button>
             </form>
             
             <div className="mt-8 pt-6 border-t border-border">
-              <div className="bg-blue-50 rounded-lg p-4">
-                <h4 className="font-medium text-text-primary mb-2">Credenciais de Teste:</h4>
-                <p className="text-sm text-text-secondary">
-                  <strong>E-mail:</strong> admin@agendicar.com<br />
-                  <strong>Senha:</strong> admin123
-                </p>
-              </div>
-              
-              <div className="mt-4 text-center">
+              <div className="text-center space-y-2">
                 <a 
-                  href="/auth"
-                  className="text-sm text-primary hover:text-primary-hover underline"
+                  href="/cliente/login"
+                  className="text-sm text-secondary hover:text-secondary-hover underline block"
                 >
                   Acessar como empresa/cliente
+                </a>
+                <a 
+                  href="/"
+                  className="text-sm text-text-secondary hover:text-text-primary underline block"
+                >
+                  Voltar ao site
                 </a>
               </div>
             </div>

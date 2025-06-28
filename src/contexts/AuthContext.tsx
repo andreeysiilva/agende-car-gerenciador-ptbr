@@ -14,6 +14,7 @@ interface UserProfile {
   empresa_id: string | null;
   ativo: boolean;
   ultimo_acesso: string | null;
+  primeiro_acesso_concluido: boolean;
 }
 
 interface AuthContextType {
@@ -22,6 +23,7 @@ interface AuthContextType {
   profile: UserProfile | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  needsPasswordChange: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signUp: (email: string, password: string, userData?: { name: string }) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
@@ -29,6 +31,7 @@ interface AuthContextType {
   isGlobalAdmin: boolean;
   isCompanyUser: boolean;
   updateLastAccess: () => Promise<void>;
+  markFirstAccessComplete: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -68,12 +71,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Verificar se precisa trocar senha
+  const checkNeedsPasswordChange = async () => {
+    try {
+      const { data, error } = await supabase.rpc('precisa_trocar_senha');
+      if (error) {
+        console.error('Erro ao verificar necessidade de trocar senha:', error);
+        return false;
+      }
+      return data || false;
+    } catch (error) {
+      console.error('Erro inesperado ao verificar senha:', error);
+      return false;
+    }
+  };
+
   // Atualizar último acesso
   const updateLastAccess = async () => {
     try {
       await supabase.rpc('update_last_access');
     } catch (error) {
       console.error('Erro ao atualizar último acesso:', error);
+    }
+  };
+
+  // Marcar primeiro acesso como concluído
+  const markFirstAccessComplete = async () => {
+    try {
+      await supabase.rpc('marcar_primeiro_acesso_concluido');
+      // Recarregar perfil para atualizar estado
+      if (user) {
+        const updatedProfile = await loadUserProfile(user.id);
+        setProfile(updatedProfile);
+      }
+    } catch (error) {
+      console.error('Erro ao marcar primeiro acesso:', error);
     }
   };
 
@@ -187,6 +219,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const isGlobalAdmin = (profile?.role === 'admin' || profile?.role === 'super_admin') && profile?.empresa_id === null;
   const isCompanyUser = profile?.empresa_id !== null;
   const isAuthenticated = !!user && !!profile;
+  const needsPasswordChange = profile?.primeiro_acesso_concluido === false && isCompanyUser;
 
   const value = {
     user,
@@ -194,6 +227,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     profile,
     isLoading,
     isAuthenticated,
+    needsPasswordChange,
     signIn,
     signUp,
     signOut,
@@ -201,6 +235,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isGlobalAdmin,
     isCompanyUser,
     updateLastAccess,
+    markFirstAccessComplete,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

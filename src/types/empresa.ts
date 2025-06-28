@@ -5,15 +5,17 @@ export interface Empresa {
   email: string;
   telefone: string;
   endereco?: string;
+  cnpj_cpf: string;
   subdominio: string;
-  status: 'Ativo' | 'Inativo' | 'Suspenso';
+  plano_id: string;
+  status: 'Ativo' | 'Inativo' | 'Pendente';
   data_vencimento?: string;
-  created_at: string;
-  updated_at: string;
   logo_url?: string;
   senha_temporaria?: string;
-  plano_id?: string;
   telegram_chat_id?: string;
+  primeiro_acesso_concluido?: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface NovaEmpresaData {
@@ -21,6 +23,7 @@ export interface NovaEmpresaData {
   email: string;
   telefone: string;
   endereco?: string;
+  cnpj_cpf: string;
   plano: string;
   logoUrl?: string;
   telegramChatId?: string;

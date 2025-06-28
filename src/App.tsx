@@ -44,6 +44,7 @@ function App() {
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/unauthorized" element={<Unauthorized />} />
             <Route path="/cliente/login" element={<ClienteLogin />} />
 

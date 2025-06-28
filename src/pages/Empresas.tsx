@@ -1,563 +1,210 @@
 
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useEmpresas } from '@/hooks/useEmpresas';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Building2, Calendar, DollarSign, Users, ExternalLink, Upload, Image, Copy, Eye, EyeOff, HelpCircle } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Plus, Building, Users, Calendar, DollarSign, Eye, Edit, Trash2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import EmpresaForm from '@/components/forms/EmpresaForm';
 import { toast } from 'sonner';
-import { useEmpresas, NovaEmpresaData } from '@/hooks/useEmpresas';
+
+// Mock data for planos - em produção viria do backend
+const mockPlanos = [
+  { nome: 'Básico', preco: 29.90 },
+  { nome: 'Profissional', preco: 59.90 },
+  { nome: 'Premium', preco: 99.90 },
+  { nome: 'Enterprise', preco: 199.90 }
+];
 
 const Empresas: React.FC = () => {
-  const { empresas, isLoading, criarEmpresa } = useEmpresas();
-  
-  const [dialogAberto, setDialogAberto] = useState(false);
-  const [filtroStatus, setFiltroStatus] = useState('todos');
-  const [logoFile, setLogoFile] = useState<File | null>(null);
-  const [logoPreview, setLogoPreview] = useState<string>('');
-  const [credenciaisGeradas, setCredenciaisGeradas] = useState<{
-    email: string;
-    senha: string;
-    subdominio: string;
-  } | null>(null);
-  const [mostrarSenha, setMostrarSenha] = useState(false);
-  const [criandoEmpresa, setCriandoEmpresa] = useState(false);
+  const { empresas, isLoading, criarEmpresa, recarregarEmpresas } = useEmpresas();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
 
-  // Formulário para nova empresa
-  const [novaEmpresa, setNovaEmpresa] = useState<NovaEmpresaData>({
-    nome: '',
-    email: '',
-    telefone: '',
-    endereco: '',
-    plano: '',
-    telegramChatId: ''
-  });
-
-  // Função para gerar subdomínio automaticamente
-  const gerarSubdominio = (nome: string) => {
-    return nome
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9\s]/g, '')
-      .trim()
-      .split(' ')[0] + '.agendicar.com.br';
-  };
-
-  // Função para lidar com upload de logo
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
-        toast.error('O arquivo deve ter no máximo 5MB');
-        return;
-      }
-      
-      if (!file.type.startsWith('image/')) {
-        toast.error('Por favor, selecione uma imagem válida');
-        return;
-      }
-
-      setLogoFile(file);
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setLogoPreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  // Função para cadastrar nova empresa
-  const cadastrarEmpresa = async () => {
-    if (!novaEmpresa.nome || !novaEmpresa.email || !novaEmpresa.telefone || !novaEmpresa.plano) {
-      toast.error('Preencha todos os campos obrigatórios');
-      return;
-    }
-
-    setCriandoEmpresa(true);
-
+  const handleCriarEmpresa = async (dadosEmpresa: any) => {
+    setIsCreating(true);
     try {
-      const dadosEmpresa: NovaEmpresaData = {
-        ...novaEmpresa,
-        logoUrl: logoPreview || undefined
-      };
-
-      const resultado = await criarEmpresa(dadosEmpresa);
-
-      if (resultado) {
-        setCredenciaisGeradas(resultado.credenciais);
-        
-        // Reset formulário
-        setNovaEmpresa({
-          nome: '',
-          email: '',
-          telefone: '',
-          endereco: '',
-          plano: '',
-          telegramChatId: ''
-        });
-        setLogoFile(null);
-        setLogoPreview('');
+      const result = await criarEmpresa(dadosEmpresa);
+      if (result) {
+        setDialogOpen(false);
+        await recarregarEmpresas();
       }
     } catch (error) {
-      console.error('Erro ao cadastrar empresa:', error);
+      console.error('Erro ao criar empresa:', error);
     } finally {
-      setCriandoEmpresa(false);
+      setIsCreating(false);
     }
   };
 
-  // Função para copiar credenciais
-  const copiarCredenciais = (texto: string) => {
-    navigator.clipboard.writeText(texto);
-    toast.success('Copiado para a área de transferência!');
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'Ativo':
+        return <Badge variant="default">Ativo</Badge>;
+      case 'Inativo':
+        return <Badge variant="secondary">Inativo</Badge>;
+      case 'Pendente':
+        return <Badge variant="outline">Pendente</Badge>;
+      default:
+        return <Badge variant="secondary">{status}</Badge>;
+    }
   };
 
-  // Função para fechar dialog e limpar credenciais
-  const fecharDialog = () => {
-    setDialogAberto(false);
-    setCredenciaisGeradas(null);
+  const formatCnpjCpf = (value: string) => {
+    if (!value) return '';
+    const cleanValue = value.replace(/\D/g, '');
+    if (cleanValue.length <= 11) {
+      // CPF: 000.000.000-00
+      return cleanValue.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+    } else {
+      // CNPJ: 00.000.000/0000-00
+      return cleanValue.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+    }
   };
 
-  // Função para abrir link do subdomínio
-  const abrirSubdominio = (subdominio: string) => {
-    window.open(`https://${subdominio}.agendicar.com.br`, '_blank');
-  };
-
-  // Filtrar empresas por status
-  const empresasFiltradas = empresas.filter(empresa => {
-    if (filtroStatus === 'todos') return true;
-    return empresa.status.toLowerCase() === filtroStatus;
-  });
-
-  // Estatísticas das empresas
-  const estatisticas = {
-    total: empresas.length,
-    ativas: empresas.filter(e => e.status === 'Ativo').length,
-    inativas: empresas.filter(e => e.status === 'Inativo').length,
-    suspensas: empresas.filter(e => e.status === 'Suspenso').length
-  };
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Gerenciamento de Empresas</h1>
-          <p className="text-gray-600">Cadastre e gerencie as empresas clientes</p>
+          <h1 className="text-2xl font-bold text-gray-900">Empresas</h1>
+          <p className="text-gray-600">Gerencie as empresas cadastradas no sistema</p>
         </div>
         
-        <Dialog open={dialogAberto} onOpenChange={setDialogAberto}>
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="w-full sm:w-auto">
+            <Button className="bg-primary hover:bg-primary-hover">
               <Plus className="h-4 w-4 mr-2" />
               Nova Empresa
             </Button>
           </DialogTrigger>
-          <DialogContent className="w-[95vw] max-w-md mx-auto max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>
-                {credenciaisGeradas ? 'Empresa Criada com Sucesso!' : 'Cadastrar Nova Empresa'}
-              </DialogTitle>
-              <DialogDescription>
-                {credenciaisGeradas 
-                  ? 'Anote as credenciais de acesso da empresa criada:'
-                  : 'Preencha os dados da empresa. O subdomínio será gerado automaticamente.'
-                }
-              </DialogDescription>
+              <DialogTitle>Criar Nova Empresa</DialogTitle>
             </DialogHeader>
-            
-            {credenciaisGeradas ? (
-              // Exibir credenciais geradas
-              <div className="space-y-4">
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <h4 className="font-semibold text-green-800 mb-3">Credenciais de Acesso</h4>
-                  
-                  <div className="space-y-3">
-                    <div>
-                      <Label className="text-sm font-medium text-green-700">Email de Login:</Label>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Input 
-                          value={credenciaisGeradas.email} 
-                          readOnly 
-                          className="bg-white text-sm"
-                        />
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => copiarCredenciais(credenciaisGeradas.email)}
-                        >
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <Label className="text-sm font-medium text-green-700">Senha Temporária:</Label>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Input 
-                          value={credenciaisGeradas.senha} 
-                          type={mostrarSenha ? 'text' : 'password'}
-                          readOnly 
-                          className="bg-white text-sm font-mono"
-                        />
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setMostrarSenha(!mostrarSenha)}
-                        >
-                          {mostrarSenha ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => copiarCredenciais(credenciaisGeradas.senha)}
-                        >
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <Label className="text-sm font-medium text-green-700">Subdomínio:</Label>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Input 
-                          value={credenciaisGeradas.subdominio} 
-                          readOnly 
-                          className="bg-white text-sm"
-                        />
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => copiarCredenciais(credenciaisGeradas.subdominio)}
-                        >
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
-                    <p className="text-sm text-yellow-800">
-                      <strong>Importante:</strong> A empresa deve alterar a senha temporária no primeiro acesso.
-                    </p>
-                  </div>
-                </div>
-                
-                <Button onClick={fecharDialog} className="w-full">
-                  Fechar
-                </Button>
-              </div>
-            ) : (
-              // Formulário de nova empresa
-              <div className="grid gap-4 py-4">
-                {/* Upload de Logo */}
-                <div className="space-y-2">
-                  <Label htmlFor="logo">Logo da Empresa</Label>
-                  <div className="flex flex-col items-center gap-3">
-                    {logoPreview ? (
-                      <div className="w-20 h-20 rounded-lg border-2 border-gray-200 overflow-hidden">
-                        <img 
-                          src={logoPreview} 
-                          alt="Preview logo" 
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    ) : (
-                      <div className="w-20 h-20 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center">
-                        <Image className="h-8 w-8 text-gray-400" />
-                      </div>
-                    )}
-                    
-                    <div className="relative">
-                      <input
-                        id="logo"
-                        type="file"
-                        accept="image/*"
-                        onChange={handleLogoUpload}
-                        className="hidden"
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => document.getElementById('logo')?.click()}
-                      >
-                        <Upload className="h-4 w-4 mr-2" />
-                        Selecionar Logo
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid gap-2">
-                  <Label htmlFor="nome">Nome da Empresa *</Label>
-                  <Input
-                    id="nome"
-                    value={novaEmpresa.nome}
-                    onChange={(e) => setNovaEmpresa({...novaEmpresa, nome: e.target.value})}
-                    placeholder="Ex: Lava Rápido do João"
-                    disabled={criandoEmpresa}
-                  />
-                  {novaEmpresa.nome && (
-                    <p className="text-xs text-gray-500">
-                      Subdomínio: {gerarSubdominio(novaEmpresa.nome)}
-                    </p>
-                  )}
-                </div>
-                
-                <div className="grid gap-2">
-                  <Label htmlFor="email">E-mail (será o login da empresa) *</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={novaEmpresa.email}
-                    onChange={(e) => setNovaEmpresa({...novaEmpresa, email: e.target.value})}
-                    placeholder="contato@empresa.com"
-                    disabled={criandoEmpresa}
-                  />
-                </div>
-                
-                <div className="grid gap-2">
-                  <Label htmlFor="telefone">Telefone *</Label>
-                  <Input
-                    id="telefone"
-                    value={novaEmpresa.telefone}
-                    onChange={(e) => setNovaEmpresa({...novaEmpresa, telefone: e.target.value})}
-                    placeholder="(11) 99999-9999"
-                    disabled={criandoEmpresa}
-                  />
-                </div>
-                
-                <div className="grid gap-2">
-                  <Label htmlFor="endereco">Endereço</Label>
-                  <Input
-                    id="endereco"
-                    value={novaEmpresa.endereco}
-                    onChange={(e) => setNovaEmpresa({...novaEmpresa, endereco: e.target.value})}
-                    placeholder="Rua, número, bairro"
-                    disabled={criandoEmpresa}
-                  />
-                </div>
-
-                <div className="grid gap-2">
-                  <div className="flex items-center gap-2">
-                    <Label htmlFor="telegramChatId">Chat ID do Telegram</Label>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <HelpCircle className="h-4 w-4 text-gray-400" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="max-w-xs">
-                            Chat ID para envio automático da senha via Telegram.
-                            <br />
-                            Para obter: envie /start para @userinfobot no Telegram
-                          </p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                  <Input
-                    id="telegramChatId"
-                    value={novaEmpresa.telegramChatId}
-                    onChange={(e) => setNovaEmpresa({...novaEmpresa, telegramChatId: e.target.value})}
-                    placeholder="Ex: 123456789 (opcional)"
-                    disabled={criandoEmpresa}
-                  />
-                </div>
-                
-                <div className="grid gap-2">
-                  <Label htmlFor="plano">Plano *</Label>
-                  <Select 
-                    value={novaEmpresa.plano} 
-                    onValueChange={(value) => setNovaEmpresa({...novaEmpresa, plano: value})}
-                    disabled={criandoEmpresa}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o plano" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Básico">Básico - R$ 99/mês</SelectItem>
-                      <SelectItem value="Premium">Premium - R$ 199/mês</SelectItem>
-                      <SelectItem value="Empresarial">Empresarial - R$ 299/mês</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="flex gap-3 mt-4">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setDialogAberto(false)} 
-                    className="flex-1"
-                    disabled={criandoEmpresa}
-                  >
-                    Cancelar
-                  </Button>
-                  <Button 
-                    onClick={cadastrarEmpresa} 
-                    className="flex-1"
-                    disabled={criandoEmpresa}
-                  >
-                    {criandoEmpresa ? 'Criando...' : 'Cadastrar'}
-                  </Button>
-                </div>
-              </div>
-            )}
+            <EmpresaForm
+              onSubmit={handleCriarEmpresa}
+              isLoading={isCreating}
+              planos={mockPlanos}
+            />
           </DialogContent>
         </Dialog>
       </div>
 
-      {/* Estatísticas */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Stats Cards */}
+      <div className="grid gap-4 md:grid-cols-4">
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Total de Empresas</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total de Empresas</CardTitle>
+            <Building className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="flex items-center gap-2">
-              <Building2 className="h-4 w-4 text-blue-500" />
-              <span className="text-2xl font-bold">{estatisticas.total}</span>
+            <div className="text-2xl font-bold">{empresas?.length || 0}</div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Empresas Ativas</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {empresas?.filter(emp => emp.status === 'Ativo').length || 0}
             </div>
           </CardContent>
         </Card>
-
+        
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Empresas Ativas</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Empresas Pendentes</CardTitle>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="flex items-center gap-2">
-              <Users className="h-4 w-4 text-green-500" />
-              <span className="text-2xl font-bold text-green-600">{estatisticas.ativas}</span>
+            <div className="text-2xl font-bold">
+              {empresas?.filter(emp => emp.status === 'Pendente').length || 0}
             </div>
           </CardContent>
         </Card>
-
+        
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Empresas Suspensas</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Receita Mensal</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-red-500" />
-              <span className="text-2xl font-bold text-red-600">{estatisticas.suspensas}</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Receita Mensal</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-2">
-              <DollarSign className="h-4 w-4 text-purple-500" />
-              <span className="text-2xl font-bold text-purple-600">R$ 18.500</span>
-            </div>
+            <div className="text-2xl font-bold">R$ 2.847</div>
+            <p className="text-xs text-muted-foreground">+12% desde o mês passado</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Lista de Empresas */}
+      {/* Empresas List */}
       <Card>
         <CardHeader>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <CardTitle>Lista de Empresas</CardTitle>
-            <Select value={filtroStatus} onValueChange={setFiltroStatus}>
-              <SelectTrigger className="w-full sm:w-48">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todas as Empresas</SelectItem>
-                <SelectItem value="ativo">Apenas Ativas</SelectItem>
-                <SelectItem value="inativo">Apenas Inativas</SelectItem>
-                <SelectItem value="suspenso">Apenas Suspensas</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <CardTitle>Lista de Empresas</CardTitle>
+          <CardDescription>
+            Visualize e gerencie todas as empresas cadastradas
+          </CardDescription>
         </CardHeader>
-        <CardContent className="p-0 sm:p-6">
-          {isLoading ? (
-            <div className="flex items-center justify-center p-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              <span className="ml-2">Carregando empresas...</span>
+        <CardContent>
+          {empresas && empresas.length > 0 ? (
+            <div className="space-y-4">
+              {empresas.map((empresa) => (
+                <div key={empresa.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
+                  <div className="flex items-start space-x-4">
+                    <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
+                      <Building className="h-6 w-6 text-primary" />
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex items-center space-x-2">
+                        <h3 className="font-semibold text-lg">{empresa.nome}</h3>
+                        {getStatusBadge(empresa.status)}
+                      </div>
+                      <div className="text-sm text-gray-600 space-y-1">
+                        <p><strong>E-mail:</strong> {empresa.email}</p>
+                        <p><strong>Telefone:</strong> {empresa.telefone}</p>
+                        {empresa.cnpj_cpf && (
+                          <p><strong>CNPJ/CPF:</strong> {formatCnpjCpf(empresa.cnpj_cpf)}</p>
+                        )}
+                        <p><strong>Subdomínio:</strong> {empresa.subdominio}.agendicar.com.br</p>
+                        {empresa.data_vencimento && (
+                          <p><strong>Vencimento:</strong> {new Date(empresa.data_vencimento).toLocaleDateString('pt-BR')}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Button variant="ghost" size="sm">
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm">
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
             </div>
           ) : (
-            <div className="rounded-md border overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Empresa</TableHead>
-                    <TableHead>Contato</TableHead>
-                    <TableHead>Plano</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Vencimento</TableHead>
-                    <TableHead>Subdomínio</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {empresasFiltradas.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-gray-500">
-                        Nenhuma empresa encontrada
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    empresasFiltradas.map((empresa) => (
-                      <TableRow key={empresa.id}>
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-                              <img 
-                                src={empresa.logo_url || '/placeholder.svg'} 
-                                alt={`Logo ${empresa.nome}`}
-                                className="w-full h-full object-cover"
-                              />
-                            </div>
-                            <div>
-                              <div className="font-medium">{empresa.nome}</div>
-                              <div className="text-sm text-gray-500">{empresa.endereco}</div>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div>
-                            <div className="text-sm">{empresa.email}</div>
-                            <div className="text-sm text-gray-500">{empresa.telefone}</div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">Premium</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={empresa.status === 'Ativo' ? 'default' : empresa.status === 'Suspenso' ? 'destructive' : 'secondary'}>
-                            {empresa.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {empresa.data_vencimento ? new Date(empresa.data_vencimento).toLocaleDateString('pt-BR') : '-'}
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => abrirSubdominio(empresa.subdominio)}
-                            className="text-blue-600 hover:text-blue-800"
-                          >
-                            <ExternalLink className="h-4 w-4 mr-1" />
-                            {empresa.subdominio}.agendicar.com.br
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+            <div className="text-center py-8">
+              <Building className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhuma empresa cadastrada</h3>
+              <p className="text-gray-600 mb-4">Crie sua primeira empresa para começar</p>
+              <Button onClick={() => setDialogOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Criar Primeira Empresa
+              </Button>
             </div>
           )}
         </CardContent>
