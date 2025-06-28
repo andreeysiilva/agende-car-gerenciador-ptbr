@@ -1,8 +1,28 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Empresa, NovaEmpresaData, CriarEmpresaResult } from '@/types/empresa';
 import { gerarSubdominio, gerarSenhaTemporaria } from '@/utils/empresaUtils';
 import { verificarEmailUnico, verificarSubdominioUnico } from './empresaValidation';
+
+// Função para calcular a data de vencimento baseada na regra de negócio
+export const calcularDataVencimento = (dataBase?: Date): string => {
+  const hoje = dataBase || new Date();
+  const proximoMes = new Date(hoje);
+  proximoMes.setMonth(proximoMes.getMonth() + 1);
+  
+  // Se o dia atual não existe no próximo mês (ex: 31 jan -> 28/29 fev)
+  const diaOriginal = hoje.getDate();
+  const ultimoDiaProximoMes = new Date(proximoMes.getFullYear(), proximoMes.getMonth() + 1, 0).getDate();
+  
+  if (diaOriginal > ultimoDiaProximoMes) {
+    proximoMes.setDate(ultimoDiaProximoMes);
+  } else {
+    proximoMes.setDate(diaOriginal);
+  }
+  
+  return proximoMes.toISOString().split('T')[0];
+};
 
 export const fetchEmpresas = async () => {
   try {
@@ -25,6 +45,32 @@ export const fetchEmpresas = async () => {
   } catch (error) {
     console.error('Erro inesperado ao buscar empresas:', error);
     toast.error('Erro inesperado ao carregar empresas');
+    return null;
+  }
+};
+
+export const buscarEmpresaPorId = async (id: string): Promise<Empresa | null> => {
+  try {
+    console.log('Buscando empresa por ID:', id);
+    
+    const { data, error } = await supabase
+      .from('empresas')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      console.error('Erro ao buscar empresa por ID:', error);
+      toast.error('Erro ao carregar empresa');
+      return null;
+    }
+
+    console.log('Empresa encontrada:', data);
+    return data as Empresa;
+    
+  } catch (error) {
+    console.error('Erro inesperado ao buscar empresa:', error);
+    toast.error('Erro inesperado ao carregar empresa');
     return null;
   }
 };
@@ -71,6 +117,9 @@ export const criarEmpresa = async (dadosEmpresa: NovaEmpresaData): Promise<Criar
     // Gerar senha temporária
     const senhaTemporaria = gerarSenhaTemporaria();
 
+    // Calcular data de vencimento usando a nova regra de negócio
+    const dataVencimento = calcularDataVencimento();
+
     // Dados da empresa
     const novaEmpresa = {
       nome: dadosEmpresa.nome,
@@ -81,7 +130,7 @@ export const criarEmpresa = async (dadosEmpresa: NovaEmpresaData): Promise<Criar
       subdominio: subdominio,
       plano_id: planoData.id,
       status: 'Ativo' as const,
-      data_vencimento: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      data_vencimento: dataVencimento,
       logo_url: dadosEmpresa.logoUrl || null,
       senha_temporaria: senhaTemporaria,
       primeiro_acesso_concluido: false
@@ -211,6 +260,42 @@ export const deletarEmpresa = async (id: string) => {
   } catch (error) {
     console.error('Erro inesperado ao deletar empresa:', error);
     toast.error('Erro inesperado ao deletar empresa');
+    return false;
+  }
+};
+
+export const renovarPlanoEmpresa = async (empresaId: string): Promise<boolean> => {
+  try {
+    console.log('Renovando plano da empresa:', empresaId);
+    
+    // Buscar empresa atual
+    const empresa = await buscarEmpresaPorId(empresaId);
+    if (!empresa) {
+      toast.error('Empresa não encontrada');
+      return false;
+    }
+
+    // Calcular nova data de vencimento baseada na data atual de vencimento
+    const dataVencimentoAtual = empresa.data_vencimento ? new Date(empresa.data_vencimento) : new Date();
+    const novaDataVencimento = calcularDataVencimento(dataVencimentoAtual);
+
+    // Atualizar empresa
+    const empresaAtualizada = await atualizarEmpresa(empresaId, {
+      data_vencimento: novaDataVencimento,
+      status: 'Ativo'
+    });
+
+    if (empresaAtualizada) {
+      console.log('Plano renovado com sucesso. Nova data de vencimento:', novaDataVencimento);
+      toast.success('Plano renovado com sucesso!');
+      return true;
+    }
+
+    return false;
+    
+  } catch (error) {
+    console.error('Erro inesperado ao renovar plano:', error);
+    toast.error('Erro inesperado ao renovar plano');
     return false;
   }
 };

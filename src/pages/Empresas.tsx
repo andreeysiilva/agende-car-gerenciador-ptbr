@@ -7,6 +7,10 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Building, Users, Calendar, DollarSign, Eye, Edit, Trash2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import EmpresaForm from '@/components/forms/EmpresaForm';
+import VisualizarEmpresaModal from '@/components/empresa/VisualizarEmpresaModal';
+import EditarEmpresaModal from '@/components/empresa/EditarEmpresaModal';
+import ExcluirEmpresaDialog from '@/components/empresa/ExcluirEmpresaDialog';
+import { Empresa } from '@/types/empresa';
 import { toast } from 'sonner';
 
 // Mock data for planos - em produção viria do backend
@@ -18,9 +22,25 @@ const mockPlanos = [
 ];
 
 const Empresas: React.FC = () => {
-  const { empresas, isLoading, criarEmpresa, recarregarEmpresas } = useEmpresas();
+  const { 
+    empresas, 
+    isLoading, 
+    criarEmpresa, 
+    atualizarEmpresa, 
+    deletarEmpresa, 
+    buscarEmpresaPorId, 
+    recarregarEmpresas 
+  } = useEmpresas();
+  
+  // Estados para modais
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [empresaSelecionada, setEmpresaSelecionada] = useState<Empresa | null>(null);
+  const [visualizarModalOpen, setVisualizarModalOpen] = useState(false);
+  const [editarModalOpen, setEditarModalOpen] = useState(false);
+  const [excluirDialogOpen, setExcluirDialogOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleCriarEmpresa = async (dadosEmpresa: any) => {
     setIsCreating(true);
@@ -34,6 +54,58 @@ const Empresas: React.FC = () => {
       console.error('Erro ao criar empresa:', error);
     } finally {
       setIsCreating(false);
+    }
+  };
+
+  const handleVisualizarEmpresa = async (empresaId: string) => {
+    const empresa = await buscarEmpresaPorId(empresaId);
+    if (empresa) {
+      setEmpresaSelecionada(empresa);
+      setVisualizarModalOpen(true);
+    }
+  };
+
+  const handleEditarEmpresa = async (empresa: Empresa) => {
+    setEmpresaSelecionada(empresa);
+    setEditarModalOpen(true);
+    setVisualizarModalOpen(false);
+  };
+
+  const handleSalvarEdicao = async (empresaId: string, dadosAtualizados: Partial<Empresa>) => {
+    setIsEditing(true);
+    try {
+      const empresaAtualizada = await atualizarEmpresa(empresaId, dadosAtualizados);
+      if (empresaAtualizada) {
+        setEditarModalOpen(false);
+        setEmpresaSelecionada(null);
+        await recarregarEmpresas();
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar empresa:', error);
+    } finally {
+      setIsEditing(false);
+    }
+  };
+
+  const handleExcluirEmpresa = (empresa: Empresa) => {
+    setEmpresaSelecionada(empresa);
+    setExcluirDialogOpen(true);
+    setVisualizarModalOpen(false);
+  };
+
+  const handleConfirmarExclusao = async (empresaId: string) => {
+    setIsDeleting(true);
+    try {
+      const success = await deletarEmpresa(empresaId);
+      if (success) {
+        setExcluirDialogOpen(false);
+        setEmpresaSelecionada(null);
+        await recarregarEmpresas();
+      }
+    } catch (error) {
+      console.error('Erro ao deletar empresa:', error);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -183,13 +255,26 @@ const Empresas: React.FC = () => {
                   </div>
                   
                   <div className="flex items-center space-x-2">
-                    <Button variant="ghost" size="sm">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => handleVisualizarEmpresa(empresa.id)}
+                    >
                       <Eye className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="sm">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => handleEditarEmpresa(empresa)}
+                    >
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="text-red-600 hover:text-red-700"
+                      onClick={() => handleExcluirEmpresa(empresa)}
+                    >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
@@ -209,6 +294,40 @@ const Empresas: React.FC = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Modais */}
+      <VisualizarEmpresaModal
+        empresa={empresaSelecionada}
+        isOpen={visualizarModalOpen}
+        onClose={() => {
+          setVisualizarModalOpen(false);
+          setEmpresaSelecionada(null);
+        }}
+        onEdit={handleEditarEmpresa}
+        onDelete={handleExcluirEmpresa}
+      />
+
+      <EditarEmpresaModal
+        empresa={empresaSelecionada}
+        isOpen={editarModalOpen}
+        onClose={() => {
+          setEditarModalOpen(false);
+          setEmpresaSelecionada(null);
+        }}
+        onSave={handleSalvarEdicao}
+        isLoading={isEditing}
+      />
+
+      <ExcluirEmpresaDialog
+        empresa={empresaSelecionada}
+        isOpen={excluirDialogOpen}
+        onClose={() => {
+          setExcluirDialogOpen(false);
+          setEmpresaSelecionada(null);
+        }}
+        onConfirm={handleConfirmarExclusao}
+        isLoading={isDeleting}
+      />
     </div>
   );
 };

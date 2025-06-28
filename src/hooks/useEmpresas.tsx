@@ -5,9 +5,11 @@ import { Empresa, NovaEmpresaData } from '@/types/empresa';
 import { verificarEmailUnico, verificarSubdominioUnico } from '@/services/empresaValidation';
 import {
   fetchEmpresas as fetchEmpresasService,
+  buscarEmpresaPorId as buscarEmpresaPorIdService,
   criarEmpresa as criarEmpresaService,
   atualizarEmpresa as atualizarEmpresaService,
-  deletarEmpresa as deletarEmpresaService
+  deletarEmpresa as deletarEmpresaService,
+  renovarPlanoEmpresa as renovarPlanoEmpresaService
 } from '@/services/empresaService';
 
 export function useEmpresas() {
@@ -18,10 +20,13 @@ export function useEmpresas() {
     setIsLoading(true);
     const data = await fetchEmpresasService();
     if (data) {
-      // Type assertion para garantir compatibilidade
       setEmpresas(data as Empresa[]);
     }
     setIsLoading(false);
+  };
+
+  const buscarEmpresaPorId = async (id: string): Promise<Empresa | null> => {
+    return await buscarEmpresaPorIdService(id);
   };
 
   const criarEmpresa = async (dadosEmpresa: NovaEmpresaData) => {
@@ -48,6 +53,15 @@ export function useEmpresas() {
     return success;
   };
 
+  const renovarPlanoEmpresa = async (empresaId: string) => {
+    const success = await renovarPlanoEmpresaService(empresaId);
+    if (success) {
+      // Recarregar a lista de empresas para obter os dados atualizados
+      await fetchEmpresas();
+    }
+    return success;
+  };
+
   // Carregar empresas na inicialização
   useEffect(() => {
     fetchEmpresas();
@@ -59,11 +73,12 @@ export function useEmpresas() {
     criarEmpresa,
     atualizarEmpresa,
     deletarEmpresa,
+    buscarEmpresaPorId,
+    renovarPlanoEmpresa,
     recarregarEmpresas: fetchEmpresas,
     verificarEmailUnico,
     verificarSubdominioUnico
   };
 }
 
-// Export interfaces for backward compatibility
 export type { Empresa, NovaEmpresaData };
