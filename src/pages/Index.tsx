@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -16,7 +15,10 @@ import {
   CheckCircle,
   ArrowRight,
   Building2,
+  UserCog,
+  Building,
 } from 'lucide-react';
+import { getAdminLoginUrl, getClientLoginUrl } from '@/utils/linkUtils';
 
 const Index: React.FC = () => {
   const navigate = useNavigate();
@@ -34,6 +36,14 @@ const Index: React.FC = () => {
     } else {
       navigate('/auth');
     }
+  };
+
+  const handleAdminAccess = () => {
+    navigate(getAdminLoginUrl());
+  };
+
+  const handleClientAccess = () => {
+    navigate(getClientLoginUrl());
   };
 
   const features = [
@@ -134,9 +144,19 @@ const Index: React.FC = () => {
                 </Button>
               </div>
             ) : (
-              <Button onClick={() => navigate('/auth')}>
-                Entrar
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" onClick={handleAdminAccess}>
+                  <UserCog className="h-4 w-4 mr-2" />
+                  Admin
+                </Button>
+                <Button variant="outline" onClick={handleClientAccess}>
+                  <Building className="h-4 w-4 mr-2" />
+                  Área do Cliente
+                </Button>
+                <Button onClick={() => navigate('/auth')}>
+                  Entrar
+                </Button>
+              </div>
             )}
           </div>
         </div>
@@ -162,7 +182,7 @@ const Index: React.FC = () => {
             de forma simples e eficiente. Tudo em um só lugar.
           </p>
           
-          <div className="flex gap-4 justify-center">
+          <div className="flex gap-4 justify-center flex-wrap">
             <Button size="lg" onClick={handleGetStarted} className="h-12 px-8">
               {isAuthenticated ? 'Acessar Sistema' : 'Começar Agora'}
               <ArrowRight className="h-5 w-5 ml-2" />
@@ -170,6 +190,14 @@ const Index: React.FC = () => {
             <Button size="lg" variant="outline" className="h-12 px-8">
               <Building2 className="h-5 w-5 mr-2" />
               Ver Demonstração
+            </Button>
+            <Button size="lg" variant="secondary" onClick={handleClientAccess} className="h-12 px-8">
+              <Building className="h-5 w-5 mr-2" />
+              Área do Cliente
+            </Button>
+            <Button size="lg" variant="ghost" onClick={handleAdminAccess} className="h-12 px-8">
+              <UserCog className="h-5 w-5 mr-2" />
+              Painel Admin
             </Button>
           </div>
         </div>

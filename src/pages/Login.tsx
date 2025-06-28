@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -9,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Car, Lock, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import ForgotPasswordForm from '@/components/auth/ForgotPasswordForm';
+import { getClientLoginUrl, getAdminDashboardUrl } from '@/utils/linkUtils';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -29,7 +29,7 @@ const Login: React.FC = () => {
         toast.error(error);
       } else {
         toast.success('Login realizado com sucesso!');
-        navigate('/admin/dashboard');
+        navigate(getAdminDashboardUrl());
       }
     } catch (error) {
       console.error('Erro no login:', error);
@@ -132,18 +132,21 @@ const Login: React.FC = () => {
             
             <div className="mt-8 pt-6 border-t border-border">
               <div className="text-center space-y-2">
-                <a 
-                  href="/cliente/login"
-                  className="text-sm text-secondary hover:text-secondary-hover underline block"
+                <Button
+                  variant="link"
+                  className="text-sm text-secondary hover:text-secondary-hover underline p-0"
+                  onClick={() => navigate(getClientLoginUrl())}
                 >
                   Acessar como empresa/cliente
-                </a>
-                <a 
-                  href="/"
-                  className="text-sm text-text-secondary hover:text-text-primary underline block"
+                </Button>
+                <br />
+                <Button
+                  variant="link"
+                  className="text-sm text-text-secondary hover:text-text-primary underline p-0"
+                  onClick={() => navigate('/')}
                 >
                   Voltar ao site
-                </a>
+                </Button>
               </div>
             </div>
           </CardContent>

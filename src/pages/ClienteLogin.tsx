@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -10,6 +9,7 @@ import { Car, Lock, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import ForgotPasswordForm from '@/components/auth/ForgotPasswordForm';
 import FirstAccessPasswordChange from '@/components/auth/FirstAccessPasswordChange';
+import { getAdminLoginUrl } from '@/utils/linkUtils';
 
 // Página de login para clientes (empresas)
 const ClienteLogin: React.FC = () => {
@@ -149,12 +149,13 @@ const ClienteLogin: React.FC = () => {
                 <p className="text-xs text-text-secondary">
                   Recebeu credenciais por e-mail? Use-as para fazer login.
                 </p>
-                <a 
-                  href="/login"
-                  className="text-sm text-primary hover:text-primary-hover underline block"
+                <Button
+                  variant="link"
+                  className="text-sm text-primary hover:text-primary-hover underline p-0"
+                  onClick={() => navigate(getAdminLoginUrl())}
                 >
                   Acessar como administrador
-                </a>
+                </Button>
               </div>
             </div>
           </CardContent>
