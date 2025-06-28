@@ -59,7 +59,14 @@ export function useFinanceiro() {
         return;
       }
 
-      setTransacoes(data || []);
+      // Type assertion para garantir que o tipo seja correto
+      const transacoesFormatadas = (data || []).map(transacao => ({
+        ...transacao,
+        tipo: transacao.tipo as 'receita' | 'despesa',
+        status: transacao.status as 'pendente' | 'pago' | 'cancelado'
+      })) as TransacaoFinanceira[];
+
+      setTransacoes(transacoesFormatadas);
     } catch (error) {
       console.error('Erro inesperado ao buscar transações:', error);
       toast.error('Erro inesperado ao carregar dados financeiros');
@@ -156,7 +163,8 @@ export function useFinanceiro() {
 
       // Se for uma receita de plano, renovar a empresa
       if (data?.empresa_id) {
-        const { error: empresaError } = await supabase.rpc('renovar_plano_empresa', {
+        // Usar type assertion para a função RPC customizada
+        const { error: empresaError } = await (supabase.rpc as any)('renovar_plano_empresa', {
           p_empresa_id: data.empresa_id
         });
 
