@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Empresa, NovaEmpresaData, CriarEmpresaResult } from '@/types/empresa';
@@ -302,6 +301,74 @@ export const renovarPlanoEmpresa = async (empresaId: string): Promise<boolean> =
   } catch (error) {
     console.error('Erro inesperado ao renovar plano:', error);
     toast.error('Erro inesperado ao renovar plano');
+    return false;
+  }
+};
+
+export const reenviarCredenciaisEmpresa = async (empresaId: string): Promise<boolean> => {
+  try {
+    console.log('Reenviando credenciais para empresa:', empresaId);
+    
+    // Buscar dados da empresa
+    const empresa = await buscarEmpresaPorId(empresaId);
+    if (!empresa) {
+      toast.error('Empresa não encontrada');
+      return false;
+    }
+
+    // Validar se tem os dados necessários
+    if (!empresa.email || !empresa.subdominio) {
+      toast.error('Dados da empresa incompletos para reenvio');
+      return false;
+    }
+
+    // Se não tem senha temporária, gerar uma nova
+    let senhaTemporaria = empresa.senha_temporaria;
+    if (!senhaTemporaria) {
+      senhaTemporaria = gerarSenhaTemporaria();
+      
+      // Atualizar a empresa com a nova senha temporária
+      await atualizarEmpresa(empresaId, { senha_temporaria: senhaTemporaria });
+    }
+
+    // Reenviar e-mail usando a mesma Edge Function
+    try {
+      console.log('Reenviando e-mail de credenciais via Edge Function...');
+      
+      const { data: emailData, error: emailError } = await supabase.functions.invoke('send-company-invite', {
+        body: {
+          email: empresa.email,
+          nomeEmpresa: empresa.nome,
+          empresaId: empresa.id,
+          subdominio: empresa.subdominio,
+          senhaTemporaria: senhaTemporaria,
+          redirectTo: `https://${empresa.subdominio}.agendicar.com.br/cliente/login`,
+          isResend: true // Flag para identificar que é um reenvio
+        }
+      });
+
+      if (emailError) {
+        console.error('Erro ao reenviar e-mail via Edge Function:', emailError);
+        toast.error(`Erro ao reenviar credenciais: ${emailError.message}`);
+        return false;
+      } else if (emailData?.success) {
+        console.log('E-mail de credenciais reenviado com sucesso:', emailData);
+        toast.success(`Credenciais reenviadas para ${empresa.email} com sucesso!`);
+        return true;
+      } else {
+        console.error('Resposta inesperada da Edge Function:', emailData);
+        toast.error('Erro ao reenviar credenciais');
+        return false;
+      }
+    } catch (edgeFunctionError) {
+      console.error('Erro na chamada da Edge Function:', edgeFunctionError);
+      toast.error('Erro ao reenviar credenciais');
+      return false;
+    }
+    
+  } catch (error) {
+    console.error('Erro inesperado ao reenviar credenciais:', error);
+    toast.error('Erro inesperado ao reenviar credenciais');
     return false;
   }
 };

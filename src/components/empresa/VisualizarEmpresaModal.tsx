@@ -1,10 +1,9 @@
-
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Empresa } from '@/types/empresa';
-import { Edit, Trash2, Building } from 'lucide-react';
+import { Edit, Trash2, Building, Mail } from 'lucide-react';
 
 interface VisualizarEmpresaModalProps {
   empresa: Empresa | null;
@@ -12,6 +11,8 @@ interface VisualizarEmpresaModalProps {
   onClose: () => void;
   onEdit: (empresa: Empresa) => void;
   onDelete: (empresa: Empresa) => void;
+  onReenviarCredenciais: (empresa: Empresa) => void;
+  isReenviandoCredenciais?: boolean;
 }
 
 const VisualizarEmpresaModal: React.FC<VisualizarEmpresaModalProps> = ({
@@ -19,7 +20,9 @@ const VisualizarEmpresaModal: React.FC<VisualizarEmpresaModalProps> = ({
   isOpen,
   onClose,
   onEdit,
-  onDelete
+  onDelete,
+  onReenviarCredenciais,
+  isReenviandoCredenciais = false
 }) => {
   if (!empresa) return null;
 
@@ -143,6 +146,14 @@ const VisualizarEmpresaModal: React.FC<VisualizarEmpresaModalProps> = ({
           <div className="flex justify-end space-x-3 pt-4 border-t">
             <Button variant="outline" onClick={onClose}>
               Fechar
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => onReenviarCredenciais(empresa)}
+              disabled={isReenviandoCredenciais}
+            >
+              <Mail className="h-4 w-4 mr-2" />
+              {isReenviandoCredenciais ? 'Reenviando...' : 'Reenviar Credenciais'}
             </Button>
             <Button variant="outline" onClick={() => onEdit(empresa)}>
               <Edit className="h-4 w-4 mr-2" />

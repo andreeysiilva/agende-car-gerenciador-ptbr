@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { Empresa, NovaEmpresaData } from '@/types/empresa';
@@ -9,7 +8,8 @@ import {
   criarEmpresa as criarEmpresaService,
   atualizarEmpresa as atualizarEmpresaService,
   deletarEmpresa as deletarEmpresaService,
-  renovarPlanoEmpresa as renovarPlanoEmpresaService
+  renovarPlanoEmpresa as renovarPlanoEmpresaService,
+  reenviarCredenciaisEmpresa as reenviarCredenciaisEmpresaService
 } from '@/services/empresaService';
 
 export function useEmpresas() {
@@ -62,6 +62,11 @@ export function useEmpresas() {
     return success;
   };
 
+  const reenviarCredenciais = async (empresaId: string) => {
+    const success = await reenviarCredenciaisEmpresaService(empresaId);
+    return success;
+  };
+
   // Carregar empresas na inicialização
   useEffect(() => {
     fetchEmpresas();
@@ -77,7 +82,8 @@ export function useEmpresas() {
     renovarPlanoEmpresa,
     recarregarEmpresas: fetchEmpresas,
     verificarEmailUnico,
-    verificarSubdominioUnico
+    verificarSubdominioUnico,
+    reenviarCredenciais
   };
 }
 

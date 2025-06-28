@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useEmpresas } from '@/hooks/useEmpresas';
 import { Button } from '@/components/ui/button';
@@ -29,7 +28,8 @@ const Empresas: React.FC = () => {
     atualizarEmpresa, 
     deletarEmpresa, 
     buscarEmpresaPorId, 
-    recarregarEmpresas 
+    recarregarEmpresas,
+    reenviarCredenciais
   } = useEmpresas();
   
   // Estados para modais
@@ -41,6 +41,7 @@ const Empresas: React.FC = () => {
   const [excluirDialogOpen, setExcluirDialogOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isReenviandoCredenciais, setIsReenviandoCredenciais] = useState(false);
 
   const handleCriarEmpresa = async (dadosEmpresa: any) => {
     setIsCreating(true);
@@ -106,6 +107,20 @@ const Empresas: React.FC = () => {
       console.error('Erro ao deletar empresa:', error);
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleReenviarCredenciais = async (empresa: Empresa) => {
+    setIsReenviandoCredenciais(true);
+    try {
+      const success = await reenviarCredenciais(empresa.id);
+      if (success) {
+        // Sucesso já é tratado no serviço com toast
+      }
+    } catch (error) {
+      console.error('Erro ao reenviar credenciais:', error);
+    } finally {
+      setIsReenviandoCredenciais(false);
     }
   };
 
@@ -305,6 +320,8 @@ const Empresas: React.FC = () => {
         }}
         onEdit={handleEditarEmpresa}
         onDelete={handleExcluirEmpresa}
+        onReenviarCredenciais={handleReenviarCredenciais}
+        isReenviandoCredenciais={isReenviandoCredenciais}
       />
 
       <EditarEmpresaModal

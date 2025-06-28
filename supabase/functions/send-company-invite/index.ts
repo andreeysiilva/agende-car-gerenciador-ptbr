@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
@@ -15,6 +14,7 @@ interface InviteRequest {
   subdominio: string;
   senhaTemporaria: string;
   redirectTo: string;
+  isResend?: boolean;
 }
 
 serve(async (req) => {
@@ -24,9 +24,9 @@ serve(async (req) => {
   }
 
   try {
-    const { email, nomeEmpresa, empresaId, subdominio, senhaTemporaria, redirectTo }: InviteRequest = await req.json();
+    const { email, nomeEmpresa, empresaId, subdominio, senhaTemporaria, redirectTo, isResend = false }: InviteRequest = await req.json();
 
-    console.log("Dados recebidos:", { email, nomeEmpresa, empresaId, subdominio, redirectTo });
+    console.log("Dados recebidos:", { email, nomeEmpresa, empresaId, subdominio, redirectTo, isResend });
 
     if (!email || !nomeEmpresa || !senhaTemporaria || !subdominio) {
       console.error("Dados obrigatórios não fornecidos");
@@ -42,14 +42,19 @@ serve(async (req) => {
       );
     }
 
-    // HTML personalizado para o e-mail de boas-vindas
+    // HTML personalizado para o e-mail de boas-vindas (com texto ajustado para reenvio)
+    const saudacao = isResend ? "Reenvio das suas credenciais" : "Bem-vindo ao AgendiCar";
+    const textoInicial = isResend 
+      ? "Conforme solicitado, estamos reenviando suas credenciais de acesso ao AgendiCar."
+      : "Obrigado pela sua compra, seja muito bem-vindo(a) ao AgendiCar!";
+
     const htmlContent = `
     <!DOCTYPE html>
     <html lang="pt-BR">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Bem-vindo ao AgendiCar</title>
+        <title>${saudacao}</title>
         <style>
             body { 
                 font-family: Arial, sans-serif; 
@@ -107,15 +112,15 @@ serve(async (req) => {
     </head>
     <body>
         <div class="header">
-            <h1>🎉 Bem-vindo ao AgendiCar!</h1>
+            <h1>${isResend ? '📧' : '🎉'} ${saudacao}!</h1>
         </div>
         
         <div class="content">
             <p><strong>Olá ${nomeEmpresa},</strong></p>
             
-            <p>Obrigado pela sua compra, seja muito bem-vindo(a) ao AgendiCar!</p>
+            <p>${textoInicial}</p>
             
-            <p>Sua plataforma de agendamentos está pronta para uso. Abaixo você encontra os seus dados de acesso para nossa área de membros, onde você encontrará todas as funcionalidades para gerenciar seus agendamentos.</p>
+            ${!isResend ? '<p>Sua plataforma de agendamentos está pronta para uso. Abaixo você encontra os seus dados de acesso para nossa área de membros, onde você encontrará todas as funcionalidades para gerenciar seus agendamentos.</p>' : ''}
             
             <div class="credentials">
                 <h3>📋 Seus Dados de Acesso:</h3>
@@ -134,6 +139,7 @@ serve(async (req) => {
                 </a>
             </div>
             
+            ${!isResend ? `
             <h3>🌟 O que você pode fazer na plataforma:</h3>
             <ul>
                 <li>Gerenciar agendamentos de serviços automotivos</li>
@@ -142,6 +148,7 @@ serve(async (req) => {
                 <li>Acompanhar estatísticas e relatórios</li>
                 <li>Configurar horários de funcionamento</li>
             </ul>
+            ` : ''}
             
             <div class="footer">
                 <p><strong>Precisa de ajuda?</strong></p>
@@ -161,7 +168,7 @@ serve(async (req) => {
     const textContent = `
 Olá ${nomeEmpresa},
 
-Obrigado pela sua compra, seja muito bem-vindo(a) ao AgendiCar!
+${textoInicial}
 
 Abaixo você encontra os seus dados de acesso para nossa área de membros, onde você encontrará o conteúdo que acabou de adquirir.
 
@@ -181,7 +188,7 @@ Equipe AgendiCar
 
     // Enviar via Resend se a chave API estiver disponível
     if (RESEND_API_KEY) {
-      console.log("Enviando e-mail via Resend...");
+      console.log(`${isResend ? 'Reenviando' : 'Enviando'} e-mail via Resend...`);
       
       const resendResponse = await fetch("https://api.resend.com/emails", {
         method: "POST",
@@ -192,7 +199,7 @@ Equipe AgendiCar
         body: JSON.stringify({
           from: "AgendiCar <noreply@agendicar.com.br>",
           to: [email],
-          subject: `🎉 Bem-vindo ao AgendiCar, ${nomeEmpresa}! Seus dados de acesso`,
+          subject: `${isResend ? '📧 Reenvio' : '🎉 Bem-vindo ao AgendiCar'} - ${nomeEmpresa}! Seus dados de acesso`,
           html: htmlContent,
           text: textContent,
         }),
@@ -200,14 +207,15 @@ Equipe AgendiCar
 
       if (resendResponse.ok) {
         const result = await resendResponse.json();
-        console.log("E-mail enviado com sucesso via Resend:", result);
+        console.log(`E-mail ${isResend ? 'reenviado' : 'enviado'} com sucesso via Resend:`, result);
         
         return new Response(
           JSON.stringify({ 
             success: true, 
-            message: "E-mail de boas-vindas enviado com sucesso",
+            message: `E-mail ${isResend ? 'reenviado' : 'enviado'} com sucesso`,
             provider: "resend",
-            messageId: result.id
+            messageId: result.id,
+            isResend
           }),
           { 
             status: 200, 
@@ -223,7 +231,7 @@ Equipe AgendiCar
     // Fallback: log do conteúdo do e-mail
     console.log("RESEND_API_KEY não configurada. Conteúdo do e-mail:");
     console.log("Para:", email);
-    console.log("Assunto: 🎉 Bem-vindo ao AgendiCar! Seus dados de acesso");
+    console.log("Assunto: ${isResend ? '📧 Reenvio' : '🎉 Bem-vindo ao AgendiCar'} - ${nomeEmpresa}! Seus dados de acesso");
     console.log("Conteúdo HTML:", htmlContent);
     
     return new Response(
