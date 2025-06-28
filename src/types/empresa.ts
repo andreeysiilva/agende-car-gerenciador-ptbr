@@ -10,6 +10,7 @@ export interface Empresa {
   plano_id: string;
   status: 'Ativo' | 'Inativo' | 'Pendente';
   data_vencimento?: string;
+  data_ativacao?: string;
   logo_url?: string;
   senha_temporaria?: string;
   telegram_chat_id?: string;
@@ -27,6 +28,7 @@ export interface NovaEmpresaData {
   plano: string;
   logoUrl?: string;
   telegramChatId?: string;
+  dataAtivacao?: string;
 }
 
 export interface CriarEmpresaResult {

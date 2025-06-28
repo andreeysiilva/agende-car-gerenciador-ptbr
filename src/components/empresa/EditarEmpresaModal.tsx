@@ -34,6 +34,7 @@ const EditarEmpresaModal: React.FC<EditarEmpresaModalProps> = ({
         endereco: empresa.endereco || '',
         cnpj_cpf: empresa.cnpj_cpf,
         status: empresa.status,
+        data_ativacao: empresa.data_ativacao || '',
         telegram_chat_id: empresa.telegram_chat_id || ''
       });
     }
@@ -123,6 +124,16 @@ const EditarEmpresaModal: React.FC<EditarEmpresaModalProps> = ({
             </div>
 
             <div>
+              <Label htmlFor="data_ativacao">Data de Ativação</Label>
+              <Input
+                id="data_ativacao"
+                type="date"
+                value={formData.data_ativacao || ''}
+                onChange={(e) => handleInputChange('data_ativacao', e.target.value)}
+              />
+            </div>
+
+            <div className="md:col-span-2">
               <Label htmlFor="telegram_chat_id">Telegram Chat ID</Label>
               <Input
                 id="telegram_chat_id"

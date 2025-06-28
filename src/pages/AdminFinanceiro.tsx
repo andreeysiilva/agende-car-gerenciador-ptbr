@@ -1,446 +1,324 @@
 
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useFinanceiro } from '@/hooks/useFinanceiro';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
-import { DollarSign, TrendingUp, AlertTriangle, CheckCircle, Download, Search, Calendar, Filter } from 'lucide-react';
-import { toast } from 'sonner';
-import { useEmpresas } from '@/hooks/useEmpresas';
-
-// Interface para transações financeiras
-interface TransacaoFinanceira {
-  id: number;
-  empresaId: number;
-  empresaNome: string;
-  valor: number;
-  status: 'Pago' | 'Pendente' | 'Atrasado' | 'Cancelado';
-  dataVencimento: string;
-  dataPagamento?: string;
-  plano: string;
-  metodoPagamento?: string;
-}
-
-// Dados mock das transações
-const transacoesMock: TransacaoFinanceira[] = [
-  {
-    id: 1,
-    empresaId: 1,
-    empresaNome: 'Lava Rápido do Robson',
-    valor: 299.90,
-    status: 'Pago',
-    dataVencimento: '2024-01-15',
-    dataPagamento: '2024-01-14',
-    plano: 'Premium',
-    metodoPagamento: 'Cartão de Crédito'
-  },
-  {
-    id: 2,
-    empresaId: 2,
-    empresaNome: 'AutoLavagem Silva',
-    valor: 99.90,
-    status: 'Pendente',
-    dataVencimento: '2024-01-30',
-    plano: 'Básico'
-  },
-  {
-    id: 3,
-    empresaId: 3,
-    empresaNome: 'Detalhamento Premium',
-    valor: 299.90,
-    status: 'Atrasado',
-    dataVencimento: '2024-01-01',
-    plano: 'Premium'
-  },
-  {
-    id: 4,
-    empresaId: 1,
-    empresaNome: 'Lava Rápido do Robson',
-    valor: 299.90,
-    status: 'Pago',
-    dataVencimento: '2023-12-15',
-    dataPagamento: '2023-12-14',
-    plano: 'Premium',
-    metodoPagamento: 'PIX'
-  },
-  {
-    id: 5,
-    empresaId: 4,
-    empresaNome: 'Carro Limpo Express',
-    valor: 499.90,
-    status: 'Pago',
-    dataVencimento: '2024-01-20',
-    dataPagamento: '2024-01-19',
-    plano: 'Empresarial',
-    metodoPagamento: 'Boleto'
-  }
-];
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { DollarSign, TrendingUp, AlertCircle, Users, Calendar, CreditCard, CheckCircle } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 const AdminFinanceiro: React.FC = () => {
-  const { renovarPlanoEmpresa } = useEmpresas();
-  const [transacoes, setTransacoes] = useState<TransacaoFinanceira[]>(transacoesMock);
-  const [filtroStatus, setFiltroStatus] = useState('todos');
-  const [filtroEmpresa, setFiltroEmpresa] = useState('');
-  const [filtroMes, setFiltroMes] = useState('todos');
+  const { transacoes, estatisticas, isLoading, confirmarPagamento } = useFinanceiro();
+  const [confirmandoPagamento, setConfirmandoPagamento] = useState<string | null>(null);
 
-  // Função para confirmar pagamento manual e renovar plano
-  const confirmarPagamento = async (id: number) => {
-    const transacao = transacoes.find(t => t.id === id);
-    if (!transacao) {
-      toast.error('Transação não encontrada');
-      return;
+  const handleConfirmarPagamento = async (transacaoId: string) => {
+    setConfirmandoPagamento(transacaoId);
+    const sucesso = await confirmarPagamento(transacaoId);
+    if (sucesso) {
+      // Pagamento confirmado - a lógica de renovação do plano já foi executada
     }
+    setConfirmandoPagamento(null);
+  };
 
-    try {
-      // Atualizar o status da transação
-      setTransacoes(transacoes.map(t => 
-        t.id === id 
-          ? { 
-              ...t, 
-              status: 'Pago' as const, 
-              dataPagamento: new Date().toISOString().split('T')[0],
-              metodoPagamento: 'Confirmação Manual'
-            }
-          : t
-      ));
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
+  };
 
-      // Renovar o plano da empresa (aqui usamos o empresaId como string)
-      // Em um cenário real, você teria o UUID da empresa
-      const empresaIdString = transacao.empresaId.toString();
-      
-      // Como não temos o UUID real, vamos simular a renovação
-      // Em produção, você buscaria o UUID real da empresa através do nome ou outro identificador
-      console.log(`Renovando plano da empresa: ${transacao.empresaNome} (ID: ${empresaIdString})`);
-      
-      // Para demonstração, vamos apenas mostrar uma mensagem de sucesso
-      toast.success(`Pagamento confirmado! Plano da empresa ${transacao.empresaNome} renovado com sucesso.`);
-      
-      // Se tivéssemos o UUID real da empresa, chamariamos:
-      // await renovarPlanoEmpresa(empresaUuid);
-      
-    } catch (error) {
-      console.error('Erro ao confirmar pagamento:', error);
-      toast.error('Erro ao confirmar pagamento');
-      
-      // Reverter a alteração em caso de erro
-      setTransacoes(transacoes.map(t => 
-        t.id === id 
-          ? { ...t, status: 'Pendente' as const, dataPagamento: undefined, metodoPagamento: undefined }
-          : t
-      ));
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'pago':
+        return <Badge variant="default">Pago</Badge>;
+      case 'pendente':
+        return <Badge variant="outline">Pendente</Badge>;
+      case 'cancelado':
+        return <Badge variant="destructive">Cancelado</Badge>;
+      default:
+        return <Badge variant="secondary">{status}</Badge>;
     }
   };
 
-  // Função para exportar relatório
-  const exportarRelatorio = (formato: 'csv' | 'pdf') => {
-    toast.success(`Relatório ${formato.toUpperCase()} gerado com sucesso!`);
-    console.log(`Exportando relatório em ${formato}`);
-  };
-
-  // Filtrar transações
-  const transacoesFiltradas = transacoes.filter(transacao => {
-    const matchStatus = filtroStatus === 'todos' || transacao.status.toLowerCase() === filtroStatus;
-    const matchEmpresa = filtroEmpresa === '' || transacao.empresaNome.toLowerCase().includes(filtroEmpresa.toLowerCase());
-    
-    let matchMes = true;
-    if (filtroMes !== 'todos') {
-      const dataVencimento = new Date(transacao.dataVencimento);
-      const mesAtual = new Date().getMonth();
-      const anoAtual = new Date().getFullYear();
-      
-      if (filtroMes === 'este-mes') {
-        matchMes = dataVencimento.getMonth() === mesAtual && dataVencimento.getFullYear() === anoAtual;
-      } else if (filtroMes === 'mes-passado') {
-        const mesPassado = mesAtual === 0 ? 11 : mesAtual - 1;
-        const anoMesPassado = mesAtual === 0 ? anoAtual - 1 : anoAtual;
-        matchMes = dataVencimento.getMonth() === mesPassado && dataVencimento.getFullYear() === anoMesPassado;
-      }
+  const getTipoBadge = (tipo: string) => {
+    switch (tipo) {
+      case 'receita':
+        return <Badge className="bg-green-100 text-green-800">Receita</Badge>;
+      case 'despesa':
+        return <Badge className="bg-red-100 text-red-800">Despesa</Badge>;
+      default:
+        return <Badge variant="secondary">{tipo}</Badge>;
     }
-    
-    return matchStatus && matchEmpresa && matchMes;
-  });
-
-  // Calcular estatísticas
-  const estatisticas = {
-    receitaTotal: transacoesFiltradas
-      .filter(t => t.status === 'Pago')
-      .reduce((acc, t) => acc + t.valor, 0),
-    pagamentosAtrasados: transacoesFiltradas.filter(t => t.status === 'Atrasado').length,
-    pagamentosPendentes: transacoesFiltradas.filter(t => t.status === 'Pendente').length,
-    pagamentosConfirmados: transacoesFiltradas.filter(t => t.status === 'Pago').length
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Gestão Financeira</h1>
-          <p className="text-gray-600">Gerencie pagamentos e assinaturas das empresas</p>
+          <h1 className="text-2xl font-bold text-gray-900">Financeiro</h1>
+          <p className="text-gray-600">Gerencie receitas, despesas e pagamentos do sistema</p>
         </div>
         
-        <div className="flex flex-col sm:flex-row gap-2">
-          <Button variant="outline" onClick={() => exportarRelatorio('csv')} className="w-full sm:w-auto">
-            <Download className="h-4 w-4 mr-2" />
-            Exportar CSV
-          </Button>
-          <Button variant="outline" onClick={() => exportarRelatorio('pdf')} className="w-full sm:w-auto">
-            <Download className="h-4 w-4 mr-2" />
-            Exportar PDF
-          </Button>
-        </div>
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button className="bg-blue-600 hover:bg-blue-700">
+              <CreditCard className="h-4 w-4 mr-2" />
+              Configurar Mercado Pago
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Configuração do Mercado Pago</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <p className="text-sm text-gray-600">
+                Configure sua integração com o Mercado Pago para receber pagamentos automaticamente.
+              </p>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-sm font-medium">Client ID</label>
+                  <input 
+                    type="text" 
+                    className="w-full mt-1 p-2 border rounded-md" 
+                    placeholder="Seu Client ID do Mercado Pago"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Client Secret</label>
+                  <input 
+                    type="password" 
+                    className="w-full mt-1 p-2 border rounded-md" 
+                    placeholder="Seu Client Secret do Mercado Pago"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Public Key</label>
+                  <input 
+                    type="text" 
+                    className="w-full mt-1 p-2 border rounded-md" 
+                    placeholder="Sua Public Key do Mercado Pago"
+                  />
+                </div>
+              </div>
+              <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded">
+                <strong>Nota:</strong> Esta funcionalidade será implementada em uma próxima versão. 
+                Por enquanto, você pode confirmar pagamentos manualmente através da lista de transações.
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Estatísticas */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Receita Total</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Receitas</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="flex items-center gap-2">
-              <DollarSign className="h-4 w-4 text-green-500" />
-              <span className="text-2xl font-bold text-green-600">
-                R$ {estatisticas.receitaTotal.toFixed(2).replace('.', ',')}
-              </span>
+            <div className="text-2xl font-bold text-green-600">
+              {formatCurrency(estatisticas.totalReceitas)}
             </div>
           </CardContent>
         </Card>
-
+        
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Pagamentos Confirmados</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Receitas Pendentes</CardTitle>
+            <AlertCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="flex items-center gap-2">
-              <CheckCircle className="h-4 w-4 text-blue-500" />
-              <span className="text-2xl font-bold text-blue-600">{estatisticas.pagamentosConfirmados}</span>
+            <div className="text-2xl font-bold text-orange-600">
+              {formatCurrency(estatisticas.receitasPendentes)}
             </div>
           </CardContent>
         </Card>
-
+        
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Pagamentos Pendentes</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Empresas Ativas</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-yellow-500" />
-              <span className="text-2xl font-bold text-yellow-600">{estatisticas.pagamentosPendentes}</span>
-            </div>
+            <div className="text-2xl font-bold">{estatisticas.empresasAtivas}</div>
           </CardContent>
         </Card>
-
+        
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Pagamentos Atrasados</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Vencendo Este Mês</CardTitle>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-red-500" />
-              <span className="text-2xl font-bold text-red-600">{estatisticas.pagamentosAtrasados}</span>
-            </div>
+            <div className="text-2xl font-bold text-red-600">{estatisticas.empresasVencendo}</div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Filtros */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            Filtros de Pesquisa
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div>
-              <label className="text-sm font-medium text-gray-700 mb-2 block">Status</label>
-              <Select value={filtroStatus} onValueChange={setFiltroStatus}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos os Status</SelectItem>
-                  <SelectItem value="pago">Apenas Pagos</SelectItem>
-                  <SelectItem value="pendente">Apenas Pendentes</SelectItem>
-                  <SelectItem value="atrasado">Apenas Atrasados</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium text-gray-700 mb-2 block">Período</label>
-              <Select value={filtroMes} onValueChange={setFiltroMes}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos os Períodos</SelectItem>
-                  <SelectItem value="este-mes">Este Mês</SelectItem>
-                  <SelectItem value="mes-passado">Mês Passado</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="sm:col-span-2">
-              <label className="text-sm font-medium text-gray-700 mb-2 block">Buscar Empresa</label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Digite o nome da empresa..."
-                  value={filtroEmpresa}
-                  onChange={(e) => setFiltroEmpresa(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Lista de transações */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Transações Financeiras</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0 sm:p-6">
-          {/* Versão mobile - Cards */}
-          <div className="block lg:hidden space-y-4 p-4">
-            {transacoesFiltradas.map((transacao) => (
-              <Card key={transacao.id} className="border border-gray-200">
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <h3 className="font-medium text-gray-900">{transacao.empresaNome}</h3>
-                      <p className="text-sm text-gray-500">Plano {transacao.plano}</p>
-                    </div>
-                    <Badge 
-                      variant={
-                        transacao.status === 'Pago' ? 'default' :
-                        transacao.status === 'Pendente' ? 'secondary' :
-                        transacao.status === 'Atrasado' ? 'destructive' : 'outline'
-                      }
-                    >
-                      {transacao.status}
-                    </Badge>
-                  </div>
-                  
-                  <div className="space-y-2 mb-4">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Valor:</span>
-                      <span className="font-bold text-green-600">
-                        R$ {transacao.valor.toFixed(2).replace('.', ',')}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Vencimento:</span>
-                      <span>{new Date(transacao.dataVencimento).toLocaleDateString('pt-BR')}</span>
-                    </div>
-                    {transacao.dataPagamento && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">Pagamento:</span>
-                        <span>{new Date(transacao.dataPagamento).toLocaleDateString('pt-BR')}</span>
+      {/* Tabelas de Transações */}
+      <Tabs defaultValue="receitas" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="receitas">Receitas</TabsTrigger>
+          <TabsTrigger value="despesas">Despesas</TabsTrigger>
+          <TabsTrigger value="todas">Todas Transações</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="receitas">
+          <Card>
+            <CardHeader>
+              <CardTitle>Receitas</CardTitle>
+              <CardDescription>Lista de todas as receitas do sistema</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {transacoes.filter(t => t.tipo === 'receita').map((transacao) => (
+                  <div key={transacao.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <h3 className="font-semibold">{transacao.empresa?.nome || 'Empresa não encontrada'}</h3>
+                        {getTipoBadge(transacao.tipo)}
+                        {getStatusBadge(transacao.status)}
                       </div>
-                    )}
-                    {transacao.metodoPagamento && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">Método:</span>
-                        <span>{transacao.metodoPagamento}</span>
-                      </div>
-                    )}
-                  </div>
-                  
-                  {transacao.status === 'Pendente' && (
-                    <Button
-                      onClick={() => confirmarPagamento(transacao.id)}
-                      size="sm"
-                      className="w-full"
-                    >
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Confirmar Pagamento e Renovar Plano
-                    </Button>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          {/* Versão desktop - Tabela */}
-          <div className="hidden lg:block">
-            <div className="rounded-md border overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Empresa</TableHead>
-                    <TableHead>Plano</TableHead>
-                    <TableHead>Valor</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Vencimento</TableHead>
-                    <TableHead>Pagamento</TableHead>
-                    <TableHead>Método</TableHead>
-                    <TableHead>Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {transacoesFiltradas.map((transacao) => (
-                    <TableRow key={transacao.id}>
-                      <TableCell className="font-medium">{transacao.empresaNome}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{transacao.plano}</Badge>
-                      </TableCell>
-                      <TableCell className="font-bold text-green-600">
-                        R$ {transacao.valor.toFixed(2).replace('.', ',')}
-                      </TableCell>
-                      <TableCell>
-                        <Badge 
-                          variant={
-                            transacao.status === 'Pago' ? 'default' :
-                            transacao.status === 'Pendente' ? 'secondary' :
-                            transacao.status === 'Atrasado' ? 'destructive' : 'outline'
-                          }
-                        >
-                          {transacao.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {new Date(transacao.dataVencimento).toLocaleDateString('pt-BR')}
-                      </TableCell>
-                      <TableCell>
-                        {transacao.dataPagamento 
-                          ? new Date(transacao.dataPagamento).toLocaleDateString('pt-BR')
-                          : '-'
-                        }
-                      </TableCell>
-                      <TableCell>{transacao.metodoPagamento || '-'}</TableCell>
-                      <TableCell>
-                        {transacao.status === 'Pendente' && (
-                          <Button
-                            onClick={() => confirmarPagamento(transacao.id)}
-                            size="sm"
-                            variant="outline"
-                          >
-                            <CheckCircle className="h-4 w-4 mr-1" />
-                            Confirmar e Renovar
-                          </Button>
+                      <div className="text-sm text-gray-600 space-y-1">
+                        <p><strong>Valor:</strong> {formatCurrency(transacao.valor)}</p>
+                        <p><strong>Descrição:</strong> {transacao.descricao || 'Mensalidade do plano'}</p>
+                        {transacao.data_vencimento && (
+                          <p><strong>Vencimento:</strong> {new Date(transacao.data_vencimento).toLocaleDateString('pt-BR')}</p>
                         )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
+                        {transacao.data_pagamento && (
+                          <p><strong>Pagamento:</strong> {new Date(transacao.data_pagamento).toLocaleDateString('pt-BR')}</p>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {transacao.status === 'pendente' && (
+                      <Button 
+                        onClick={() => handleConfirmarPagamento(transacao.id)}
+                        disabled={confirmandoPagamento === transacao.id}
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        {confirmandoPagamento === transacao.id ? 'Confirmando...' : 'Confirmar Pagamento'}
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                
+                {transacoes.filter(t => t.tipo === 'receita').length === 0 && (
+                  <div className="text-center py-8">
+                    <DollarSign className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhuma receita encontrada</h3>
+                    <p className="text-gray-600">As receitas aparecerão aqui quando empresas forem criadas</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="despesas">
+          <Card>
+            <CardHeader>
+              <CardTitle>Despesas</CardTitle>
+              <CardDescription>Lista de todas as despesas do sistema</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {transacoes.filter(t => t.tipo === 'despesa').map((transacao) => (
+                  <div key={transacao.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <h3 className="font-semibold">{transacao.descricao || 'Despesa'}</h3>
+                        {getTipoBadge(transacao.tipo)}
+                        {getStatusBadge(transacao.status)}
+                      </div>
+                      <div className="text-sm text-gray-600 space-y-1">
+                        <p><strong>Valor:</strong> {formatCurrency(transacao.valor)}</p>
+                        {transacao.data_vencimento && (
+                          <p><strong>Vencimento:</strong> {new Date(transacao.data_vencimento).toLocaleDateString('pt-BR')}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                
+                {transacoes.filter(t => t.tipo === 'despesa').length === 0 && (
+                  <div className="text-center py-8">
+                    <TrendingUp className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhuma despesa encontrada</h3>
+                    <p className="text-gray-600">As despesas aparecerão aqui quando forem cadastradas</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-          {transacoesFiltradas.length === 0 && (
-            <div className="text-center py-8">
-              <p className="text-gray-500">Nenhuma transação encontrada com os filtros aplicados</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+        <TabsContent value="todas">
+          <Card>
+            <CardHeader>
+              <CardTitle>Todas as Transações</CardTitle>
+              <CardDescription>Histórico completo de transações financeiras</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {transacoes.map((transacao) => (
+                  <div key={transacao.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <h3 className="font-semibold">
+                          {transacao.tipo === 'receita' 
+                            ? (transacao.empresa?.nome || 'Empresa não encontrada')
+                            : (transacao.descricao || 'Despesa')
+                          }
+                        </h3>
+                        {getTipoBadge(transacao.tipo)}
+                        {getStatusBadge(transacao.status)}
+                      </div>
+                      <div className="text-sm text-gray-600 space-y-1">
+                        <p><strong>Valor:</strong> {formatCurrency(transacao.valor)}</p>
+                        <p><strong>Data:</strong> {new Date(transacao.created_at).toLocaleDateString('pt-BR')}</p>
+                        {transacao.descricao && transacao.tipo === 'receita' && (
+                          <p><strong>Descrição:</strong> {transacao.descricao}</p>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {transacao.status === 'pendente' && transacao.tipo === 'receita' && (
+                      <Button 
+                        onClick={() => handleConfirmarPagamento(transacao.id)}
+                        disabled={confirmandoPagamento === transacao.id}
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        {confirmandoPagamento === transacao.id ? 'Confirmando...' : 'Confirmar Pagamento'}
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                
+                {transacoes.length === 0 && (
+                  <div className="text-center py-8">
+                    <DollarSign className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhuma transação encontrada</h3>
+                    <p className="text-gray-600">As transações aparecerão aqui conforme o sistema for utilizado</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

@@ -84,11 +84,31 @@ const VisualizarEmpresaModal: React.FC<VisualizarEmpresaModalProps> = ({
             </div>
 
             <div>
+              <label className="text-sm font-medium text-gray-500">Data de Ativação</label>
+              <p className="text-gray-900">
+                {empresa.data_ativacao 
+                  ? new Date(empresa.data_ativacao).toLocaleDateString('pt-BR')
+                  : 'Não definida'
+                }
+              </p>
+            </div>
+
+            <div>
               <label className="text-sm font-medium text-gray-500">Data de Vencimento</label>
               <p className="text-gray-900">
                 {empresa.data_vencimento 
                   ? new Date(empresa.data_vencimento).toLocaleDateString('pt-BR')
                   : 'Não definida'
+                }
+              </p>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-gray-500">Data de Criação</label>
+              <p className="text-gray-900">
+                {empresa.created_at 
+                  ? new Date(empresa.created_at).toLocaleDateString('pt-BR')
+                  : 'Não disponível'
                 }
               </p>
             </div>
@@ -105,30 +125,19 @@ const VisualizarEmpresaModal: React.FC<VisualizarEmpresaModalProps> = ({
           {/* Informações técnicas */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium text-gray-500">Data de Criação</label>
-              <p className="text-gray-900">
-                {empresa.created_at 
-                  ? new Date(empresa.created_at).toLocaleDateString('pt-BR')
-                  : 'Não disponível'
-                }
-              </p>
-            </div>
-
-            <div>
               <label className="text-sm font-medium text-gray-500">Primeiro Acesso</label>
               <p className="text-gray-900">
                 {empresa.primeiro_acesso_concluido ? 'Concluído' : 'Pendente'}
               </p>
             </div>
-          </div>
 
-          {/* Telegram Chat ID se disponível */}
-          {empresa.telegram_chat_id && (
-            <div>
-              <label className="text-sm font-medium text-gray-500">Telegram Chat ID</label>
-              <p className="text-gray-900">{empresa.telegram_chat_id}</p>
-            </div>
-          )}
+            {empresa.telegram_chat_id && (
+              <div>
+                <label className="text-sm font-medium text-gray-500">Telegram Chat ID</label>
+                <p className="text-gray-900">{empresa.telegram_chat_id}</p>
+              </div>
+            )}
+          </div>
 
           {/* Botões de ação */}
           <div className="flex justify-end space-x-3 pt-4 border-t">

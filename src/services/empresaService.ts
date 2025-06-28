@@ -117,8 +117,11 @@ export const criarEmpresa = async (dadosEmpresa: NovaEmpresaData): Promise<Criar
     // Gerar senha temporária
     const senhaTemporaria = gerarSenhaTemporaria();
 
-    // Calcular data de vencimento usando a nova regra de negócio
-    const dataVencimento = calcularDataVencimento();
+    // Determinar data de ativação
+    const dataAtivacao = dadosEmpresa.dataAtivacao || new Date().toISOString().split('T')[0];
+    
+    // Calcular data de vencimento baseada na data de ativação
+    const dataVencimento = calcularDataVencimento(new Date(dataAtivacao));
 
     // Dados da empresa
     const novaEmpresa = {
@@ -130,9 +133,11 @@ export const criarEmpresa = async (dadosEmpresa: NovaEmpresaData): Promise<Criar
       subdominio: subdominio,
       plano_id: planoData.id,
       status: 'Ativo' as const,
+      data_ativacao: dataAtivacao,
       data_vencimento: dataVencimento,
       logo_url: dadosEmpresa.logoUrl || null,
       senha_temporaria: senhaTemporaria,
+      telegram_chat_id: dadosEmpresa.telegramChatId || null,
       primeiro_acesso_concluido: false
     };
 
@@ -163,33 +168,34 @@ export const criarEmpresa = async (dadosEmpresa: NovaEmpresaData): Promise<Criar
       // Não falhar a operação completamente, mas avisar
     }
 
-    // Enviar convite usando a Edge Function
+    // Enviar e-mail de boas-vindas personalizado usando a Edge Function
     try {
-      console.log('Enviando convite via Edge Function...');
+      console.log('Enviando e-mail de boas-vindas personalizado via Edge Function...');
       
-      const { data: inviteData, error: inviteError } = await supabase.functions.invoke('send-company-invite', {
+      const { data: emailData, error: emailError } = await supabase.functions.invoke('send-company-invite', {
         body: {
           email: dadosEmpresa.email,
           nomeEmpresa: dadosEmpresa.nome,
           empresaId: empresaCriada.id,
+          subdominio: subdominio,
           senhaTemporaria: senhaTemporaria,
-          redirectTo: `${window.location.origin}/cliente/login`
+          redirectTo: `https://${subdominio}.agendicar.com.br/cliente/login`
         }
       });
 
-      if (inviteError) {
-        console.error('Erro ao invocar Edge Function de convite:', inviteError);
-        toast.warning(`Empresa ${dadosEmpresa.nome} criada, mas erro ao enviar e-mail: ${inviteError.message}`);
-      } else if (inviteData?.success) {
-        console.log('Convite enviado com sucesso via Edge Function:', inviteData);
-        toast.success(`Empresa ${dadosEmpresa.nome} criada! E-mail com credenciais enviado.`);
+      if (emailError) {
+        console.error('Erro ao invocar Edge Function de e-mail:', emailError);
+        toast.warning(`Empresa ${dadosEmpresa.nome} criada, mas erro ao enviar e-mail: ${emailError.message}`);
+      } else if (emailData?.success) {
+        console.log('E-mail de boas-vindas enviado com sucesso:', emailData);
+        toast.success(`Empresa ${dadosEmpresa.nome} criada! E-mail de boas-vindas enviado.`);
       } else {
-        console.error('Resposta inesperada da Edge Function:', inviteData);
+        console.error('Resposta inesperada da Edge Function:', emailData);
         toast.warning(`Empresa ${dadosEmpresa.nome} criada, mas erro no envio do e-mail.`);
       }
     } catch (edgeFunctionError) {
       console.error('Erro na chamada da Edge Function:', edgeFunctionError);
-      toast.warning(`Empresa ${dadosEmpresa.nome} criada, mas erro ao enviar e-mail de convite.`);
+      toast.warning(`Empresa ${dadosEmpresa.nome} criada, mas erro ao enviar e-mail de boas-vindas.`);
     }
 
     console.log('Empresa criada com sucesso:', empresaCriada);

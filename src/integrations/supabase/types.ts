@@ -157,6 +157,7 @@ export type Database = {
         Row: {
           cnpj_cpf: string | null
           created_at: string | null
+          data_ativacao: string | null
           data_vencimento: string | null
           email: string
           endereco: string | null
@@ -175,6 +176,7 @@ export type Database = {
         Insert: {
           cnpj_cpf?: string | null
           created_at?: string | null
+          data_ativacao?: string | null
           data_vencimento?: string | null
           email: string
           endereco?: string | null
@@ -193,6 +195,7 @@ export type Database = {
         Update: {
           cnpj_cpf?: string | null
           created_at?: string | null
+          data_ativacao?: string | null
           data_vencimento?: string | null
           email?: string
           endereco?: string | null
