@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Empresa, NovaEmpresaData, CriarEmpresaResult } from '@/types/empresa';
@@ -115,30 +114,33 @@ export const criarEmpresa = async (dadosEmpresa: NovaEmpresaData): Promise<Criar
       // Não falhar a operação completamente, mas avisar
     }
 
-    // Criar usuário no Supabase Auth com convite
+    // Enviar convite usando a Edge Function
     try {
-      const { data: authData, error: authError } = await supabase.auth.admin.inviteUserByEmail(
-        dadosEmpresa.email,
-        {
-          data: {
-            nome: dadosEmpresa.nome,
-            empresa_id: empresaCriada.id,
-            senha_temporaria: senhaTemporaria,
-            primeiro_acesso: true
-          },
+      console.log('Enviando convite via Edge Function...');
+      
+      const { data: inviteData, error: inviteError } = await supabase.functions.invoke('send-company-invite', {
+        body: {
+          email: dadosEmpresa.email,
+          nomeEmpresa: dadosEmpresa.nome,
+          empresaId: empresaCriada.id,
+          senhaTemporaria: senhaTemporaria,
           redirectTo: `${window.location.origin}/cliente/login`
         }
-      );
+      });
 
-      if (authError) {
-        console.error('Erro ao enviar convite:', authError);
-        toast.warning('Empresa criada, mas erro ao enviar e-mail de convite');
-      } else {
+      if (inviteError) {
+        console.error('Erro ao invocar Edge Function de convite:', inviteError);
+        toast.warning(`Empresa ${dadosEmpresa.nome} criada, mas erro ao enviar e-mail: ${inviteError.message}`);
+      } else if (inviteData?.success) {
+        console.log('Convite enviado com sucesso via Edge Function:', inviteData);
         toast.success(`Empresa ${dadosEmpresa.nome} criada! E-mail com credenciais enviado.`);
+      } else {
+        console.error('Resposta inesperada da Edge Function:', inviteData);
+        toast.warning(`Empresa ${dadosEmpresa.nome} criada, mas erro no envio do e-mail.`);
       }
-    } catch (authError) {
-      console.error('Erro na criação do usuário auth:', authError);
-      toast.warning('Empresa criada, mas erro no envio do e-mail');
+    } catch (edgeFunctionError) {
+      console.error('Erro na chamada da Edge Function:', edgeFunctionError);
+      toast.warning(`Empresa ${dadosEmpresa.nome} criada, mas erro ao enviar e-mail de convite.`);
     }
 
     console.log('Empresa criada com sucesso:', empresaCriada);

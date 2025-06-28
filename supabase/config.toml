@@ -1,1 +1,5 @@
+
 project_id = "lztntncrgenyvkotfgig"
+
+[functions.send-company-invite]
+verify_jwt = false
