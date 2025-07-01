@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Empresa, NovaEmpresaData, CriarEmpresaResult } from '@/types/empresa';
@@ -140,7 +141,7 @@ export const criarEmpresa = async (dadosEmpresa: NovaEmpresaData): Promise<Criar
       primeiro_acesso_concluido: false
     };
 
-    // Criar empresa
+    // Criar empresa primeiro
     const { data: empresaCriada, error: empresaError } = await supabase
       .from('empresas')
       .insert([novaEmpresa])
@@ -153,18 +154,84 @@ export const criarEmpresa = async (dadosEmpresa: NovaEmpresaData): Promise<Criar
       return null;
     }
 
-    // Criar usuário administrador da empresa usando a função do banco
-    const { error: usuarioError } = await supabase.rpc('criar_usuario_empresa', {
-      p_email: dadosEmpresa.email,
-      p_senha_temporaria: senhaTemporaria,
-      p_nome_empresa: dadosEmpresa.nome,
-      p_empresa_id: empresaCriada.id
+    console.log('Empresa criada no banco:', empresaCriada);
+
+    // PASSO CRÍTICO: Criar usuário no Supabase Auth
+    console.log('Criando usuário no Supabase Auth...');
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email: dadosEmpresa.email,
+      password: senhaTemporaria,
+      options: {
+        data: {
+          nome_cliente_empresa: dadosEmpresa.nome,
+          subdominio: subdominio,
+          senha_provisoria: senhaTemporaria,
+          empresa_id: empresaCriada.id
+        },
+        emailRedirectTo: `https://${subdominio}.agendicar.com.br/cliente/login`
+      }
     });
 
-    if (usuarioError) {
-      console.error('Erro ao criar usuário da empresa:', usuarioError);
-      toast.error('Erro ao criar usuário administrador: ' + usuarioError.message);
-      // Não falhar a operação completamente, mas avisar
+    if (authError) {
+      console.error('Erro ao criar usuário no Supabase Auth:', authError);
+      // Se falhar a criação do usuário, vamos tentar deletar a empresa criada
+      try {
+        await supabase.from('empresas').delete().eq('id', empresaCriada.id);
+        console.log('Empresa removida devido a erro na criação do usuário');
+      } catch (cleanupError) {
+        console.error('Erro ao limpar empresa após falha na criação do usuário:', cleanupError);
+      }
+      toast.error('Erro ao criar usuário de autenticação: ' + authError.message);
+      return null;
+    }
+
+    console.log('Usuário Supabase Auth criado com sucesso:', authData);
+
+    // Verificar se o usuário foi criado
+    if (!authData.user) {
+      console.error('Usuário não foi criado no Supabase Auth - data.user é null');
+      toast.error('Erro interno: usuário não foi criado no sistema de autenticação');
+      return null;
+    }
+
+    // Atualizar o registro de usuário na tabela usuarios com o auth_user_id
+    console.log('Atualizando tabela usuarios com auth_user_id...');
+    const { error: updateUserError } = await supabase
+      .from('usuarios')
+      .update({
+        auth_user_id: authData.user.id,
+        primeiro_acesso_concluido: false
+      })
+      .eq('email', dadosEmpresa.email)
+      .eq('empresa_id', empresaCriada.id);
+
+    if (updateUserError) {
+      console.error('Erro ao atualizar usuário com auth_user_id:', updateUserError);
+      // Não vamos falhar a operação por isso, mas vamos logar
+      console.warn('Usuário criado no Auth mas não vinculado na tabela usuarios');
+    } else {
+      console.log('Usuário vinculado com sucesso na tabela usuarios');
+    }
+
+    // Criar registro inicial na tabela usuarios se não existir
+    const { error: insertUserError } = await supabase
+      .from('usuarios')
+      .upsert({
+        nome: dadosEmpresa.nome,
+        email: dadosEmpresa.email,
+        empresa_id: empresaCriada.id,
+        auth_user_id: authData.user.id,
+        role: 'admin',
+        nivel_acesso: 'admin',
+        ativo: true,
+        primeiro_acesso_concluido: false
+      });
+
+    if (insertUserError) {
+      console.error('Erro ao criar/atualizar registro de usuário:', insertUserError);
+      // Não vamos falhar a operação por isso
+    } else {
+      console.log('Registro de usuário criado/atualizado com sucesso');
     }
 
     // Enviar e-mail de boas-vindas personalizado usando a Edge Function
@@ -197,7 +264,7 @@ export const criarEmpresa = async (dadosEmpresa: NovaEmpresaData): Promise<Criar
       toast.warning(`Empresa ${dadosEmpresa.nome} criada, mas erro ao enviar e-mail de boas-vindas.`);
     }
 
-    console.log('Empresa criada com sucesso:', empresaCriada);
+    console.log('Processo de criação de empresa concluído com sucesso!');
 
     return {
       empresa: empresaCriada as Empresa,
