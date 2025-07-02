@@ -19,16 +19,6 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const { isAuthenticated, isLoading, isSuperAdmin, isCompanyUser } = useAuth();
   const location = useLocation();
 
-  console.log('🛡️ ProtectedRoute check:', {
-    isAuthenticated,
-    isLoading,
-    isSuperAdmin,
-    isCompanyUser,
-    requireSuperAdmin,
-    requireCompanyAccess,
-    path: location.pathname
-  });
-
   // Mostrar loading durante verificação
   if (isLoading) {
     return (
@@ -43,22 +33,18 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Verificar se requer autenticação
   if (requireAuth && !isAuthenticated) {
-    console.log('❌ Usuário não autenticado, redirecionando para login');
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   // Verificar permissões específicas
   if (requireSuperAdmin && !isSuperAdmin) {
-    console.log('❌ Usuário não é super admin');
     return <Navigate to="/unauthorized" replace />;
   }
 
   // Super admins podem acessar qualquer rota (admin ou empresa)
   if (requireCompanyAccess && !isCompanyUser && !isSuperAdmin) {
-    console.log('❌ Usuário não pertence a uma empresa e não é super admin');
     return <Navigate to="/unauthorized" replace />;
   }
 
-  console.log('✅ Acesso autorizado');
   return <>{children}</>;
 };

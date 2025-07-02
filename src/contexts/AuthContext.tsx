@@ -55,8 +55,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Carregar perfil do usuário
   const loadUserProfile = async (userId: string): Promise<UserProfile | null> => {
     try {
-      console.log('🔍 Carregando perfil para usuário:', userId);
-      
       const { data, error } = await supabase
         .from('usuarios')
         .select('*')
@@ -68,7 +66,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return null;
       }
 
-      console.log('✅ Perfil carregado:', data);
       return data as UserProfile;
     } catch (error) {
       console.error('❌ Erro inesperado ao carregar perfil:', error);
@@ -79,7 +76,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Função de login
   const signIn = async (email: string, password: string) => {
     try {
-      console.log('🔐 Iniciando login para:', email);
       setIsLoading(true);
       
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -88,7 +84,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       if (error) {
-        console.error('❌ Erro de autenticação:', error);
         setIsLoading(false);
         
         if (error.message.includes('Invalid login credentials')) {
@@ -107,7 +102,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { error: 'Erro na autenticação do usuário.' };
       }
 
-      console.log('✅ Login bem-sucedido para:', data.user.email);
       // O perfil será carregado pelo listener do onAuthStateChange
       return { error: null };
     } catch (error) {
@@ -125,9 +119,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error) {
         console.error('Erro no logout:', error);
         toast.error('Erro ao sair do sistema');
-      } else {
-        console.log('✅ Logout realizado com sucesso');
-        toast.success('Logout realizado com sucesso');
       }
     } catch (error) {
       console.error('Erro inesperado no logout:', error);
