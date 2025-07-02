@@ -18,12 +18,12 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   requireSuperAdmin = false,
   requireCompanyAccess = false,
 }) => {
-  const { isAuthenticated, isLoading, isSuperAdmin, isGlobalAdmin, isCompanyUser } = useAuth();
+  const { isAuthenticated, isCheckingSession, isSuperAdmin, isGlobalAdmin, isCompanyUser } = useAuth();
   const location = useLocation();
 
   console.log('ProtectedRoute check:', {
     isAuthenticated,
-    isLoading,
+    isCheckingSession,
     isSuperAdmin,
     isGlobalAdmin,
     isCompanyUser,
@@ -32,13 +32,13 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     requireCompanyAccess
   });
 
-  // Mostrar loading enquanto verifica autenticação
-  if (isLoading) {
+  // Mostrar loading apenas durante verificação inicial de sessão
+  if (isCheckingSession) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">Verificando autenticação...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+          <p className="text-sm text-gray-600">Verificando autenticação...</p>
         </div>
       </div>
     );

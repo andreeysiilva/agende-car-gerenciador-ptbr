@@ -14,25 +14,22 @@ import { getClientLoginUrl } from '@/utils/linkUtils';
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const { signIn, isAuthenticated, isSuperAdmin, isGlobalAdmin, profile, isLoading: authLoading } = useAuth();
+  const { signIn, isAuthenticated, isSuperAdmin, isGlobalAdmin, profile, isLoading, isCheckingSession } = useAuth();
   const navigate = useNavigate();
 
-  // Redirecionar usuários já autenticados
+  // Redirecionar usuários já autenticados (silenciosamente se for verificação automática)
   useEffect(() => {
-    if (!authLoading && isAuthenticated && profile) {
-      console.log('✅ Usuário autenticado, redirecionando...', { isSuperAdmin, isGlobalAdmin });
+    if (!isCheckingSession && isAuthenticated && profile) {
+      console.log('✅ Usuário já autenticado, redirecionando silenciosamente...', { isSuperAdmin, isGlobalAdmin });
       
       if (isSuperAdmin || isGlobalAdmin) {
-        toast.success('Bem-vindo ao painel administrativo!');
         navigate('/admin/dashboard', { replace: true });
       } else {
-        toast.success('Bem-vindo ao sistema!');
         navigate('/app/dashboard', { replace: true });
       }
     }
-  }, [authLoading, isAuthenticated, isSuperAdmin, isGlobalAdmin, profile, navigate]);
+  }, [isCheckingSession, isAuthenticated, isSuperAdmin, isGlobalAdmin, profile, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,26 +39,29 @@ const Login: React.FC = () => {
       return;
     }
 
-    setIsLoading(true);
-
-    try {
-      console.log('🔐 Tentando fazer login...');
-      const { error } = await signIn(email.trim(), password);
-      
-      if (error) {
-        console.error('❌ Erro no login:', error);
-        toast.error(error);
-      } else {
-        console.log('✅ Login bem-sucedido!');
-        toast.success('Login realizado com sucesso!');
-      }
-    } catch (error) {
-      console.error('❌ Erro no login:', error);
-      toast.error('Erro interno do sistema. Tente novamente.');
-    } finally {
-      setIsLoading(false);
+    console.log('🔐 Usuário iniciando login manual...');
+    const { error } = await signIn(email.trim(), password);
+    
+    if (error) {
+      console.error('❌ Erro no login manual:', error);
+      toast.error(error);
+    } else {
+      console.log('✅ Login manual iniciado com sucesso!');
+      toast.success('Login realizado com sucesso!');
     }
   };
+
+  // Mostrar loading apenas durante verificação inicial de sessão
+  if (isCheckingSession) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-secondary-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+          <p className="text-sm text-gray-600">Verificando autenticação...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (showForgotPassword) {
     return <ForgotPasswordForm onBack={() => setShowForgotPassword(false)} />;
@@ -99,7 +99,7 @@ const Login: React.FC = () => {
                     onChange={(e) => setEmail(e.target.value)}
                     required
                     className="h-11 pl-10"
-                    disabled={isLoading || authLoading}
+                    disabled={isLoading}
                     autoComplete="email"
                   />
                 </div>
@@ -119,7 +119,7 @@ const Login: React.FC = () => {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     className="h-11 pl-10"
-                    disabled={isLoading || authLoading}
+                    disabled={isLoading}
                     autoComplete="current-password"
                   />
                 </div>
@@ -131,7 +131,7 @@ const Login: React.FC = () => {
                   variant="ghost"
                   className="text-sm text-primary hover:text-primary-hover"
                   onClick={() => setShowForgotPassword(true)}
-                  disabled={isLoading || authLoading}
+                  disabled={isLoading}
                 >
                   Esqueci minha senha
                 </Button>
@@ -140,12 +140,12 @@ const Login: React.FC = () => {
               <Button 
                 type="submit" 
                 className="w-full h-11 bg-primary hover:bg-primary-hover text-white font-medium"
-                disabled={isLoading || authLoading}
+                disabled={isLoading}
               >
-                {isLoading || authLoading ? (
+                {isLoading ? (
                   <div className="flex items-center gap-2">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    {authLoading ? 'Carregando sistema...' : 'Entrando...'}
+                    Entrando...
                   </div>
                 ) : (
                   'Entrar no Sistema'

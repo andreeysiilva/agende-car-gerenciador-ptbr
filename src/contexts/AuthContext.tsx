@@ -22,6 +22,7 @@ interface AuthContextType {
   session: Session | null;
   profile: UserProfile | null;
   isLoading: boolean;
+  isCheckingSession: boolean;
   isAuthenticated: boolean;
   needsPasswordChange: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
@@ -48,12 +49,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false); // Para login manual
+  const [isCheckingSession, setIsCheckingSession] = useState(true); // Para verificação inicial
+  const [isManualLogin, setIsManualLogin] = useState(false); // Flag para distinguir login manual
 
   // Carregar perfil do usuário
-  const loadUserProfile = async (userId: string): Promise<UserProfile | null> => {
+  const loadUserProfile = async (userId: string, isManual: boolean = false): Promise<UserProfile | null> => {
     try {
-      console.log('🔍 Carregando perfil para usuário:', userId);
+      if (isManual) {
+        console.log('🔍 Carregando perfil após login manual para usuário:', userId);
+      } else {
+        console.log('🔍 Verificando perfil existente para usuário:', userId);
+      }
       
       const { data, error } = await supabase
         .from('usuarios')
@@ -66,7 +73,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return null;
       }
 
-      console.log('✅ Perfil carregado:', data);
+      if (isManual) {
+        console.log('✅ Perfil carregado após login manual:', data);
+      } else {
+        console.log('✅ Perfil existente verificado:', data);
+      }
       return data as UserProfile;
     } catch (error) {
       console.error('❌ Erro inesperado ao carregar perfil:', error);
@@ -78,7 +89,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const forceReloadProfile = async () => {
     if (user) {
       setIsLoading(true);
-      const updatedProfile = await loadUserProfile(user.id);
+      const updatedProfile = await loadUserProfile(user.id, false);
       setProfile(updatedProfile);
       setIsLoading(false);
     }
@@ -104,7 +115,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.error('Erro ao marcar primeiro acesso:', error);
       } else {
         if (user) {
-          const updatedProfile = await loadUserProfile(user.id);
+          const updatedProfile = await loadUserProfile(user.id, false);
           setProfile(updatedProfile);
         }
       }
@@ -116,7 +127,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Função de login
   const signIn = async (email: string, password: string) => {
     try {
-      console.log('🔐 Iniciando login para:', email);
+      console.log('🔐 Iniciando login manual para:', email);
+      setIsManualLogin(true);
+      setIsLoading(true);
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -125,6 +138,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) {
         console.error('❌ Erro de autenticação:', error);
+        setIsLoading(false);
+        setIsManualLogin(false);
         
         if (error.message.includes('Invalid login credentials')) {
           return { error: 'Email ou senha incorretos. Verifique suas credenciais.' };
@@ -138,13 +153,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (!data.user) {
+        setIsLoading(false);
+        setIsManualLogin(false);
         return { error: 'Erro na autenticação do usuário.' };
       }
 
-      console.log('✅ Login bem-sucedido para:', data.user.email);
+      console.log('✅ Login manual bem-sucedido para:', data.user.email);
       return { error: null };
     } catch (error) {
       console.error('❌ Erro inesperado no login:', error);
+      setIsLoading(false);
+      setIsManualLogin(false);
       return { error: 'Erro interno do sistema. Tente novamente.' };
     }
   };
@@ -177,22 +196,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (!mounted) return;
 
         if (session?.user) {
-          console.log('👤 Sessão ativa, carregando perfil...');
           setSession(session);
           setUser(session.user);
-          setIsLoading(true);
           
-          // Carregar perfil
-          const userProfile = await loadUserProfile(session.user.id);
-          if (mounted) {
-            setProfile(userProfile);
-            setIsLoading(false);
-            
-            console.log('✅ Perfil carregado:', userProfile);
-            
-            // Atualizar último acesso apenas no login
-            if (event === 'SIGNED_IN' && userProfile) {
-              setTimeout(() => updateLastAccess(), 1000);
+          // Distinguir entre tipos de eventos
+          if (event === 'SIGNED_IN' && isManualLogin) {
+            console.log('👤 Login manual detectado, carregando perfil...');
+            const userProfile = await loadUserProfile(session.user.id, true);
+            if (mounted) {
+              setProfile(userProfile);
+              setIsLoading(false);
+              setIsManualLogin(false);
+              
+              // Atualizar último acesso apenas no login manual
+              if (userProfile) {
+                setTimeout(() => updateLastAccess(), 1000);
+              }
+            }
+          } else if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') {
+            console.log('🔄 Token refresh ou login automático, verificando perfil silenciosamente...');
+            const userProfile = await loadUserProfile(session.user.id, false);
+            if (mounted) {
+              setProfile(userProfile);
+              setIsCheckingSession(false);
             }
           }
         } else {
@@ -201,31 +227,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser(null);
           setProfile(null);
           setIsLoading(false);
+          setIsCheckingSession(false);
+          setIsManualLogin(false);
         }
       }
     );
 
-    // Verificar sessão existente
+    // Verificar sessão existente apenas uma vez
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!mounted) return;
 
-      console.log('🔍 Verificando sessão existente:', session?.user?.email);
+      console.log('🔍 Verificando sessão existente (silencioso):', session?.user?.email || 'Nenhuma');
       
       if (session?.user) {
         setSession(session);
         setUser(session.user);
-        setIsLoading(true);
         
-        const userProfile = await loadUserProfile(session.user.id);
+        const userProfile = await loadUserProfile(session.user.id, false);
         if (mounted) {
           setProfile(userProfile);
-          setIsLoading(false);
-          
-          console.log('✅ Perfil carregado na inicialização:', userProfile);
+          setIsCheckingSession(false);
+          console.log('✅ Sessão existente restaurada silenciosamente');
         }
       } else {
         if (mounted) {
-          setIsLoading(false);
+          setIsCheckingSession(false);
         }
       }
     });
@@ -234,29 +260,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       mounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [isManualLogin]);
 
   // Verificações de papel
-  const isSuperAdmin = !isLoading && profile 
+  const isSuperAdmin = !isCheckingSession && !isLoading && profile 
     ? profile.role === 'super_admin' && profile.nivel_acesso === 'super_admin'
     : false;
     
-  const isGlobalAdmin = !isLoading && profile 
+  const isGlobalAdmin = !isCheckingSession && !isLoading && profile 
     ? (profile.role === 'admin' || profile.role === 'super_admin') && profile.empresa_id !== null
     : false;
     
-  const isCompanyUser = !isLoading && profile 
+  const isCompanyUser = !isCheckingSession && !isLoading && profile 
     ? profile.empresa_id !== null
     : false;
     
-  const isAuthenticated = !isLoading && !!user && !!profile;
-  const needsPasswordChange = !isLoading && profile?.primeiro_acesso_concluido === false && isCompanyUser;
+  const isAuthenticated = !isCheckingSession && !isLoading && !!user && !!profile;
+  const needsPasswordChange = !isCheckingSession && !isLoading && profile?.primeiro_acesso_concluido === false && isCompanyUser;
 
   const value = {
     user,
     session,
     profile,
-    isLoading,
+    isLoading, // Para login manual
+    isCheckingSession, // Para verificação inicial
     isAuthenticated,
     needsPasswordChange,
     signIn,
