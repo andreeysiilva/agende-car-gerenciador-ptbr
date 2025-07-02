@@ -3,6 +3,8 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
+import { getAdminDashboardUrl } from '@/utils/linkUtils';
 
 // Tipos para o contexto de autenticação
 interface UserProfile {
@@ -25,7 +27,6 @@ interface AuthContextType {
   isAuthenticated: boolean;
   needsPasswordChange: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
-  signUp: (email: string, password: string, userData?: { name: string }) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   isSuperAdmin: boolean;
   isGlobalAdmin: boolean;
@@ -71,21 +72,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Verificar se precisa trocar senha
-  const checkNeedsPasswordChange = async () => {
-    try {
-      const { data, error } = await supabase.rpc('precisa_trocar_senha');
-      if (error) {
-        console.error('Erro ao verificar necessidade de trocar senha:', error);
-        return false;
-      }
-      return data || false;
-    } catch (error) {
-      console.error('Erro inesperado ao verificar senha:', error);
-      return false;
-    }
-  };
-
   // Atualizar último acesso
   const updateLastAccess = async () => {
     try {
@@ -109,7 +95,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Função de login
+  // Função de login com redirecionamento inteligente
   const signIn = async (email: string, password: string) => {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -118,41 +104,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       if (error) {
-        return { error: error.message };
+        console.error('Erro de autenticação:', error);
+        return { error: 'Credenciais inválidas. Verifique seu email e senha.' };
       }
 
-      // Atualizar último acesso após login bem-sucedido
-      if (data.user) {
-        setTimeout(() => updateLastAccess(), 1000);
+      if (!data.user) {
+        return { error: 'Erro na autenticação do usuário.' };
       }
 
-      return { error: null };
-    } catch (error) {
-      return { error: 'Erro inesperado no login' };
-    }
-  };
-
-  // Função de registro
-  const signUp = async (email: string, password: string, userData?: { name: string }) => {
-    try {
-      const redirectUrl = `${window.location.origin}/`;
-      
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: redirectUrl,
-          data: userData || {}
+      // Aguardar um momento para o perfil ser carregado
+      setTimeout(async () => {
+        try {
+          await updateLastAccess();
+          
+          // Carregar perfil para determinar redirecionamento
+          const userProfile = await loadUserProfile(data.user.id);
+          if (userProfile) {
+            // Redirecionar baseado no tipo de usuário
+            if (userProfile.empresa_id === null && (userProfile.role === 'admin' || userProfile.role === 'super_admin')) {
+              // Admin global - redirecionar para dashboard admin
+              window.location.href = getAdminDashboardUrl();
+            } else if (userProfile.empresa_id !== null) {
+              // Usuário de empresa - redirecionar para dashboard da empresa
+              window.location.href = '/app/dashboard';
+            }
+          }
+        } catch (error) {
+          console.error('Erro no pós-login:', error);
         }
-      });
-
-      if (error) {
-        return { error: error.message };
-      }
+      }, 1000);
 
       return { error: null };
     } catch (error) {
-      return { error: 'Erro inesperado no registro' };
+      console.error('Erro inesperado no login:', error);
+      return { error: 'Erro interno do sistema. Tente novamente.' };
     }
   };
 
@@ -165,6 +150,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         toast.error('Erro ao sair do sistema');
       } else {
         toast.success('Logout realizado com sucesso');
+        // Redirecionar para a página de login
+        window.location.href = '/auth';
       }
     } catch (error) {
       console.error('Erro inesperado no logout:', error);
@@ -229,7 +216,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isAuthenticated,
     needsPasswordChange,
     signIn,
-    signUp,
     signOut,
     isSuperAdmin,
     isGlobalAdmin,

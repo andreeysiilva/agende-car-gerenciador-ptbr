@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -23,12 +24,19 @@ const ClienteLogin: React.FC = () => {
   // Função para lidar com o envio do formulário de login
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!email.trim() || !password.trim()) {
+      toast.error('Por favor, preencha todos os campos');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      const { error } = await signIn(email, password);
+      const { error } = await signIn(email.trim(), password);
       
       if (error) {
+        console.error('Erro no login:', error);
         toast.error(error);
       } else {
         toast.success('Login realizado com sucesso!');
@@ -37,7 +45,7 @@ const ClienteLogin: React.FC = () => {
       }
     } catch (error) {
       console.error('Erro no login:', error);
-      toast.error('Erro interno. Tente novamente.');
+      toast.error('Erro interno do sistema. Tente novamente.');
     } finally {
       setIsLoading(false);
     }
@@ -93,6 +101,7 @@ const ClienteLogin: React.FC = () => {
                     required
                     className="h-11 pl-10"
                     disabled={isLoading}
+                    autoComplete="email"
                   />
                 </div>
               </div>
@@ -112,6 +121,7 @@ const ClienteLogin: React.FC = () => {
                     required
                     className="h-11 pl-10"
                     disabled={isLoading}
+                    autoComplete="current-password"
                   />
                 </div>
               </div>

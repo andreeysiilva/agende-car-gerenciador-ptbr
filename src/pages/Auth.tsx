@@ -6,18 +6,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Car, Lock, Mail, User } from 'lucide-react';
+import { Car, Lock, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Auth: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('login');
   
-  const { signIn, signUp, isAuthenticated } = useAuth();
+  const { signIn, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -32,40 +29,26 @@ const Auth: React.FC = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!email.trim() || !password.trim()) {
+      toast.error('Por favor, preencha todos os campos');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      const { error } = await signIn(email, password);
+      const { error } = await signIn(email.trim(), password);
       
       if (error) {
-        toast.error(`Erro no login: ${error}`);
+        console.error('Erro no login:', error);
+        toast.error('Credenciais inválidas. Verifique seu email e senha.');
       } else {
         toast.success('Login realizado com sucesso!');
       }
     } catch (error) {
-      console.error('Erro no login:', error);
-      toast.error('Erro interno. Tente novamente.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-
-    try {
-      const { error } = await signUp(email, password, { name });
-      
-      if (error) {
-        toast.error(`Erro no registro: ${error}`);
-      } else {
-        toast.success('Conta criada com sucesso! Verifique seu email.');
-        setActiveTab('login');
-      }
-    } catch (error) {
-      console.error('Erro no registro:', error);
-      toast.error('Erro interno. Tente novamente.');
+      console.error('Erro inesperado no login:', error);
+      toast.error('Erro interno do sistema. Tente novamente.');
     } finally {
       setIsLoading(false);
     }
@@ -91,152 +74,67 @@ const Auth: React.FC = () => {
           </CardHeader>
           
           <CardContent>
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="login">Entrar</TabsTrigger>
-                <TabsTrigger value="signup">Registrar</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="login">
-                <form onSubmit={handleLogin} className="space-y-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="email" className="text-text-primary font-medium">
-                      E-mail
-                    </Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-text-secondary" />
-                      <Input
-                        id="email"
-                        type="email"
-                        placeholder="seu@email.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                        className="h-11 pl-10"
-                        disabled={isLoading}
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="password" className="text-text-primary font-medium">
-                      Senha
-                    </Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-text-secondary" />
-                      <Input
-                        id="password"
-                        type="password"
-                        placeholder="Digite sua senha"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        className="h-11 pl-10"
-                        disabled={isLoading}
-                      />
-                    </div>
-                  </div>
-                  
-                  <Button 
-                    type="submit" 
-                    className="w-full h-11 bg-primary hover:bg-primary-hover text-white font-medium"
+            <form onSubmit={handleLogin} className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-text-primary font-medium">
+                  E-mail
+                </Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-text-secondary" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="seu@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="h-11 pl-10"
                     disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <div className="flex items-center gap-2">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                        Entrando...
-                      </div>
-                    ) : (
-                      'Entrar'
-                    )}
-                  </Button>
-                </form>
-              </TabsContent>
+                    autoComplete="email"
+                  />
+                </div>
+              </div>
               
-              <TabsContent value="signup">
-                <form onSubmit={handleSignUp} className="space-y-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="name" className="text-text-primary font-medium">
-                      Nome Completo
-                    </Label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-text-secondary" />
-                      <Input
-                        id="name"
-                        type="text"
-                        placeholder="Seu nome completo"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        required
-                        className="h-11 pl-10"
-                        disabled={isLoading}
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-email" className="text-text-primary font-medium">
-                      E-mail
-                    </Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-text-secondary" />
-                      <Input
-                        id="signup-email"
-                        type="email"
-                        placeholder="seu@email.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                        className="h-11 pl-10"
-                        disabled={isLoading}
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-password" className="text-text-primary font-medium">
-                      Senha
-                    </Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-text-secondary" />
-                      <Input
-                        id="signup-password"
-                        type="password"
-                        placeholder="Escolha uma senha"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        className="h-11 pl-10"
-                        disabled={isLoading}
-                      />
-                    </div>
-                  </div>
-                  
-                  <Button 
-                    type="submit" 
-                    className="w-full h-11 bg-secondary hover:bg-secondary-hover text-white font-medium"
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-text-primary font-medium">
+                  Senha
+                </Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-text-secondary" />
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="Digite sua senha"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="h-11 pl-10"
                     disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <div className="flex items-center gap-2">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                        Registrando...
-                      </div>
-                    ) : (
-                      'Criar Conta'
-                    )}
-                  </Button>
-                </form>
-              </TabsContent>
-            </Tabs>
+                    autoComplete="current-password"
+                  />
+                </div>
+              </div>
+              
+              <Button 
+                type="submit" 
+                className="w-full h-11 bg-primary hover:bg-primary-hover text-white font-medium"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Entrando...
+                  </div>
+                ) : (
+                  'Entrar no Sistema'
+                )}
+              </Button>
+            </form>
             
             <div className="mt-8 pt-6 border-t border-border">
-              <div className="bg-blue-50 rounded-lg p-4">
-                <h4 className="font-medium text-text-primary mb-2">Conta de Teste:</h4>
+              <div className="text-center">
                 <p className="text-sm text-text-secondary">
-                  <strong>E-mail:</strong> andreey.siilva@icloud.com<br />
-                  <strong>Senha:</strong> (criar conta primeiro)
+                  Não possui acesso? Entre em contato com o administrador do sistema.
                 </p>
               </div>
             </div>
