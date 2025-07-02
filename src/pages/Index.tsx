@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -24,26 +25,25 @@ const Index: React.FC = () => {
   const navigate = useNavigate();
   const { isAuthenticated, isGlobalAdmin, isCompanyUser } = useAuth();
 
-  const handleGetStarted = () => {
-    if (isAuthenticated) {
-      if (isGlobalAdmin) {
-        navigate('/admin/dashboard');
-      } else if (isCompanyUser) {
-        navigate('/app/dashboard');
-      } else {
-        navigate('/auth');
-      }
-    } else {
-      navigate('/auth');
-    }
-  };
-
   const handleAdminAccess = () => {
     navigate(getAdminLoginUrl());
   };
 
   const handleClientAccess = () => {
     navigate(getClientLoginUrl());
+  };
+
+  const handleGetStarted = () => {
+    if (isAuthenticated) {
+      if (isGlobalAdmin) {
+        navigate('/admin/dashboard');
+      } else if (isCompanyUser) {
+        navigate('/app/dashboard');
+      }
+    } else {
+      // Se não autenticado, redireciona para área do cliente por padrão
+      navigate(getClientLoginUrl());
+    }
   };
 
   const features = [
@@ -147,14 +147,11 @@ const Index: React.FC = () => {
               <div className="flex items-center gap-2">
                 <Button variant="outline" onClick={handleAdminAccess}>
                   <UserCog className="h-4 w-4 mr-2" />
-                  Admin
+                  Painel Admin
                 </Button>
-                <Button variant="outline" onClick={handleClientAccess}>
+                <Button onClick={handleClientAccess}>
                   <Building className="h-4 w-4 mr-2" />
                   Área do Cliente
-                </Button>
-                <Button onClick={() => navigate('/auth')}>
-                  Entrar
                 </Button>
               </div>
             )}
@@ -183,21 +180,26 @@ const Index: React.FC = () => {
           </p>
           
           <div className="flex gap-4 justify-center flex-wrap">
-            <Button size="lg" onClick={handleGetStarted} className="h-12 px-8">
-              {isAuthenticated ? 'Acessar Sistema' : 'Começar Agora'}
-              <ArrowRight className="h-5 w-5 ml-2" />
-            </Button>
-            <Button size="lg" variant="outline" className="h-12 px-8">
+            {isAuthenticated ? (
+              <Button size="lg" onClick={handleGetStarted} className="h-12 px-8">
+                Acessar Meu Dashboard
+                <ArrowRight className="h-5 w-5 ml-2" />
+              </Button>
+            ) : (
+              <>
+                <Button size="lg" onClick={handleClientAccess} className="h-12 px-8">
+                  <Building className="h-5 w-5 mr-2" />
+                  Área do Cliente
+                </Button>
+                <Button size="lg" variant="outline" onClick={handleAdminAccess} className="h-12 px-8">
+                  <UserCog className="h-5 w-5 mr-2" />
+                  Painel Admin
+                </Button>
+              </>
+            )}
+            <Button size="lg" variant="secondary" className="h-12 px-8">
               <Building2 className="h-5 w-5 mr-2" />
               Ver Demonstração
-            </Button>
-            <Button size="lg" variant="secondary" onClick={handleClientAccess} className="h-12 px-8">
-              <Building className="h-5 w-5 mr-2" />
-              Área do Cliente
-            </Button>
-            <Button size="lg" variant="ghost" onClick={handleAdminAccess} className="h-12 px-8">
-              <UserCog className="h-5 w-5 mr-2" />
-              Painel Admin
             </Button>
           </div>
         </div>
@@ -274,7 +276,7 @@ const Index: React.FC = () => {
                   <Button 
                     className="w-full" 
                     variant={plan.popular ? 'default' : 'outline'}
-                    onClick={() => navigate('/auth')}
+                    onClick={handleClientAccess}
                   >
                     Começar Teste Grátis
                   </Button>
@@ -298,9 +300,9 @@ const Index: React.FC = () => {
             size="lg" 
             variant="secondary" 
             className="h-12 px-8"
-            onClick={handleGetStarted}
+            onClick={isAuthenticated ? handleGetStarted : handleClientAccess}
           >
-            {isAuthenticated ? 'Acessar Minha Conta' : 'Criar Conta Gratuita'}
+            {isAuthenticated ? 'Acessar Minha Conta' : 'Começar Agora'}
             <ArrowRight className="h-5 w-5 ml-2" />
           </Button>
         </div>
