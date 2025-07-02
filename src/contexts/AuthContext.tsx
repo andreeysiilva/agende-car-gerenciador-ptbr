@@ -4,34 +4,34 @@ import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
 import { toast } from 'sonner';
 
-// Tipos simplificados
+// Tipos para o contexto de autenticação
 interface UserProfile {
   id: string;
-  auth_user_id: string;
   nome: string;
   email: string;
   role: 'super_admin' | 'admin' | 'funcionario' | 'moderador' | 'suporte';
   nivel_acesso: 'super_admin' | 'admin' | 'moderador' | 'suporte';
   empresa_id: string | null;
   ativo: boolean;
+  ultimo_acesso: string | null;
   primeiro_acesso_concluido: boolean;
 }
 
 interface AuthContextType {
   user: User | null;
+  session: Session | null;
   profile: UserProfile | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  needsPasswordChange: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
+  signUp: (email: string, password: string, userData?: { name: string }) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   isSuperAdmin: boolean;
+  isGlobalAdmin: boolean;
   isCompanyUser: boolean;
   updateLastAccess: () => Promise<void>;
   markFirstAccessComplete: () => Promise<void>;
-  needsPasswordChange: boolean;
-  selectedEmpresaId: string | null;
-  selectEmpresa: (empresaId: string) => Promise<void>;
-  availableEmpresas: any[];
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -46,34 +46,12 @@ export const useAuth = () => {
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [session, setSession] = useState<Session | null>(null);
-  const [selectedEmpresaId, setSelectedEmpresaId] = useState<string | null>(null);
-  const [availableEmpresas, setAvailableEmpresas] = useState<any[]>([]);
-
-  // Função para verificar permissões robustamente
-  const checkUserPermissions = async (userId: string): Promise<boolean> => {
-    try {
-      const { data, error } = await supabase.rpc('debug_user_permissions', {
-        p_email: null
-      });
-
-      if (error) {
-        console.error('Erro ao verificar permissões:', error);
-        return false;
-      }
-
-      console.log('🔍 Debug permissões:', data);
-      return data?.[0]?.is_super_admin || false;
-    } catch (error) {
-      console.error('Erro inesperado ao verificar permissões:', error);
-      return false;
-    }
-  };
 
   // Carregar perfil do usuário
-  const loadUserProfile = async (userId: string): Promise<UserProfile | null> => {
+  const loadUserProfile = async (userId: string) => {
     try {
       const { data, error } = await supabase
         .from('usuarios')
@@ -82,263 +60,182 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .single();
 
       if (error) {
-        console.error('❌ Erro ao carregar perfil:', error);
+        console.error('Erro ao carregar perfil:', error);
         return null;
-      }
-
-      // Verificar permissões após carregar perfil
-      if (data.role === 'super_admin') {
-        await checkUserPermissions(userId);
       }
 
       return data as UserProfile;
     } catch (error) {
-      console.error('❌ Erro inesperado ao carregar perfil:', error);
+      console.error('Erro inesperado ao carregar perfil:', error);
       return null;
     }
   };
 
-  // Função de login
-  const signIn = async (email: string, password: string) => {
+  // Verificar se precisa trocar senha
+  const checkNeedsPasswordChange = async () => {
     try {
-      setIsLoading(true);
-      
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
+      const { data, error } = await supabase.rpc('precisa_trocar_senha');
       if (error) {
-        setIsLoading(false);
-        
-        if (error.message.includes('Invalid login credentials')) {
-          return { error: 'Email ou senha incorretos. Verifique suas credenciais.' };
-        } else if (error.message.includes('Email not confirmed')) {
-          return { error: 'Email não confirmado. Verifique sua caixa de entrada.' };
-        } else if (error.message.includes('Too many requests')) {
-          return { error: 'Muitas tentativas de login. Aguarde alguns minutos.' };
-        }
-        
-        return { error: 'Erro na autenticação. Tente novamente.' };
+        console.error('Erro ao verificar necessidade de trocar senha:', error);
+        return false;
       }
-
-      if (!data.user) {
-        setIsLoading(false);
-        return { error: 'Erro na autenticação do usuário.' };
-      }
-
-      // O perfil será carregado pelo listener do onAuthStateChange
-      return { error: null };
+      return data || false;
     } catch (error) {
-      console.error('❌ Erro inesperado no login:', error);
-      setIsLoading(false);
-      return { error: 'Erro interno do sistema. Tente novamente.' };
-    }
-  };
-
-  // Função de logout
-  const signOut = async () => {
-    try {
-      setIsLoading(true);
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        console.error('Erro no logout:', error);
-        toast.error('Erro ao sair do sistema');
-      }
-    } catch (error) {
-      console.error('Erro inesperado no logout:', error);
-      toast.error('Erro inesperado ao sair');
-    } finally {
-      setIsLoading(false);
+      console.error('Erro inesperado ao verificar senha:', error);
+      return false;
     }
   };
 
   // Atualizar último acesso
   const updateLastAccess = async () => {
     try {
-      const { error } = await supabase.rpc('update_last_access');
-      if (error) {
-        console.error('Erro ao atualizar último acesso:', error);
-      }
+      await supabase.rpc('update_last_access');
     } catch (error) {
-      console.error('Erro inesperado ao atualizar último acesso:', error);
+      console.error('Erro ao atualizar último acesso:', error);
     }
   };
 
   // Marcar primeiro acesso como concluído
   const markFirstAccessComplete = async () => {
     try {
-      const { error } = await supabase.rpc('marcar_primeiro_acesso_concluido');
-      if (error) {
-        console.error('Erro ao marcar primeiro acesso:', error);
-      } else if (user) {
+      await supabase.rpc('marcar_primeiro_acesso_concluido');
+      // Recarregar perfil para atualizar estado
+      if (user) {
         const updatedProfile = await loadUserProfile(user.id);
         setProfile(updatedProfile);
       }
     } catch (error) {
-      console.error('Erro inesperado ao marcar primeiro acesso:', error);
+      console.error('Erro ao marcar primeiro acesso:', error);
     }
   };
 
-  // Carregar empresas disponíveis para super admin
-  const loadAvailableEmpresas = async () => {
+  // Função de login
+  const signIn = async (email: string, password: string) => {
     try {
-      const { data, error } = await supabase
-        .from('empresas')
-        .select('id, nome, email, status')
-        .eq('status', 'Ativo')
-        .order('nome');
-
-      if (error) {
-        console.error('Erro ao carregar empresas:', error);
-        return;
-      }
-
-      setAvailableEmpresas(data || []);
-    } catch (error) {
-      console.error('Erro inesperado ao carregar empresas:', error);
-    }
-  };
-
-  // Selecionar empresa como super admin
-  const selectEmpresa = async (empresaId: string) => {
-    try {
-      const { error } = await supabase.rpc('select_empresa_as_admin', {
-        p_empresa_id: empresaId
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
 
       if (error) {
-        console.error('Erro ao selecionar empresa:', error);
-        toast.error('Erro ao selecionar empresa');
-        return;
+        return { error: error.message };
       }
 
-      setSelectedEmpresaId(empresaId);
-      toast.success('Empresa selecionada com sucesso');
+      // Atualizar último acesso após login bem-sucedido
+      if (data.user) {
+        setTimeout(() => updateLastAccess(), 1000);
+      }
+
+      return { error: null };
     } catch (error) {
-      console.error('Erro inesperado ao selecionar empresa:', error);
-      toast.error('Erro inesperado');
+      return { error: 'Erro inesperado no login' };
     }
   };
 
-  // Carregar empresa selecionada para super admin
-  const loadSelectedEmpresa = async () => {
+  // Função de registro
+  const signUp = async (email: string, password: string, userData?: { name: string }) => {
     try {
-      const { data, error } = await supabase.rpc('get_admin_selected_empresa_id');
+      const redirectUrl = `${window.location.origin}/`;
       
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: userData || {}
+        }
+      });
+
       if (error) {
-        console.error('Erro ao carregar empresa selecionada:', error);
-        return;
+        return { error: error.message };
       }
 
-      setSelectedEmpresaId(data);
+      return { error: null };
     } catch (error) {
-      console.error('Erro inesperado ao carregar empresa selecionada:', error);
+      return { error: 'Erro inesperado no registro' };
+    }
+  };
+
+  // Função de logout
+  const signOut = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Erro no logout:', error);
+        toast.error('Erro ao sair do sistema');
+      } else {
+        toast.success('Logout realizado com sucesso');
+      }
+    } catch (error) {
+      console.error('Erro inesperado no logout:', error);
+      toast.error('Erro inesperado ao sair');
     }
   };
 
   // Configurar listeners de autenticação
   useEffect(() => {
-    let mounted = true;
-
     // Configurar listener de mudanças de auth
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (!mounted) return;
-
-        console.log('🔄 Auth state change:', event, session?.user?.email);
+        console.log('Auth state changed:', event, session?.user?.email);
+        
         setSession(session);
+        setUser(session?.user ?? null);
         
         if (session?.user) {
-          setUser(session.user);
-          
-          // Carregar perfil
-          const userProfile = await loadUserProfile(session.user.id);
-          if (mounted) {
+          // Carregar perfil do usuário
+          setTimeout(async () => {
+            const userProfile = await loadUserProfile(session.user.id);
             setProfile(userProfile);
-            
-            // Atualizar último acesso apenas no login inicial
-            if (event === 'SIGNED_IN' && userProfile) {
-              setTimeout(() => updateLastAccess(), 100);
-            }
-          }
+            setIsLoading(false);
+          }, 0);
         } else {
-          setUser(null);
           setProfile(null);
-          setSelectedEmpresaId(null);
-          setAvailableEmpresas([]);
-        }
-        
-        if (mounted) {
           setIsLoading(false);
         }
       }
     );
 
     // Verificar sessão existente
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!mounted) return;
-      
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
+      setUser(session?.user ?? null);
       
       if (session?.user) {
-        setUser(session.user);
-        const userProfile = await loadUserProfile(session.user.id);
-        if (mounted) {
+        loadUserProfile(session.user.id).then((userProfile) => {
           setProfile(userProfile);
-        }
-      }
-      
-      if (mounted) {
+          setIsLoading(false);
+        });
+      } else {
         setIsLoading(false);
       }
     });
 
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
-  // Verificações de papel com logging melhorado
-  const isSuperAdmin = profile?.role === 'super_admin' && profile?.nivel_acesso === 'super_admin';
-  const isCompanyUser = profile ? (profile.empresa_id !== null || isSuperAdmin) : false;
+  // Verificações de papel
+  const isSuperAdmin = profile?.role === 'super_admin' && profile?.nivel_acesso === 'super_admin' && profile?.empresa_id === null;
+  const isGlobalAdmin = (profile?.role === 'admin' || profile?.role === 'super_admin') && profile?.empresa_id === null;
+  const isCompanyUser = profile?.empresa_id !== null;
   const isAuthenticated = !!user && !!profile;
-  const needsPasswordChange = profile?.primeiro_acesso_concluido === false && isAuthenticated;
-
-  console.log('👤 Auth State:', {
-    email: profile?.email,
-    role: profile?.role,
-    nivel_acesso: profile?.nivel_acesso,
-    empresa_id: profile?.empresa_id,
-    isSuperAdmin,
-    isCompanyUser,
-    isAuthenticated
-  });
-
-  // Carregar dados específicos para super admin
-  useEffect(() => {
-    if (isSuperAdmin) {
-      loadAvailableEmpresas();
-      loadSelectedEmpresa();
-    }
-  }, [isSuperAdmin]);
+  const needsPasswordChange = profile?.primeiro_acesso_concluido === false && isCompanyUser;
 
   const value = {
     user,
+    session,
     profile,
     isLoading,
     isAuthenticated,
+    needsPasswordChange,
     signIn,
+    signUp,
     signOut,
     isSuperAdmin,
+    isGlobalAdmin,
     isCompanyUser,
     updateLastAccess,
     markFirstAccessComplete,
-    needsPasswordChange,
-    selectedEmpresaId,
-    selectEmpresa,
-    availableEmpresas,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

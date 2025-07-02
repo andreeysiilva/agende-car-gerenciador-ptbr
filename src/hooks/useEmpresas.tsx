@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { Empresa, NovaEmpresaData } from '@/types/empresa';
@@ -12,7 +11,6 @@ import {
   renovarPlanoEmpresa as renovarPlanoEmpresaService,
   reenviarCredenciaisEmpresa as reenviarCredenciaisEmpresaService
 } from '@/services/empresaService';
-import { supabase } from '@/integrations/supabase/client';
 
 export function useEmpresas() {
   const [empresas, setEmpresas] = useState<Empresa[]>([]);
@@ -20,21 +18,11 @@ export function useEmpresas() {
 
   const fetchEmpresas = async () => {
     setIsLoading(true);
-    try {
-      // Verificar permissões antes de buscar empresas
-      const { data: permissionsData } = await supabase.rpc('debug_user_permissions');
-      console.log('🔍 Permissões do usuário:', permissionsData);
-      
-      const data = await fetchEmpresasService();
-      if (data) {
-        setEmpresas(data as Empresa[]);
-      }
-    } catch (error) {
-      console.error('Erro ao buscar empresas:', error);
-      toast.error('Erro ao carregar empresas');
-    } finally {
-      setIsLoading(false);
+    const data = await fetchEmpresasService();
+    if (data) {
+      setEmpresas(data as Empresa[]);
     }
+    setIsLoading(false);
   };
 
   const buscarEmpresaPorId = async (id: string): Promise<Empresa | null> => {
@@ -42,29 +30,11 @@ export function useEmpresas() {
   };
 
   const criarEmpresa = async (dadosEmpresa: NovaEmpresaData) => {
-    try {
-      console.log('🏢 Criando empresa:', dadosEmpresa);
-      
-      // Verificar permissões antes de criar
-      const { data: permissionsData } = await supabase.rpc('debug_user_permissions');
-      console.log('🔍 Permissões para criação:', permissionsData);
-      
-      if (!permissionsData?.[0]?.is_super_admin) {
-        toast.error('Você não tem permissão para criar empresas');
-        return null;
-      }
-      
-      const result = await criarEmpresaService(dadosEmpresa);
-      if (result) {
-        setEmpresas(prev => [result.empresa as Empresa, ...prev]);
-        toast.success('Empresa criada com sucesso!');
-      }
-      return result;
-    } catch (error) {
-      console.error('Erro detalhado na criação de empresa:', error);
-      toast.error('Erro ao criar empresa. Verifique suas permissões.');
-      return null;
+    const result = await criarEmpresaService(dadosEmpresa);
+    if (result) {
+      setEmpresas(prev => [result.empresa as Empresa, ...prev]);
     }
+    return result;
   };
 
   const atualizarEmpresa = async (id: string, dadosAtualizados: Partial<Empresa>) => {

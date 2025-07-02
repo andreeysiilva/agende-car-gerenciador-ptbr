@@ -9,15 +9,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Car, Lock, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import ForgotPasswordForm from '@/components/auth/ForgotPasswordForm';
+import FirstAccessPasswordChange from '@/components/auth/FirstAccessPasswordChange';
 
-const Login: React.FC = () => {
+// Página de login para clientes (empresas)
+const ClienteLogin: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const { signIn } = useAuth();
+  const { signIn, needsPasswordChange, markFirstAccessComplete } = useAuth();
   const navigate = useNavigate();
 
+  // Função para lidar com o envio do formulário de login
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -29,7 +32,8 @@ const Login: React.FC = () => {
         toast.error(error);
       } else {
         toast.success('Login realizado com sucesso!');
-        navigate('/admin/dashboard');
+        // A verificação de needsPasswordChange será feita pelo contexto
+        navigate('/app/dashboard');
       }
     } catch (error) {
       console.error('Erro no login:', error);
@@ -39,8 +43,18 @@ const Login: React.FC = () => {
     }
   };
 
+  const handlePasswordChangeSuccess = async () => {
+    await markFirstAccessComplete();
+    toast.success('Bem-vindo! Senha alterada com sucesso.');
+    navigate('/app/dashboard');
+  };
+
   if (showForgotPassword) {
     return <ForgotPasswordForm onBack={() => setShowForgotPassword(false)} />;
+  }
+
+  if (needsPasswordChange) {
+    return <FirstAccessPasswordChange onSuccess={handlePasswordChangeSuccess} />;
   }
 
   return (
@@ -55,10 +69,10 @@ const Login: React.FC = () => {
               </div>
             </div>
             <CardTitle className="text-2xl font-bold text-text-primary">
-              Painel Administrativo
+              AgendiCar
             </CardTitle>
             <CardDescription className="text-text-secondary">
-              Acesse o painel de administração do AgendiCar
+              Acesse o painel da sua empresa
             </CardDescription>
           </CardHeader>
           
@@ -73,7 +87,7 @@ const Login: React.FC = () => {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="admin@agendicar.com"
+                    placeholder="seu@email.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -132,17 +146,14 @@ const Login: React.FC = () => {
             
             <div className="mt-8 pt-6 border-t border-border">
               <div className="text-center space-y-2">
+                <p className="text-xs text-text-secondary">
+                  Recebeu credenciais por e-mail? Use-as para fazer login.
+                </p>
                 <a 
-                  href="/cliente/login"
-                  className="text-sm text-secondary hover:text-secondary-hover underline block"
+                  href="/login"
+                  className="text-sm text-primary hover:text-primary-hover underline block"
                 >
-                  Acessar como empresa/cliente
-                </a>
-                <a 
-                  href="/"
-                  className="text-sm text-text-secondary hover:text-text-primary underline block"
-                >
-                  Voltar ao site
+                  Acessar como administrador
                 </a>
               </div>
             </div>
@@ -153,4 +164,4 @@ const Login: React.FC = () => {
   );
 };
 
-export default Login;
+export default ClienteLogin;

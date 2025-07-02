@@ -2,22 +2,18 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/sonner';
-import { AdminAuthProvider } from '@/contexts/AdminAuthContext';
-import { CompanyAuthProvider } from '@/contexts/CompanyAuthContext';
-import { AdminProtectedRoute } from '@/components/auth/AdminProtectedRoute';
-import { CompanyProtectedRoute } from '@/components/auth/CompanyProtectedRoute';
+import { AuthProvider } from '@/contexts/AuthContext';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/layout/AppSidebar';
 
 // Páginas públicas
 import Index from '@/pages/Index';
 import NotFound from '@/pages/NotFound';
+import Auth from '@/pages/Auth';
+import Login from '@/pages/Login';
 import Unauthorized from '@/pages/Unauthorized';
 import ResetPassword from '@/pages/ResetPassword';
-
-// Páginas de login específicas
-import AdminLogin from '@/pages/AdminLogin';
-import CompanyLogin from '@/pages/CompanyLogin';
 
 // Páginas administrativas (rotas /admin/*)
 import Dashboard from '@/pages/Dashboard';
@@ -35,36 +31,27 @@ import ClienteServicos from '@/pages/ClienteServicos';
 import ClienteFinanceiro from '@/pages/ClienteFinanceiro';
 import ClienteEstatisticas from '@/pages/ClienteEstatisticas';
 import ClienteConta from '@/pages/ClienteConta';
-import ClienteUsuarios from '@/pages/ClienteUsuarios';
+import ClienteLogin from '@/pages/ClienteLogin';
 
 const queryClient = new QueryClient();
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Router>
-        <Routes>
-          {/* Rotas públicas */}
-          <Route path="/" element={<Index />} />
-          <Route path="/unauthorized" element={<Unauthorized />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
+      <AuthProvider>
+        <Router>
+          <Routes>
+            {/* Rotas públicas */}
+            <Route path="/" element={<Index />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/unauthorized" element={<Unauthorized />} />
+            <Route path="/cliente/login" element={<ClienteLogin />} />
 
-          {/* Rotas de login específicas */}
-          <Route path="/admin/login" element={
-            <AdminAuthProvider>
-              <AdminLogin />
-            </AdminAuthProvider>
-          } />
-          <Route path="/app/login" element={
-            <CompanyAuthProvider>
-              <CompanyLogin />
-            </CompanyAuthProvider>
-          } />
-
-          {/* Rotas administrativas com sidebar */}
-          <Route path="/admin/*" element={
-            <AdminAuthProvider>
-              <AdminProtectedRoute>
+            {/* Rotas administrativas com sidebar */}
+            <Route path="/admin/*" element={
+              <ProtectedRoute requireGlobalAdmin>
                 <SidebarProvider>
                   <div className="flex min-h-screen">
                     <AppSidebar />
@@ -74,20 +61,25 @@ function App() {
                         <Route path="empresas" element={<Empresas />} />
                         <Route path="planos" element={<Planos />} />
                         <Route path="financeiro" element={<AdminFinanceiro />} />
-                        <Route path="administradores" element={<AdminAdministradores />} />
+                        <Route 
+                          path="administradores" 
+                          element={
+                            <ProtectedRoute requireSuperAdmin>
+                              <AdminAdministradores />
+                            </ProtectedRoute>
+                          } 
+                        />
                         <Route path="configuracoes" element={<AdminConfiguracoes />} />
                       </Routes>
                     </main>
                   </div>
                 </SidebarProvider>
-              </AdminProtectedRoute>
-            </AdminAuthProvider>
-          } />
+              </ProtectedRoute>
+            } />
 
-          {/* Rotas da empresa com sidebar */}
-          <Route path="/app/*" element={
-            <CompanyAuthProvider>
-              <CompanyProtectedRoute>
+            {/* Rotas da empresa com sidebar */}
+            <Route path="/app/*" element={
+              <ProtectedRoute requireCompanyAccess>
                 <SidebarProvider>
                   <div className="flex min-h-screen">
                     <AppSidebar />
@@ -104,15 +96,22 @@ function App() {
                     </main>
                   </div>
                 </SidebarProvider>
-              </CompanyProtectedRoute>
-            </CompanyAuthProvider>
-          } />
+              </ProtectedRoute>
+            } />
 
-          {/* 404 */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-        <Toaster />
-      </Router>
+            {/* Redirect padrão para autenticados */}
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            } />
+
+            {/* 404 */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+          <Toaster />
+        </Router>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

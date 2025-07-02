@@ -2,17 +2,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Empresa, NovaEmpresaData, CriarEmpresaResult } from '@/types/empresa';
 import { gerarSubdominio, gerarSenhaTemporaria } from '@/utils/empresaUtils';
-import { 
-  validarDadosEmpresa, 
-  verificarEmailUnico, 
-  verificarSubdominioUnico 
-} from '@/utils/empresaValidationUtils';
-import { 
-  criarUsuarioAuth, 
-  vincularUsuarioTabela, 
-  limparUsuarioAuth 
-} from '@/utils/authUtils';
-import { EnviarEmailParams, EnviarEmailResult } from '@/utils/emailUtils';
+import { verificarEmailUnico, verificarSubdominioUnico } from './empresaValidation';
 
 // Função para calcular a data de vencimento baseada na regra de negócio
 export const calcularDataVencimento = (dataBase?: Date): string => {
@@ -84,70 +74,13 @@ export const buscarEmpresaPorId = async (id: string): Promise<Empresa | null> =>
   }
 };
 
-const enviarEmailCredenciais = async (params: EnviarEmailParams): Promise<EnviarEmailResult> => {
-  try {
-    console.log('Enviando e-mail de credenciais via Edge Function...');
-    
-    const { data: emailData, error: emailError } = await supabase.functions.invoke('send-company-invite', {
-      body: {
-        email: params.email,
-        nomeEmpresa: params.nomeEmpresa,
-        empresaId: params.empresaId,
-        subdominio: params.subdominio,
-        senhaTemporaria: params.senhaTemporaria,
-        redirectTo: `https://${params.subdominio}.agendicar.com.br/cliente/login`,
-        isResend: params.isResend || false
-      }
-    });
-
-    if (emailError) {
-      console.error('Erro ao invocar Edge Function de e-mail:', emailError);
-      return {
-        success: false,
-        error: emailError.message
-      };
-    }
-
-    if (emailData?.success) {
-      console.log('E-mail de credenciais enviado com sucesso:', emailData);
-      return { success: true };
-    } else {
-      console.error('Resposta inesperada da Edge Function:', emailData);
-      return {
-        success: false,
-        error: 'Erro no envio do e-mail'
-      };
-    }
-  } catch (error) {
-    console.error('Erro na chamada da Edge Function:', error);
-    return {
-      success: false,
-      error: 'Erro inesperado no envio do e-mail'
-    };
-  }
-};
-
-const limparEmpresaCriada = async (empresaId: string): Promise<void> => {
-  try {
-    console.log('Removendo empresa devido a erro na criação...');
-    await supabase.from('empresas').delete().eq('id', empresaId);
-    console.log('Empresa removida com sucesso');
-  } catch (cleanupError) {
-    console.error('Erro ao limpar empresa:', cleanupError);
-  }
-};
-
 export const criarEmpresa = async (dadosEmpresa: NovaEmpresaData): Promise<CriarEmpresaResult | null> => {
-  const transactionId = `empresa_${Date.now()}`;
-  console.log(`[${transactionId}] Iniciando criação de empresa:`, dadosEmpresa);
-
   try {
-    // ETAPA 1: Validações iniciais
-    console.log(`[${transactionId}] Etapa 1: Validações iniciais`);
-    
-    const validationError = validarDadosEmpresa(dadosEmpresa);
-    if (validationError) {
-      toast.error(validationError);
+    console.log('Iniciando criação de empresa:', dadosEmpresa);
+
+    // Validações
+    if (!dadosEmpresa.nome || !dadosEmpresa.email || !dadosEmpresa.telefone || !dadosEmpresa.cnpj_cpf || !dadosEmpresa.plano) {
+      toast.error('Preencha todos os campos obrigatórios');
       return null;
     }
 
@@ -158,9 +91,10 @@ export const criarEmpresa = async (dadosEmpresa: NovaEmpresaData): Promise<Criar
       return null;
     }
 
-    // Gerar e verificar subdomínio
+    // Gerar subdomínio
     const subdominio = gerarSubdominio(dadosEmpresa.nome);
     const subdominioUnico = await verificarSubdominioUnico(subdominio);
+    
     if (!subdominioUnico) {
       toast.error('Nome da empresa gera subdomínio já existente. Tente um nome diferente.');
       return null;
@@ -179,31 +113,16 @@ export const criarEmpresa = async (dadosEmpresa: NovaEmpresaData): Promise<Criar
       return null;
     }
 
-    // ETAPA 2: Gerar senha temporária
-    console.log(`[${transactionId}] Etapa 2: Gerando senha temporária`);
+    // Gerar senha temporária
     const senhaTemporaria = gerarSenhaTemporaria();
 
-    // ETAPA 3: Criar usuário no Supabase Auth primeiro
-    console.log(`[${transactionId}] Etapa 3: Criando usuário no Supabase Auth`);
-    const authResult = await criarUsuarioAuth({
-      email: dadosEmpresa.email,
-      password: senhaTemporaria,
-      nomeEmpresa: dadosEmpresa.nome,
-      subdominio: subdominio,
-      empresaId: 'temp' // Será atualizado após criar a empresa
-    });
-
-    if (!authResult.success) {
-      toast.error('Erro ao criar usuário de autenticação: ' + authResult.error);
-      return null;
-    }
-
-    // ETAPA 4: Criar empresa no banco
-    console.log(`[${transactionId}] Etapa 4: Criando empresa no banco`);
-    
+    // Determinar data de ativação
     const dataAtivacao = dadosEmpresa.dataAtivacao || new Date().toISOString().split('T')[0];
+    
+    // Calcular data de vencimento baseada na data de ativação
     const dataVencimento = calcularDataVencimento(new Date(dataAtivacao));
 
+    // Dados da empresa
     const novaEmpresa = {
       nome: dadosEmpresa.nome,
       email: dadosEmpresa.email,
@@ -221,6 +140,7 @@ export const criarEmpresa = async (dadosEmpresa: NovaEmpresaData): Promise<Criar
       primeiro_acesso_concluido: false
     };
 
+    // Criar empresa
     const { data: empresaCriada, error: empresaError } = await supabase
       .from('empresas')
       .insert([novaEmpresa])
@@ -229,49 +149,55 @@ export const criarEmpresa = async (dadosEmpresa: NovaEmpresaData): Promise<Criar
 
     if (empresaError) {
       console.error('Erro ao criar empresa:', empresaError);
-      // Limpar usuário Auth criado
-      if (authResult.authUserId) {
-        await limparUsuarioAuth(authResult.authUserId);
-      }
       toast.error('Erro ao criar empresa: ' + empresaError.message);
       return null;
     }
 
-    console.log(`[${transactionId}] Empresa criada no banco:`, empresaCriada);
-
-    // ETAPA 5: Vincular usuário na tabela usuarios
-    console.log(`[${transactionId}] Etapa 5: Vinculando usuário na tabela usuarios`);
-    const usuarioVinculado = await vincularUsuarioTabela(
-      dadosEmpresa.email,
-      dadosEmpresa.nome,
-      empresaCriada.id,
-      authResult.authUserId!
-    );
-
-    if (!usuarioVinculado) {
-      console.warn('Usuário criado no Auth mas não vinculado na tabela usuarios');
-      // Não falhar a operação por isso, mas avisar
-    }
-
-    // ETAPA 6: Enviar e-mail personalizado
-    console.log(`[${transactionId}] Etapa 6: Enviando e-mail de boas-vindas`);
-    const emailResult = await enviarEmailCredenciais({
-      email: dadosEmpresa.email,
-      nomeEmpresa: dadosEmpresa.nome,
-      empresaId: empresaCriada.id,
-      subdominio: subdominio,
-      senhaTemporaria: senhaTemporaria,
-      isResend: false
+    // Criar usuário administrador da empresa usando a função do banco
+    const { error: usuarioError } = await supabase.rpc('criar_usuario_empresa', {
+      p_email: dadosEmpresa.email,
+      p_senha_temporaria: senhaTemporaria,
+      p_nome_empresa: dadosEmpresa.nome,
+      p_empresa_id: empresaCriada.id
     });
 
-    if (!emailResult.success) {
-      console.error('Erro ao enviar e-mail, mas empresa foi criada:', emailResult.error);
-      toast.warning(`Empresa ${dadosEmpresa.nome} criada, mas erro ao enviar e-mail: ${emailResult.error}`);
-    } else {
-      toast.success(`Empresa ${dadosEmpresa.nome} criada! E-mail de boas-vindas enviado.`);
+    if (usuarioError) {
+      console.error('Erro ao criar usuário da empresa:', usuarioError);
+      toast.error('Erro ao criar usuário administrador: ' + usuarioError.message);
+      // Não falhar a operação completamente, mas avisar
     }
 
-    console.log(`[${transactionId}] Processo de criação de empresa concluído com sucesso!`);
+    // Enviar e-mail de boas-vindas personalizado usando a Edge Function
+    try {
+      console.log('Enviando e-mail de boas-vindas personalizado via Edge Function...');
+      
+      const { data: emailData, error: emailError } = await supabase.functions.invoke('send-company-invite', {
+        body: {
+          email: dadosEmpresa.email,
+          nomeEmpresa: dadosEmpresa.nome,
+          empresaId: empresaCriada.id,
+          subdominio: subdominio,
+          senhaTemporaria: senhaTemporaria,
+          redirectTo: `https://${subdominio}.agendicar.com.br/cliente/login`
+        }
+      });
+
+      if (emailError) {
+        console.error('Erro ao invocar Edge Function de e-mail:', emailError);
+        toast.warning(`Empresa ${dadosEmpresa.nome} criada, mas erro ao enviar e-mail: ${emailError.message}`);
+      } else if (emailData?.success) {
+        console.log('E-mail de boas-vindas enviado com sucesso:', emailData);
+        toast.success(`Empresa ${dadosEmpresa.nome} criada! E-mail de boas-vindas enviado.`);
+      } else {
+        console.error('Resposta inesperada da Edge Function:', emailData);
+        toast.warning(`Empresa ${dadosEmpresa.nome} criada, mas erro no envio do e-mail.`);
+      }
+    } catch (edgeFunctionError) {
+      console.error('Erro na chamada da Edge Function:', edgeFunctionError);
+      toast.warning(`Empresa ${dadosEmpresa.nome} criada, mas erro ao enviar e-mail de boas-vindas.`);
+    }
+
+    console.log('Empresa criada com sucesso:', empresaCriada);
 
     return {
       empresa: empresaCriada as Empresa,
@@ -283,7 +209,7 @@ export const criarEmpresa = async (dadosEmpresa: NovaEmpresaData): Promise<Criar
     };
     
   } catch (error) {
-    console.error(`[${transactionId}] Erro inesperado ao criar empresa:`, error);
+    console.error('Erro inesperado ao criar empresa:', error);
     toast.error('Erro inesperado ao criar empresa');
     return null;
   }
@@ -405,23 +331,40 @@ export const reenviarCredenciaisEmpresa = async (empresaId: string): Promise<boo
       await atualizarEmpresa(empresaId, { senha_temporaria: senhaTemporaria });
     }
 
-    // Reenviar e-mail
-    const emailResult = await enviarEmailCredenciais({
-      email: empresa.email,
-      nomeEmpresa: empresa.nome,
-      empresaId: empresa.id,
-      subdominio: empresa.subdominio,
-      senhaTemporaria: senhaTemporaria,
-      isResend: true
-    });
+    // Reenviar e-mail usando a mesma Edge Function
+    try {
+      console.log('Reenviando e-mail de credenciais via Edge Function...');
+      
+      const { data: emailData, error: emailError } = await supabase.functions.invoke('send-company-invite', {
+        body: {
+          email: empresa.email,
+          nomeEmpresa: empresa.nome,
+          empresaId: empresa.id,
+          subdominio: empresa.subdominio,
+          senhaTemporaria: senhaTemporaria,
+          redirectTo: `https://${empresa.subdominio}.agendicar.com.br/cliente/login`,
+          isResend: true // Flag para identificar que é um reenvio
+        }
+      });
 
-    if (!emailResult.success) {
-      toast.error(`Erro ao reenviar credenciais: ${emailResult.error}`);
+      if (emailError) {
+        console.error('Erro ao reenviar e-mail via Edge Function:', emailError);
+        toast.error(`Erro ao reenviar credenciais: ${emailError.message}`);
+        return false;
+      } else if (emailData?.success) {
+        console.log('E-mail de credenciais reenviado com sucesso:', emailData);
+        toast.success(`Credenciais reenviadas para ${empresa.email} com sucesso!`);
+        return true;
+      } else {
+        console.error('Resposta inesperada da Edge Function:', emailData);
+        toast.error('Erro ao reenviar credenciais');
+        return false;
+      }
+    } catch (edgeFunctionError) {
+      console.error('Erro na chamada da Edge Function:', edgeFunctionError);
+      toast.error('Erro ao reenviar credenciais');
       return false;
     }
-
-    toast.success(`Credenciais reenviadas para ${empresa.email} com sucesso!`);
-    return true;
     
   } catch (error) {
     console.error('Erro inesperado ao reenviar credenciais:', error);
