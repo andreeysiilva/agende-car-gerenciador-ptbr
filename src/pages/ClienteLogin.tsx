@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -12,16 +12,21 @@ import ForgotPasswordForm from '@/components/auth/ForgotPasswordForm';
 import FirstAccessPasswordChange from '@/components/auth/FirstAccessPasswordChange';
 import { getAdminLoginUrl } from '@/utils/linkUtils';
 
-// Página de login para clientes (empresas)
 const ClienteLogin: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const { signIn, needsPasswordChange, markFirstAccessComplete } = useAuth();
+  const { signIn, needsPasswordChange, markFirstAccessComplete, isAuthenticated, isCompanyUser } = useAuth();
   const navigate = useNavigate();
 
-  // Função para lidar com o envio do formulário de login
+  // Redirecionar usuários já autenticados
+  useEffect(() => {
+    if (isAuthenticated && isCompanyUser) {
+      navigate('/app/dashboard');
+    }
+  }, [isAuthenticated, isCompanyUser, navigate]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -40,8 +45,12 @@ const ClienteLogin: React.FC = () => {
         toast.error(error);
       } else {
         toast.success('Login realizado com sucesso!');
-        // A verificação de needsPasswordChange será feita pelo contexto
-        navigate('/app/dashboard');
+        // O redirecionamento será baseado no needsPasswordChange
+        if (!needsPasswordChange) {
+          setTimeout(() => {
+            navigate('/app/dashboard');
+          }, 1000);
+        }
       }
     } catch (error) {
       console.error('Erro no login:', error);

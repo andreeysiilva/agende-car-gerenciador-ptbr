@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -9,15 +9,22 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Car, Lock, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import ForgotPasswordForm from '@/components/auth/ForgotPasswordForm';
-import { getClientLoginUrl, getAdminDashboardUrl } from '@/utils/linkUtils';
+import { getClientLoginUrl } from '@/utils/linkUtils';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const { signIn } = useAuth();
+  const { signIn, isAuthenticated, isGlobalAdmin } = useAuth();
   const navigate = useNavigate();
+
+  // Redirecionar usuários já autenticados
+  useEffect(() => {
+    if (isAuthenticated && isGlobalAdmin) {
+      navigate('/admin/dashboard');
+    }
+  }, [isAuthenticated, isGlobalAdmin, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,7 +44,10 @@ const Login: React.FC = () => {
         toast.error(error);
       } else {
         toast.success('Login realizado com sucesso!');
-        navigate(getAdminDashboardUrl());
+        // Aguardar um pouco para o contexto ser atualizado
+        setTimeout(() => {
+          navigate('/admin/dashboard');
+        }, 1000);
       }
     } catch (error) {
       console.error('Erro no login:', error);

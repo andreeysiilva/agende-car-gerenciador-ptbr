@@ -1,145 +1,22 @@
 
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Car, Lock, Mail } from 'lucide-react';
-import { toast } from 'sonner';
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { getClientLoginUrl } from '@/utils/linkUtils';
 
+// Página de redirecionamento para evitar confusão
 const Auth: React.FC = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  
-  const { signIn, isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
 
-  const from = location.state?.from?.pathname || '/';
-
-  // Redirecionar se já estiver autenticado
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate(from, { replace: true });
-    }
-  }, [isAuthenticated, navigate, from]);
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!email.trim() || !password.trim()) {
-      toast.error('Por favor, preencha todos os campos');
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      const { error } = await signIn(email.trim(), password);
-      
-      if (error) {
-        console.error('Erro no login:', error);
-        toast.error('Credenciais inválidas. Verifique seu email e senha.');
-      } else {
-        toast.success('Login realizado com sucesso!');
-      }
-    } catch (error) {
-      console.error('Erro inesperado no login:', error);
-      toast.error('Erro interno do sistema. Tente novamente.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    // Redirecionar automaticamente para área do cliente
+    navigate(getClientLoginUrl(), { replace: true });
+  }, [navigate]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-secondary-50 px-4">
-      <div className="w-full max-w-md">
-        <Card className="shadow-xl border-0">
-          <CardHeader className="text-center pb-8">
-            <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-4 relative">
-              <Car className="h-8 w-8 text-white" />
-              <div className="absolute -top-1 -right-1 w-6 h-6 bg-secondary rounded-full flex items-center justify-center">
-                <div className="w-2 h-2 bg-white rounded-full opacity-70"></div>
-              </div>
-            </div>
-            <CardTitle className="text-2xl font-bold text-text-primary">
-              AgendiCar
-            </CardTitle>
-            <CardDescription className="text-text-secondary">
-              Sistema de Gestão de Agendamentos
-            </CardDescription>
-          </CardHeader>
-          
-          <CardContent>
-            <form onSubmit={handleLogin} className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-text-primary font-medium">
-                  E-mail
-                </Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-text-secondary" />
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="seu@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="h-11 pl-10"
-                    disabled={isLoading}
-                    autoComplete="email"
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-text-primary font-medium">
-                  Senha
-                </Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-text-secondary" />
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="Digite sua senha"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    className="h-11 pl-10"
-                    disabled={isLoading}
-                    autoComplete="current-password"
-                  />
-                </div>
-              </div>
-              
-              <Button 
-                type="submit" 
-                className="w-full h-11 bg-primary hover:bg-primary-hover text-white font-medium"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <div className="flex items-center gap-2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    Entrando...
-                  </div>
-                ) : (
-                  'Entrar no Sistema'
-                )}
-              </Button>
-            </form>
-            
-            <div className="mt-8 pt-6 border-t border-border">
-              <div className="text-center">
-                <p className="text-sm text-text-secondary">
-                  Não possui acesso? Entre em contato com o administrador do sistema.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-secondary-50">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+        <p className="text-gray-600">Redirecionando...</p>
       </div>
     </div>
   );

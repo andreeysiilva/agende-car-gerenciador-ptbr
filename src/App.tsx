@@ -1,3 +1,4 @@
+
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/sonner';
@@ -97,13 +98,6 @@ function App() {
                     </main>
                   </div>
                 </SidebarProvider>
-              </ProtectedRoute>
-            } />
-
-            {/* Redirect padrão para autenticados */}
-            <Route path="/dashboard" element={
-              <ProtectedRoute>
-                <Dashboard />
               </ProtectedRoute>
             } />
 

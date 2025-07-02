@@ -4,7 +4,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import { getAdminDashboardUrl } from '@/utils/linkUtils';
 
 // Tipos para o contexto de autenticação
 interface UserProfile {
@@ -95,7 +94,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Função de login com redirecionamento inteligente
+  // Função de login simplificada sem redirecionamento automático
   const signIn = async (email: string, password: string) => {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -112,23 +111,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { error: 'Erro na autenticação do usuário.' };
       }
 
-      // Aguardar um momento para o perfil ser carregado
+      // Apenas atualizar último acesso, sem redirecionamento
       setTimeout(async () => {
         try {
           await updateLastAccess();
-          
-          // Carregar perfil para determinar redirecionamento
-          const userProfile = await loadUserProfile(data.user.id);
-          if (userProfile) {
-            // Redirecionar baseado no tipo de usuário
-            if (userProfile.empresa_id === null && (userProfile.role === 'admin' || userProfile.role === 'super_admin')) {
-              // Admin global - redirecionar para dashboard admin
-              window.location.href = getAdminDashboardUrl();
-            } else if (userProfile.empresa_id !== null) {
-              // Usuário de empresa - redirecionar para dashboard da empresa
-              window.location.href = '/app/dashboard';
-            }
-          }
         } catch (error) {
           console.error('Erro no pós-login:', error);
         }
@@ -141,7 +127,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Função de logout
+  // Função de logout sem redirecionamento automático
   const signOut = async () => {
     try {
       const { error } = await supabase.auth.signOut();
@@ -150,8 +136,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         toast.error('Erro ao sair do sistema');
       } else {
         toast.success('Logout realizado com sucesso');
-        // Redirecionar para a página de login
-        window.location.href = '/auth';
+        // Limpar estados locais
+        setUser(null);
+        setSession(null);
+        setProfile(null);
       }
     } catch (error) {
       console.error('Erro inesperado no logout:', error);
@@ -170,12 +158,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Carregar perfil do usuário
+          // Carregar perfil do usuário com delay para evitar race conditions
           setTimeout(async () => {
             const userProfile = await loadUserProfile(session.user.id);
             setProfile(userProfile);
             setIsLoading(false);
-          }, 0);
+          }, 100);
         } else {
           setProfile(null);
           setIsLoading(false);
