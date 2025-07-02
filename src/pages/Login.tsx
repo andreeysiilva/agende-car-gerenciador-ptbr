@@ -26,7 +26,8 @@ const Login: React.FC = () => {
       isAuthenticated, 
       isGlobalAdmin, 
       hasProfile: !!profile,
-      profileRole: profile?.role
+      profileRole: profile?.role,
+      profileEmail: profile?.email
     });
     
     // Só redirecionar quando não estiver mais carregando e estiver autenticado
@@ -70,6 +71,9 @@ const Login: React.FC = () => {
     return <ForgotPasswordForm onBack={() => setShowForgotPassword(false)} />;
   }
 
+  // Mostrar informações de debug se estiver carregando por muito tempo
+  const showDebugInfo = authLoading;
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-secondary-50 px-4">
       <div className="w-full max-w-md">
@@ -87,6 +91,15 @@ const Login: React.FC = () => {
             <CardDescription className="text-text-secondary">
               Acesse o painel de administração do AgendiCar
             </CardDescription>
+            {showDebugInfo && (
+              <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-xs text-left">
+                <p className="font-semibold text-yellow-700">Debug Info:</p>
+                <p>Auth Loading: {authLoading ? 'true' : 'false'}</p>
+                <p>Is Authenticated: {isAuthenticated ? 'true' : 'false'}</p>
+                <p>Has Profile: {!!profile ? 'true' : 'false'}</p>
+                <p>Profile Role: {profile?.role || 'none'}</p>
+              </div>
+            )}
           </CardHeader>
           
           <CardContent>
@@ -105,7 +118,7 @@ const Login: React.FC = () => {
                     onChange={(e) => setEmail(e.target.value)}
                     required
                     className="h-11 pl-10"
-                    disabled={isLoading || authLoading}
+                    disabled={isLoading}
                     autoComplete="email"
                   />
                 </div>
@@ -125,7 +138,7 @@ const Login: React.FC = () => {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     className="h-11 pl-10"
-                    disabled={isLoading || authLoading}
+                    disabled={isLoading}
                     autoComplete="current-password"
                   />
                 </div>
@@ -137,7 +150,7 @@ const Login: React.FC = () => {
                   variant="ghost"
                   className="text-sm text-primary hover:text-primary-hover"
                   onClick={() => setShowForgotPassword(true)}
-                  disabled={isLoading || authLoading}
+                  disabled={isLoading}
                 >
                   Esqueci minha senha
                 </Button>
@@ -146,17 +159,12 @@ const Login: React.FC = () => {
               <Button 
                 type="submit" 
                 className="w-full h-11 bg-primary hover:bg-primary-hover text-white font-medium"
-                disabled={isLoading || authLoading}
+                disabled={isLoading}
               >
                 {isLoading ? (
                   <div className="flex items-center gap-2">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                     Entrando...
-                  </div>
-                ) : authLoading ? (
-                  <div className="flex items-center gap-2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    Carregando...
                   </div>
                 ) : (
                   'Entrar no Sistema'
@@ -170,7 +178,6 @@ const Login: React.FC = () => {
                   variant="link"
                   className="text-sm text-secondary hover:text-secondary-hover underline p-0"
                   onClick={() => navigate(getClientLoginUrl())}
-                  disabled={authLoading}
                 >
                   Acessar como empresa/cliente
                 </Button>
@@ -179,7 +186,6 @@ const Login: React.FC = () => {
                   variant="link"
                   className="text-sm text-text-secondary hover:text-text-primary underline p-0"
                   onClick={() => navigate('/')}
-                  disabled={authLoading}
                 >
                   Voltar ao site
                 </Button>

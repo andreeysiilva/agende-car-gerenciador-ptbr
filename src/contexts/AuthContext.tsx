@@ -49,26 +49,68 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Carregar perfil do usuário
+  // Carregar perfil do usuário com melhor tratamento de erros
   const loadUserProfile = async (userId: string): Promise<UserProfile | null> => {
     try {
-      console.log('Carregando perfil para usuário:', userId);
+      console.log('🔍 Carregando perfil para usuário:', userId);
+      console.log('🔍 Auth UID atual:', userId);
       
       const { data, error } = await supabase
         .from('usuarios')
         .select('*')
         .eq('auth_user_id', userId)
-        .single();
+        .maybeSingle(); // Usar maybeSingle() em vez de single()
 
       if (error) {
-        console.error('Erro ao carregar perfil:', error);
+        console.error('❌ Erro RLS/Query ao carregar perfil:', error);
+        
+        // Verificar se é um erro de RLS ou de query
+        if (error.code === 'PGRST116') {
+          console.log('⚠️ Nenhum perfil encontrado para o usuário');
+          return null;
+        }
+        
+        // Para outros erros, log detalhado
+        console.error('❌ Erro detalhado:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        });
         return null;
       }
 
-      console.log('Perfil carregado com sucesso:', data);
+      if (!data) {
+        console.log('⚠️ Nenhum dados de perfil retornados para o usuário:', userId);
+        
+        // Verificar se o usuário existe na tabela sem filtro por auth_user_id
+        try {
+          const { data: allUsers, error: checkError } = await supabase
+            .from('usuarios')
+            .select('id, email, auth_user_id')
+            .limit(5);
+            
+          console.log('🔍 Primeiros usuários na base:', allUsers);
+          console.log('🔍 Erro na verificação:', checkError);
+        } catch (checkErr) {
+          console.log('🔍 Não foi possível verificar usuários:', checkErr);
+        }
+        
+        return null;
+      }
+
+      console.log('✅ Perfil carregado com sucesso:', {
+        id: data.id,
+        email: data.email,
+        role: data.role,
+        nivel_acesso: data.nivel_acesso,
+        empresa_id: data.empresa_id,
+        auth_user_id: data.auth_user_id
+      });
+      
       return data as UserProfile;
     } catch (error) {
-      console.error('Erro inesperado ao carregar perfil:', error);
+      console.error('❌ Erro inesperado ao carregar perfil:', error);
       return null;
     }
   };
@@ -149,6 +191,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Configurar listeners de autenticação
   useEffect(() => {
     let mounted = true;
+    let loadingTimeout: NodeJS.Timeout;
+
+    // Timeout para evitar loading infinito
+    const setLoadingTimeout = () => {
+      if (loadingTimeout) clearTimeout(loadingTimeout);
+      loadingTimeout = setTimeout(() => {
+        if (mounted) {
+          console.log('⏰ Timeout de loading atingido, forçando isLoading = false');
+          setIsLoading(false);
+        }
+      }, 10000); // 10 segundos timeout
+    };
 
     // Configurar listener de mudanças de auth
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -161,6 +215,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.log('👤 Sessão ativa, carregando perfil...');
           setSession(session);
           setUser(session.user);
+          setLoadingTimeout(); // Iniciar timeout
           
           try {
             const userProfile = await loadUserProfile(session.user.id);
@@ -169,7 +224,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               console.log('✅ Perfil carregado:', userProfile);
               
               // Atualizar último acesso apenas no login
-              if (event === 'SIGNED_IN') {
+              if (event === 'SIGNED_IN' && userProfile) {
                 setTimeout(() => updateLastAccess(), 1000);
               }
             }
@@ -177,6 +232,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.error('❌ Erro ao carregar perfil:', error);
           } finally {
             if (mounted) {
+              clearTimeout(loadingTimeout);
               setIsLoading(false);
             }
           }
@@ -185,6 +241,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setSession(null);
           setUser(null);
           setProfile(null);
+          clearTimeout(loadingTimeout);
           setIsLoading(false);
         }
       }
@@ -199,6 +256,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (session?.user) {
         setSession(session);
         setUser(session.user);
+        setLoadingTimeout(); // Iniciar timeout
         
         try {
           const userProfile = await loadUserProfile(session.user.id);
@@ -208,16 +266,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         } catch (error) {
           console.error('❌ Erro ao carregar perfil na inicialização:', error);
+        } finally {
+          if (mounted) {
+            clearTimeout(loadingTimeout);
+            setIsLoading(false);
+          }
         }
-      }
-      
-      if (mounted) {
-        setIsLoading(false);
+      } else {
+        if (mounted) {
+          setIsLoading(false);
+        }
       }
     });
 
     return () => {
       mounted = false;
+      if (loadingTimeout) clearTimeout(loadingTimeout);
       subscription.unsubscribe();
     };
   }, []);
@@ -249,7 +313,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     hasProfile: !!profile,
     profileRole: profile?.role,
     profileEmpresaId: profile?.empresa_id,
-    profileNivelAcesso: profile?.nivel_acesso
+    profileNivelAcesso: profile?.nivel_acesso,
+    userEmail: user?.email,
+    authUserId: user?.id
   });
 
   const value = {
