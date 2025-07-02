@@ -17,6 +17,8 @@ import { toast } from 'sonner';
 
 const Empresas: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
+  const [isCreatingEmpresa, setIsCreatingEmpresa] = useState(false);
+  const [isDeletingEmpresa, setIsDeletingEmpresa] = useState(false);
   const {
     empresas,
     isLoading,
@@ -31,71 +33,84 @@ const Empresas: React.FC = () => {
 
   const {
     empresaSelecionada,
-    modalVisualizarAberto,
-    modalEditarAberto,
-    modalExcluirAberto,
-    abrirModalVisualizar,
-    abrirModalEditar,
-    abrirModalExcluir,
-    fecharModalVisualizar,
-    fecharModalEditar,
-    fecharModalExcluir,
-    setEmpresaSelecionada
+    visualizarModalOpen,
+    editarModalOpen,
+    excluirDialogOpen,
+    openVisualizarModal,
+    openEditarModal,
+    openExcluirDialog,
+    closeVisualizarModal,
+    closeEditarModal,
+    closeExcluirDialog
   } = useEmpresaModals();
 
+  // Planos mock - em uma implementação real, isso viria de um hook ou service
+  const planos = [
+    { nome: 'Básico', preco: 49.90 },
+    { nome: 'Profissional', preco: 99.90 },
+    { nome: 'Empresarial', preco: 199.90 }
+  ];
+
   const handleCreateEmpresa = async (dadosEmpresa: any) => {
-    const result = await criarEmpresa(dadosEmpresa);
-    if (result) {
-      setShowForm(false);
-      toast.success('Empresa criada com sucesso!');
+    setIsCreatingEmpresa(true);
+    try {
+      const result = await criarEmpresa(dadosEmpresa);
+      if (result) {
+        setShowForm(false);
+        toast.success('Empresa criada com sucesso!');
+      }
+    } finally {
+      setIsCreatingEmpresa(false);
     }
   };
 
   const handleVisualizarEmpresa = async (empresaId: string) => {
     const empresa = await buscarEmpresaPorId(empresaId);
     if (empresa) {
-      setEmpresaSelecionada(empresa);
-      abrirModalVisualizar();
+      openVisualizarModal(empresa);
     }
   };
 
   const handleEditarEmpresa = (empresa: Empresa) => {
-    setEmpresaSelecionada(empresa);
-    abrirModalEditar();
+    openEditarModal(empresa);
   };
 
   const handleSalvarEdicao = async (empresaId: string, dadosAtualizados: Partial<Empresa>) => {
     const empresaAtualizada = await atualizarEmpresa(empresaId, dadosAtualizados);
     if (empresaAtualizada) {
-      fecharModalEditar();
+      closeEditarModal();
       toast.success('Empresa atualizada com sucesso!');
     }
   };
 
   const handleExcluirEmpresa = (empresa: Empresa) => {
-    setEmpresaSelecionada(empresa);
-    abrirModalExcluir();
+    openExcluirDialog(empresa);
   };
 
   const handleConfirmarExclusao = async () => {
     if (empresaSelecionada) {
-      const sucesso = await deletarEmpresa(empresaSelecionada.id);
-      if (sucesso) {
-        fecharModalExcluir();
-        toast.success('Empresa excluída com sucesso!');
+      setIsDeletingEmpresa(true);
+      try {
+        const sucesso = await deletarEmpresa(empresaSelecionada.id);
+        if (sucesso) {
+          closeExcluirDialog();
+          toast.success('Empresa excluída com sucesso!');
+        }
+      } finally {
+        setIsDeletingEmpresa(false);
       }
     }
   };
 
-  const handleRenovarPlano = async (empresaId: string) => {
-    const sucesso = await renovarPlanoEmpresa(empresaId);
+  const handleRenovarPlano = async (empresa: Empresa) => {
+    const sucesso = await renovarPlanoEmpresa(empresa.id);
     if (sucesso) {
       toast.success('Plano renovado com sucesso!');
     }
   };
 
-  const handleReenviarCredenciais = async (empresaId: string) => {
-    const sucesso = await reenviarCredenciais(empresaId);
+  const handleReenviarCredenciais = async (empresa: Empresa) => {
+    const sucesso = await reenviarCredenciais(empresa.id);
     if (sucesso) {
       toast.success('Credenciais reenviadas com sucesso!');
     }
@@ -139,7 +154,11 @@ const Empresas: React.FC = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <EmpresaForm onSubmit={handleCreateEmpresa} />
+              <EmpresaForm 
+                onSubmit={handleCreateEmpresa} 
+                isLoading={isCreatingEmpresa}
+                planos={planos}
+              />
             </CardContent>
           </Card>
         )}
@@ -154,25 +173,27 @@ const Empresas: React.FC = () => {
 
         <VisualizarEmpresaModal
           empresa={empresaSelecionada}
-          isOpen={modalVisualizarAberto}
-          onClose={fecharModalVisualizar}
-          onRenovarPlano={handleRenovarPlano}
+          isOpen={visualizarModalOpen}
+          onClose={closeVisualizarModal}
+          onEdit={handleEditarEmpresa}
+          onDelete={handleExcluirEmpresa}
           onReenviarCredenciais={handleReenviarCredenciais}
         />
 
         <EditarEmpresaModal
           empresa={empresaSelecionada}
-          isOpen={modalEditarAberto}
-          onClose={fecharModalEditar}
+          isOpen={editarModalOpen}
+          onClose={closeEditarModal}
           onSave={handleSalvarEdicao}
           isLoading={false}
         />
 
         <ExcluirEmpresaDialog
           empresa={empresaSelecionada}
-          isOpen={modalExcluirAberto}
-          onClose={fecharModalExcluir}
+          isOpen={excluirDialogOpen}
+          onClose={closeExcluirDialog}
           onConfirm={handleConfirmarExclusao}
+          isLoading={isDeletingEmpresa}
         />
       </div>
     </div>

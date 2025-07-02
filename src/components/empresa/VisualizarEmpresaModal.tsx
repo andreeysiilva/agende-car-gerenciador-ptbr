@@ -1,9 +1,10 @@
+
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Empresa } from '@/types/empresa';
-import { Edit, Trash2, Building, Mail } from 'lucide-react';
+import { Edit, Trash2, Building, Mail, RefreshCw } from 'lucide-react';
 
 interface VisualizarEmpresaModalProps {
   empresa: Empresa | null;
@@ -12,6 +13,7 @@ interface VisualizarEmpresaModalProps {
   onEdit: (empresa: Empresa) => void;
   onDelete: (empresa: Empresa) => void;
   onReenviarCredenciais: (empresa: Empresa) => void;
+  onRenovarPlano?: (empresa: Empresa) => void;
   isReenviandoCredenciais?: boolean;
 }
 
@@ -22,6 +24,7 @@ const VisualizarEmpresaModal: React.FC<VisualizarEmpresaModalProps> = ({
   onEdit,
   onDelete,
   onReenviarCredenciais,
+  onRenovarPlano,
   isReenviandoCredenciais = false
 }) => {
   if (!empresa) return null;
@@ -147,6 +150,15 @@ const VisualizarEmpresaModal: React.FC<VisualizarEmpresaModalProps> = ({
             <Button variant="outline" onClick={onClose}>
               Fechar
             </Button>
+            {onRenovarPlano && (
+              <Button 
+                variant="outline" 
+                onClick={() => onRenovarPlano(empresa)}
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Renovar Plano
+              </Button>
+            )}
             <Button 
               variant="outline" 
               onClick={() => onReenviarCredenciais(empresa)}
