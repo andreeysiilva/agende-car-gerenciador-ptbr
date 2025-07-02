@@ -48,75 +48,103 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [retryCount, setRetryCount] = useState(0);
+  const [emergencyMode, setEmergencyMode] = useState(false);
 
-  // Carregar perfil do usuário com melhor tratamento de erros
-  const loadUserProfile = async (userId: string): Promise<UserProfile | null> => {
+  // Carregar perfil com retry e fallback
+  const loadUserProfile = async (userId: string, attempt: number = 1): Promise<UserProfile | null> => {
+    const maxRetries = 3;
+    const delay = Math.pow(2, attempt - 1) * 1000; // Exponential backoff
+
     try {
-      console.log('🔍 Carregando perfil para usuário:', userId);
-      console.log('🔍 Auth UID atual:', userId);
+      console.log(`🔍 Tentativa ${attempt} de carregamento do perfil para usuário:`, userId);
       
+      // Primeiro, tentar carregar o perfil normalmente
       const { data, error } = await supabase
         .from('usuarios')
         .select('*')
         .eq('auth_user_id', userId)
-        .maybeSingle(); // Usar maybeSingle() em vez de single()
+        .maybeSingle();
 
       if (error) {
-        console.error('❌ Erro RLS/Query ao carregar perfil:', error);
+        console.error(`❌ Erro na tentativa ${attempt}:`, error);
         
-        // Verificar se é um erro de RLS ou de query
-        if (error.code === 'PGRST116') {
-          console.log('⚠️ Nenhum perfil encontrado para o usuário');
-          return null;
+        if (attempt < maxRetries) {
+          console.log(`⏳ Aguardando ${delay}ms antes da próxima tentativa...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return loadUserProfile(userId, attempt + 1);
         }
         
-        // Para outros erros, log detalhado
-        console.error('❌ Erro detalhado:', {
-          code: error.code,
-          message: error.message,
-          details: error.details,
-          hint: error.hint
-        });
-        return null;
+        // Se todas as tentativas falharam, tentar modo de emergência
+        console.log('🚨 Tentando modo de emergência...');
+        return tryEmergencyProfileLoad(userId);
       }
 
       if (!data) {
-        console.log('⚠️ Nenhum dados de perfil retornados para o usuário:', userId);
-        
-        // Verificar se o usuário existe na tabela sem filtro por auth_user_id
-        try {
-          const { data: allUsers, error: checkError } = await supabase
-            .from('usuarios')
-            .select('id, email, auth_user_id')
-            .limit(5);
-            
-          console.log('🔍 Primeiros usuários na base:', allUsers);
-          console.log('🔍 Erro na verificação:', checkError);
-        } catch (checkErr) {
-          console.log('🔍 Não foi possível verificar usuários:', checkErr);
-        }
-        
-        return null;
+        console.log('⚠️ Nenhum perfil encontrado, tentando modo de emergência...');
+        return tryEmergencyProfileLoad(userId);
       }
 
-      console.log('✅ Perfil carregado com sucesso:', {
-        id: data.id,
-        email: data.email,
-        role: data.role,
-        nivel_acesso: data.nivel_acesso,
-        empresa_id: data.empresa_id,
-        auth_user_id: data.auth_user_id
-      });
-      
+      console.log('✅ Perfil carregado com sucesso:', data);
+      setRetryCount(0); // Reset retry count on success
       return data as UserProfile;
+
     } catch (error) {
-      console.error('❌ Erro inesperado ao carregar perfil:', error);
+      console.error(`❌ Erro inesperado na tentativa ${attempt}:`, error);
+      
+      if (attempt < maxRetries) {
+        console.log(`⏳ Aguardando ${delay}ms antes da próxima tentativa...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return loadUserProfile(userId, attempt + 1);
+      }
+      
+      return tryEmergencyProfileLoad(userId);
+    }
+  };
+
+  // Modo de emergência - criar perfil temporário para super admin
+  const tryEmergencyProfileLoad = async (userId: string): Promise<UserProfile | null> => {
+    try {
+      console.log('🚨 Ativando modo de emergência...');
+      
+      // Verificar se o usuário logado é o super admin pelo email
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      
+      if (authUser?.email === 'andreey.siilva@icloud.com') {
+        console.log('🛡️ Super admin detectado, criando perfil de emergência...');
+        
+        const emergencyProfile: UserProfile = {
+          id: userId,
+          nome: 'Administrador Principal (Emergência)',
+          email: authUser.email,
+          role: 'super_admin',
+          nivel_acesso: 'super_admin',
+          empresa_id: null,
+          ativo: true,
+          ultimo_acesso: new Date().toISOString(),
+          primeiro_acesso_concluido: true
+        };
+        
+        setEmergencyMode(true);
+        toast.warning('Modo de emergência ativado - Algumas funcionalidades podem estar limitadas');
+        
+        return emergencyProfile;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('❌ Falha no modo de emergência:', error);
       return null;
     }
   };
 
   // Atualizar último acesso
   const updateLastAccess = async () => {
+    if (emergencyMode) {
+      console.log('⚠️ Modo de emergência - pulando atualização de último acesso');
+      return;
+    }
+    
     try {
       const { error } = await supabase.rpc('update_last_access');
       if (error) {
@@ -129,12 +157,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Marcar primeiro acesso como concluído
   const markFirstAccessComplete = async () => {
+    if (emergencyMode) {
+      console.log('⚠️ Modo de emergência - pulando marcação de primeiro acesso');
+      return;
+    }
+    
     try {
       const { error } = await supabase.rpc('marcar_primeiro_acesso_concluido');
       if (error) {
         console.error('Erro ao marcar primeiro acesso:', error);
       } else {
-        // Recarregar perfil para atualizar estado
         if (user) {
           const updatedProfile = await loadUserProfile(user.id);
           setProfile(updatedProfile);
@@ -145,10 +177,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Função de login
+  // Função de login melhorada
   const signIn = async (email: string, password: string) => {
     try {
       console.log('🔐 Iniciando login para:', email);
+      setRetryCount(0);
+      setEmergencyMode(false);
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -157,7 +191,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) {
         console.error('❌ Erro de autenticação:', error);
-        return { error: 'Credenciais inválidas. Verifique seu email e senha.' };
+        
+        // Mensagens de erro mais específicas
+        if (error.message.includes('Invalid login credentials')) {
+          return { error: 'Email ou senha incorretos. Verifique suas credenciais.' };
+        } else if (error.message.includes('Email not confirmed')) {
+          return { error: 'Email não confirmado. Verifique sua caixa de entrada.' };
+        } else if (error.message.includes('Too many requests')) {
+          return { error: 'Muitas tentativas de login. Aguarde alguns minutos.' };
+        }
+        
+        return { error: 'Erro na autenticação. Tente novamente.' };
       }
 
       if (!data.user) {
@@ -175,6 +219,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Função de logout
   const signOut = async () => {
     try {
+      setEmergencyMode(false);
+      setRetryCount(0);
+      
       const { error } = await supabase.auth.signOut();
       if (error) {
         console.error('Erro no logout:', error);
@@ -193,15 +240,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let mounted = true;
     let loadingTimeout: NodeJS.Timeout;
 
-    // Timeout para evitar loading infinito
+    // Timeout de segurança mais longo
     const setLoadingTimeout = () => {
       if (loadingTimeout) clearTimeout(loadingTimeout);
       loadingTimeout = setTimeout(() => {
         if (mounted) {
-          console.log('⏰ Timeout de loading atingido, forçando isLoading = false');
+          console.log('⏰ Timeout de loading atingido');
           setIsLoading(false);
         }
-      }, 10000); // 10 segundos timeout
+      }, 15000); // 15 segundos timeout
     };
 
     // Configurar listener de mudanças de auth
@@ -215,7 +262,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.log('👤 Sessão ativa, carregando perfil...');
           setSession(session);
           setUser(session.user);
-          setLoadingTimeout(); // Iniciar timeout
+          setLoadingTimeout();
           
           try {
             const userProfile = await loadUserProfile(session.user.id);
@@ -224,7 +271,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               console.log('✅ Perfil carregado:', userProfile);
               
               // Atualizar último acesso apenas no login
-              if (event === 'SIGNED_IN' && userProfile) {
+              if (event === 'SIGNED_IN' && userProfile && !emergencyMode) {
                 setTimeout(() => updateLastAccess(), 1000);
               }
             }
@@ -241,6 +288,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setSession(null);
           setUser(null);
           setProfile(null);
+          setEmergencyMode(false);
+          setRetryCount(0);
           clearTimeout(loadingTimeout);
           setIsLoading(false);
         }
@@ -256,7 +305,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (session?.user) {
         setSession(session);
         setUser(session.user);
-        setLoadingTimeout(); // Iniciar timeout
+        setLoadingTimeout();
         
         try {
           const userProfile = await loadUserProfile(session.user.id);
@@ -286,7 +335,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  // Verificações de papel - calculadas apenas quando profile existe e carregamento terminou
+  // Verificações de papel - melhoradas com fallbacks
   const isSuperAdmin = !isLoading && profile 
     ? profile.role === 'super_admin' && profile.nivel_acesso === 'super_admin' && profile.empresa_id === null
     : false;
@@ -315,7 +364,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     profileEmpresaId: profile?.empresa_id,
     profileNivelAcesso: profile?.nivel_acesso,
     userEmail: user?.email,
-    authUserId: user?.id
+    authUserId: user?.id,
+    emergencyMode,
+    retryCount
   });
 
   const value = {

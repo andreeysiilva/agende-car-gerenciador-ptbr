@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Car, Lock, Mail } from 'lucide-react';
+import { Car, Lock, Mail, AlertTriangle, CheckCircle2, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import ForgotPasswordForm from '@/components/auth/ForgotPasswordForm';
 import { getClientLoginUrl } from '@/utils/linkUtils';
@@ -16,10 +16,11 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [loginAttempts, setLoginAttempts] = useState(0);
   const { signIn, isAuthenticated, isGlobalAdmin, profile, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
 
-  // Redirecionar usuários já autenticados quando o perfil estiver carregado
+  // Redirecionar usuários já autenticados
   useEffect(() => {
     console.log('🔍 Login useEffect - Auth state:', { 
       authLoading, 
@@ -30,7 +31,6 @@ const Login: React.FC = () => {
       profileEmail: profile?.email
     });
     
-    // Só redirecionar quando não estiver mais carregando e estiver autenticado
     if (!authLoading && isAuthenticated && isGlobalAdmin && profile) {
       console.log('✅ Redirecionando admin global para dashboard');
       navigate('/admin/dashboard', { replace: true });
@@ -46,6 +46,7 @@ const Login: React.FC = () => {
     }
 
     setIsLoading(true);
+    setLoginAttempts(prev => prev + 1);
 
     try {
       console.log('🔐 Tentando fazer login...');
@@ -57,7 +58,6 @@ const Login: React.FC = () => {
       } else {
         console.log('✅ Login bem-sucedido, aguardando carregamento do perfil...');
         toast.success('Login realizado com sucesso!');
-        // O redirecionamento será feito pelo useEffect quando o perfil for carregado
       }
     } catch (error) {
       console.error('❌ Erro no login:', error);
@@ -71,8 +71,15 @@ const Login: React.FC = () => {
     return <ForgotPasswordForm onBack={() => setShowForgotPassword(false)} />;
   }
 
-  // Mostrar informações de debug se estiver carregando por muito tempo
-  const showDebugInfo = authLoading;
+  // Status do sistema para diagnóstico
+  const getSystemStatus = () => {
+    if (authLoading) return { icon: AlertTriangle, text: 'Verificando autenticação...', color: 'text-yellow-600' };
+    if (isAuthenticated && profile) return { icon: CheckCircle2, text: 'Sistema funcionando', color: 'text-green-600' };
+    if (loginAttempts > 0 && !isAuthenticated) return { icon: XCircle, text: 'Problemas de autenticação', color: 'text-red-600' };
+    return { icon: CheckCircle2, text: 'Sistema pronto', color: 'text-blue-600' };
+  };
+
+  const systemStatus = getSystemStatus();
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-secondary-50 px-4">
@@ -91,13 +98,24 @@ const Login: React.FC = () => {
             <CardDescription className="text-text-secondary">
               Acesse o painel de administração do AgendiCar
             </CardDescription>
-            {showDebugInfo && (
-              <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-xs text-left">
-                <p className="font-semibold text-yellow-700">Debug Info:</p>
-                <p>Auth Loading: {authLoading ? 'true' : 'false'}</p>
-                <p>Is Authenticated: {isAuthenticated ? 'true' : 'false'}</p>
-                <p>Has Profile: {!!profile ? 'true' : 'false'}</p>
-                <p>Profile Role: {profile?.role || 'none'}</p>
+            
+            {/* Status do Sistema */}
+            <div className={`mt-4 flex items-center justify-center gap-2 text-sm ${systemStatus.color}`}>
+              <systemStatus.icon className="h-4 w-4" />
+              <span>{systemStatus.text}</span>
+            </div>
+            
+            {/* Debug Info para diagnóstico */}
+            {(authLoading || loginAttempts > 0) && (
+              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded text-xs text-left">
+                <p className="font-semibold text-blue-700 mb-2">Status do Sistema:</p>
+                <div className="space-y-1 text-blue-600">
+                  <p>• Auth Loading: {authLoading ? '✓' : '✗'}</p>
+                  <p>• Usuário Autenticado: {isAuthenticated ? '✓' : '✗'}</p>
+                  <p>• Perfil Carregado: {!!profile ? '✓' : '✗'}</p>
+                  {profile && <p>• Papel: {profile.role}</p>}
+                  <p>• Tentativas de Login: {loginAttempts}</p>
+                </div>
               </div>
             )}
           </CardHeader>
@@ -159,12 +177,17 @@ const Login: React.FC = () => {
               <Button 
                 type="submit" 
                 className="w-full h-11 bg-primary hover:bg-primary-hover text-white font-medium"
-                disabled={isLoading}
+                disabled={isLoading || authLoading}
               >
                 {isLoading ? (
                   <div className="flex items-center gap-2">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                     Entrando...
+                  </div>
+                ) : authLoading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Carregando sistema...
                   </div>
                 ) : (
                   'Entrar no Sistema'
