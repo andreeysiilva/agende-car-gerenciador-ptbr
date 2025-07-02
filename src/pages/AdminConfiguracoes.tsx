@@ -1,12 +1,18 @@
 
 import React from 'react';
-import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Settings, User, Shield } from 'lucide-react';
 
 const AdminConfiguracoes: React.FC = () => {
-  const { profile } = useAuth();
+  // Mock profile data since authentication is removed
+  const mockProfile = {
+    nome: 'Administrador Demo',
+    email: 'admin@agendicar.com',
+    role: 'super_admin',
+    nivel_acesso: 'super_admin',
+    ativo: true
+  };
 
   const getRoleLabel = (role: string, nivelAcesso?: string) => {
     if (role === 'super_admin' || nivelAcesso === 'super_admin') return 'Super Admin';
@@ -44,25 +50,25 @@ const AdminConfiguracoes: React.FC = () => {
           <CardContent className="space-y-4">
             <div>
               <label className="text-sm font-medium text-gray-700">Nome</label>
-              <p className="text-gray-900">{profile?.nome}</p>
+              <p className="text-gray-900">{mockProfile.nome}</p>
             </div>
             <div>
               <label className="text-sm font-medium text-gray-700">Email</label>
-              <p className="text-gray-900">{profile?.email}</p>
+              <p className="text-gray-900">{mockProfile.email}</p>
             </div>
             <div>
               <label className="text-sm font-medium text-gray-700">Nível de Acesso</label>
               <div className="mt-1">
-                <Badge variant={getRoleBadgeVariant(profile?.role || '', profile?.nivel_acesso)}>
-                  {getRoleLabel(profile?.role || '', profile?.nivel_acesso)}
+                <Badge variant={getRoleBadgeVariant(mockProfile.role, mockProfile.nivel_acesso)}>
+                  {getRoleLabel(mockProfile.role, mockProfile.nivel_acesso)}
                 </Badge>
               </div>
             </div>
             <div>
               <label className="text-sm font-medium text-gray-700">Status</label>
               <div className="mt-1">
-                <Badge variant={profile?.ativo ? "default" : "secondary"}>
-                  {profile?.ativo ? 'Ativo' : 'Inativo'}
+                <Badge variant={mockProfile.ativo ? "default" : "secondary"}>
+                  {mockProfile.ativo ? 'Ativo' : 'Inativo'}
                 </Badge>
               </div>
             </div>
@@ -95,8 +101,8 @@ const AdminConfiguracoes: React.FC = () => {
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm">Gerenciar Administradores</span>
-              <Badge variant={profile?.nivel_acesso === 'super_admin' ? "default" : "secondary"}>
-                {profile?.nivel_acesso === 'super_admin' ? 'Permitido' : 'Negado'}
+              <Badge variant={mockProfile.nivel_acesso === 'super_admin' ? "default" : "secondary"}>
+                {mockProfile.nivel_acesso === 'super_admin' ? 'Permitido' : 'Negado'}
               </Badge>
             </div>
           </CardContent>

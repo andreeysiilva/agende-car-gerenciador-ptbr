@@ -1,6 +1,5 @@
 
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,7 +26,6 @@ interface Administrator {
 }
 
 const AdminAdministradores: React.FC = () => {
-  const { isSuperAdmin } = useAuth();
   const [administrators, setAdministrators] = useState<Administrator[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -44,18 +42,6 @@ const AdminAdministradores: React.FC = () => {
     nivel_acesso: 'admin',
     ativo: true
   });
-
-  // Verificar se é super admin
-  if (!isSuperAdmin) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Acesso Negado</h2>
-          <p className="text-gray-600">Apenas super administradores podem acessar esta seção.</p>
-        </div>
-      </div>
-    );
-  }
 
   // Carregar administradores
   const loadAdministrators = async () => {
