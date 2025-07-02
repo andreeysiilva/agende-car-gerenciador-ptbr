@@ -56,20 +56,36 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const loadAdminProfile = async (userId: string): Promise<AdminProfile | null> => {
     try {
+      console.log('🔍 Loading admin profile for user:', userId);
+      
       const { data, error } = await supabase
         .from('usuarios')
         .select('*')
         .eq('auth_user_id', userId)
-        .eq('role', 'super_admin')
-        .eq('nivel_acesso', 'super_admin')
         .single();
 
-      if (error || !data) {
-        console.error('User is not a super admin:', error);
+      console.log('📊 Usuario query result:', { data, error });
+
+      if (error) {
+        console.error('Error loading user profile:', error);
         await clearSession();
         return null;
       }
 
+      if (!data) {
+        console.error('No user data found');
+        await clearSession();
+        return null;
+      }
+
+      // Verificar se é super admin
+      if (data.role !== 'super_admin' || data.nivel_acesso !== 'super_admin') {
+        console.error('User is not a super admin:', data);
+        await clearSession();
+        return null;
+      }
+
+      console.log('✅ Super admin profile loaded:', data);
       return data as AdminProfile;
     } catch (error) {
       console.error('Error loading admin profile:', error);
@@ -85,12 +101,15 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       // Clear any existing session first
       await clearSession();
       
+      console.log('🔐 Attempting admin login for:', email);
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
+        console.error('❌ Auth error:', error);
         setIsLoading(false);
         
         if (error.message.includes('Invalid login credentials')) {
@@ -105,6 +124,8 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         return { error: 'Erro na autenticação do usuário.' };
       }
 
+      console.log('✅ Auth successful, checking admin profile...');
+      
       // Verify user is admin
       const adminProfile = await loadAdminProfile(data.user.id);
       if (!adminProfile) {
@@ -113,6 +134,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         return { error: 'Usuário não é um administrador do sistema.' };
       }
 
+      console.log('✅ Admin login successful!');
       return { error: null };
     } catch (error) {
       console.error('Unexpected error in admin login:', error);
@@ -164,6 +186,7 @@ export const AdminAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!mounted) return;
       
+      console.log('📋 Getting initial session:', session?.user?.email);
       setSession(session);
       
       if (session?.user) {
