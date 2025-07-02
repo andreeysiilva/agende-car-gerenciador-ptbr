@@ -9,6 +9,38 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      admin_empresa_sessions: {
+        Row: {
+          admin_user_id: string
+          created_at: string | null
+          empresa_id: string
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          admin_user_id: string
+          created_at?: string | null
+          empresa_id: string
+          id?: string
+          updated_at?: string | null
+        }
+        Update: {
+          admin_user_id?: string
+          created_at?: string | null
+          empresa_id?: string
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_empresa_sessions_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agendamentos: {
         Row: {
           cliente_id: string | null
@@ -448,6 +480,7 @@ export type Database = {
           nome: string
           primeiro_acesso_concluido: boolean | null
           role: string | null
+          role_empresa: Database["public"]["Enums"]["empresa_role"] | null
           ultimo_acesso: string | null
           updated_at: string | null
         }
@@ -462,6 +495,7 @@ export type Database = {
           nome: string
           primeiro_acesso_concluido?: boolean | null
           role?: string | null
+          role_empresa?: Database["public"]["Enums"]["empresa_role"] | null
           ultimo_acesso?: string | null
           updated_at?: string | null
         }
@@ -476,6 +510,7 @@ export type Database = {
           nome?: string
           primeiro_acesso_concluido?: boolean | null
           role?: string | null
+          role_empresa?: Database["public"]["Enums"]["empresa_role"] | null
           ultimo_acesso?: string | null
           updated_at?: string | null
         }
@@ -494,6 +529,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_manage_empresa_users: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      check_is_super_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      check_is_super_admin_robust: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       criar_usuario_empresa: {
         Args: {
           p_email: string
@@ -503,11 +550,41 @@ export type Database = {
         }
         Returns: string
       }
+      debug_user_permissions: {
+        Args: { p_email?: string }
+        Returns: {
+          email: string
+          auth_user_id: string
+          role: string
+          nivel_acesso: string
+          empresa_id: string
+          role_empresa: string
+          ativo: boolean
+          is_super_admin: boolean
+          auth_uid_result: string
+        }[]
+      }
+      get_admin_selected_empresa_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_current_empresa_id: {
         Args: Record<PropertyKey, never>
         Returns: string
       }
-      is_global_admin: {
+      get_current_user_empresa_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      get_user_empresa_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      is_current_user_super_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      is_empresa_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
@@ -523,13 +600,22 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      select_empresa_as_admin: {
+        Args: { p_empresa_id: string }
+        Returns: undefined
+      }
       update_last_access: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
     }
     Enums: {
-      [_ in never]: never
+      empresa_role:
+        | "admin_empresa"
+        | "gerente"
+        | "funcionario"
+        | "atendente"
+        | "visualizador"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -644,6 +730,14 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      empresa_role: [
+        "admin_empresa",
+        "gerente",
+        "funcionario",
+        "atendente",
+        "visualizador",
+      ],
+    },
   },
 } as const

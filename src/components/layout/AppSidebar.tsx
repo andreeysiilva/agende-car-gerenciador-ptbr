@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
 import {
   Sidebar,
   SidebarContent,
@@ -12,13 +11,6 @@ import {
   SidebarMenuButton,
   SidebarRail,
 } from '@/components/ui/sidebar';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
@@ -27,17 +19,15 @@ import {
   CreditCard,
   BarChart3,
   Settings,
-  LogOut,
   Calendar,
   Users,
   Wrench,
   UserCheck,
-  ChevronUp,
   Shield,
 } from 'lucide-react';
 
-// Menu items para diferentes tipos de usuário
-const getAdminMenuItems = (isSuperAdmin: boolean) => [
+// Menu items para administração
+const adminMenuItems = [
   {
     title: 'Dashboard',
     url: '/admin/dashboard',
@@ -58,11 +48,11 @@ const getAdminMenuItems = (isSuperAdmin: boolean) => [
     url: '/admin/financeiro',
     icon: CreditCard,
   },
-  ...(isSuperAdmin ? [{
+  {
     title: 'Administradores',
     url: '/admin/administradores',
     icon: Shield,
-  }] : []),
+  },
   {
     title: 'Configurações',
     url: '/admin/configuracoes',
@@ -70,6 +60,7 @@ const getAdminMenuItems = (isSuperAdmin: boolean) => [
   },
 ];
 
+// Menu items para empresa
 const companyMenuItems = [
   {
     title: 'Dashboard',
@@ -111,20 +102,27 @@ const companyMenuItems = [
 export function AppSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { profile, signOut, isGlobalAdmin, isCompanyUser, isSuperAdmin } = useAuth();
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate('/auth');
-  };
+  // Determina se estamos na área admin ou empresa baseado na URL
+  const isAdminArea = location.pathname.startsWith('/admin');
+  const isCompanyArea = location.pathname.startsWith('/app');
 
   const getMenuItems = () => {
-    if (isGlobalAdmin) {
-      return getAdminMenuItems(isSuperAdmin);
-    } else if (isCompanyUser) {
+    if (isAdminArea) {
+      return adminMenuItems;
+    } else if (isCompanyArea) {
       return companyMenuItems;
     }
-    return [];
+    return adminMenuItems; // default
+  };
+
+  const menuItems = getMenuItems();
+
+  // Dados mockados para exibição
+  const mockUser = {
+    nome: isAdminArea ? 'Administrador' : 'Empresa Demo',
+    email: isAdminArea ? 'admin@agendicar.com' : 'empresa@demo.com',
+    role: isAdminArea ? 'Super Admin' : 'Administrador da Empresa'
   };
 
   const getUserInitials = (name: string) => {
@@ -136,16 +134,6 @@ export function AppSidebar() {
       .slice(0, 2);
   };
 
-  const getRoleLabel = (role: string, nivelAcesso?: string) => {
-    if (role === 'super_admin' || nivelAcesso === 'super_admin') return 'Super Admin';
-    if (role === 'admin' || nivelAcesso === 'admin') return 'Administrador';
-    if (role === 'moderador' || nivelAcesso === 'moderador') return 'Moderador';
-    if (role === 'suporte' || nivelAcesso === 'suporte') return 'Suporte';
-    return 'Funcionário';
-  };
-
-  const menuItems = getMenuItems();
-
   return (
     <Sidebar>
       <SidebarHeader className="p-4">
@@ -156,7 +144,7 @@ export function AppSidebar() {
           <div>
             <h2 className="font-bold text-lg">AgendiCar</h2>
             <p className="text-xs text-muted-foreground">
-              {isGlobalAdmin ? 'Painel Admin' : 'Empresa'}
+              {isAdminArea ? 'Painel Admin' : 'Empresa'}
             </p>
           </div>
         </div>
@@ -182,43 +170,23 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="p-4">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="w-full justify-start h-auto p-2">
-              <div className="flex items-center gap-3 w-full">
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback className="text-xs">
-                    {profile ? getUserInitials(profile.nome) : 'U'}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 text-left">
-                  <p className="text-sm font-medium truncate">
-                    {profile?.nome || 'Usuário'}
-                  </p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {profile?.email}
-                  </p>
-                </div>
-                <ChevronUp className="h-4 w-4" />
-              </div>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuItem disabled>
-              <div className="flex flex-col">
-                <span className="font-medium">{profile?.nome}</span>
-                <span className="text-xs text-muted-foreground">
-                  {getRoleLabel(profile?.role || '', profile?.nivel_acesso)}
-                </span>
-              </div>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleSignOut}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Sair
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <Button variant="ghost" className="w-full justify-start h-auto p-2">
+          <div className="flex items-center gap-3 w-full">
+            <Avatar className="h-8 w-8">
+              <AvatarFallback className="text-xs">
+                {getUserInitials(mockUser.nome)}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 text-left">
+              <p className="text-sm font-medium truncate">
+                {mockUser.nome}
+              </p>
+              <p className="text-xs text-muted-foreground truncate">
+                {mockUser.email}
+              </p>
+            </div>
+          </div>
+        </Button>
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
