@@ -24,7 +24,6 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   isSuperAdmin: boolean;
-  isGlobalAdmin: boolean;
   isCompanyUser: boolean;
   updateLastAccess: () => Promise<void>;
   markFirstAccessComplete: () => Promise<void>;
@@ -230,11 +229,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Verificações de papel
   const isSuperAdmin = profile 
-    ? profile.role === 'super_admin' && profile.nivel_acesso === 'super_admin' && profile.empresa_id === null
-    : false;
-    
-  const isGlobalAdmin = profile 
-    ? (profile.role === 'admin' || profile.role === 'super_admin') && profile.empresa_id === null
+    ? profile.role === 'super_admin' && profile.nivel_acesso === 'super_admin'
     : false;
     
   const isCompanyUser = profile 
@@ -252,7 +247,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signIn,
     signOut,
     isSuperAdmin,
-    isGlobalAdmin,
     isCompanyUser,
     updateLastAccess,
     markFirstAccessComplete,

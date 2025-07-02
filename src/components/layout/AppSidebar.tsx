@@ -111,15 +111,15 @@ const companyMenuItems = [
 export function AppSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { profile, signOut, isGlobalAdmin, isCompanyUser, isSuperAdmin } = useAuth();
+  const { profile, signOut, isCompanyUser, isSuperAdmin } = useAuth();
 
   const handleSignOut = async () => {
     await signOut();
-    navigate('/auth');
+    navigate('/login');
   };
 
   const getMenuItems = () => {
-    if (isGlobalAdmin) {
+    if (isSuperAdmin) {
       return getAdminMenuItems(isSuperAdmin);
     } else if (isCompanyUser) {
       return companyMenuItems;
@@ -156,7 +156,7 @@ export function AppSidebar() {
           <div>
             <h2 className="font-bold text-lg">AgendiCar</h2>
             <p className="text-xs text-muted-foreground">
-              {isGlobalAdmin ? 'Painel Admin' : 'Empresa'}
+              {isSuperAdmin ? 'Painel Admin' : 'Empresa'}
             </p>
           </div>
         </div>

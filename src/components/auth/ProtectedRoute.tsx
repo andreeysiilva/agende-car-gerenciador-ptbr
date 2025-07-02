@@ -6,7 +6,6 @@ import { useAuth } from '@/contexts/AuthContext';
 interface ProtectedRouteProps {
   children: React.ReactNode;
   requireAuth?: boolean;
-  requireGlobalAdmin?: boolean;
   requireSuperAdmin?: boolean;
   requireCompanyAccess?: boolean;
 }
@@ -14,20 +13,17 @@ interface ProtectedRouteProps {
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
   requireAuth = true,
-  requireGlobalAdmin = false,
   requireSuperAdmin = false,
   requireCompanyAccess = false,
 }) => {
-  const { isAuthenticated, isLoading, isSuperAdmin, isGlobalAdmin, isCompanyUser } = useAuth();
+  const { isAuthenticated, isLoading, isSuperAdmin, isCompanyUser } = useAuth();
   const location = useLocation();
 
   console.log('🛡️ ProtectedRoute check:', {
     isAuthenticated,
     isLoading,
     isSuperAdmin,
-    isGlobalAdmin,
     isCompanyUser,
-    requireGlobalAdmin,
     requireSuperAdmin,
     requireCompanyAccess,
     path: location.pathname
@@ -57,10 +53,6 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to="/unauthorized" replace />;
   }
 
-  if (requireGlobalAdmin && !isGlobalAdmin) {
-    console.log('❌ Usuário não é admin global');
-    return <Navigate to="/unauthorized" replace />;
-  }
 
   if (requireCompanyAccess && !isCompanyUser) {
     console.log('❌ Usuário não pertence a uma empresa');

@@ -19,7 +19,7 @@ const Login: React.FC = () => {
   const [searchParams] = useSearchParams();
   const [loginType, setLoginType] = useState<'admin' | 'client'>('client');
   
-  const { signIn, isAuthenticated, isSuperAdmin, isGlobalAdmin, isCompanyUser, profile, isLoading, needsPasswordChange, markFirstAccessComplete } = useAuth();
+  const { signIn, isAuthenticated, isSuperAdmin, isCompanyUser, profile, isLoading, needsPasswordChange, markFirstAccessComplete } = useAuth();
   const navigate = useNavigate();
 
   // Detectar tipo de login pela URL
@@ -35,15 +35,15 @@ const Login: React.FC = () => {
   // Redirecionar usuários já autenticados
   useEffect(() => {
     if (isAuthenticated && profile && !isLoading) {
-      console.log('✅ Usuário já autenticado, redirecionando...', { isSuperAdmin, isGlobalAdmin, isCompanyUser });
+      console.log('✅ Usuário já autenticado, redirecionando...', { isSuperAdmin, isCompanyUser });
       
-      if (isSuperAdmin || isGlobalAdmin) {
+      if (isSuperAdmin) {
         navigate('/admin/dashboard', { replace: true });
       } else if (isCompanyUser) {
         navigate('/app/dashboard', { replace: true });
       }
     }
-  }, [isAuthenticated, isSuperAdmin, isGlobalAdmin, isCompanyUser, profile, navigate, isLoading]);
+  }, [isAuthenticated, isSuperAdmin, isCompanyUser, profile, navigate, isLoading]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

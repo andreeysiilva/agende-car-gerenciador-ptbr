@@ -49,7 +49,7 @@ function App() {
 
             {/* Rotas administrativas com sidebar */}
             <Route path="/admin/*" element={
-              <ProtectedRoute requireGlobalAdmin>
+              <ProtectedRoute requireSuperAdmin>
                 <SidebarProvider>
                   <div className="flex min-h-screen">
                     <AppSidebar />
@@ -59,14 +59,7 @@ function App() {
                         <Route path="empresas" element={<Empresas />} />
                         <Route path="planos" element={<Planos />} />
                         <Route path="financeiro" element={<AdminFinanceiro />} />
-                        <Route 
-                          path="administradores" 
-                          element={
-                            <ProtectedRoute requireSuperAdmin>
-                              <AdminAdministradores />
-                            </ProtectedRoute>
-                          } 
-                        />
+                        <Route path="administradores" element={<AdminAdministradores />} />
                         <Route path="configuracoes" element={<AdminConfiguracoes />} />
                       </Routes>
                     </main>
