@@ -501,6 +501,14 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      check_is_global_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      check_is_super_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       criar_usuario_empresa: {
         Args: {
           p_email: string
@@ -515,6 +523,10 @@ export type Database = {
         Returns: string
       }
       get_current_user_empresa_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      get_user_empresa_id: {
         Args: Record<PropertyKey, never>
         Returns: string
       }

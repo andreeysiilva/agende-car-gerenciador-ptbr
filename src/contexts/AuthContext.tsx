@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
@@ -43,97 +44,32 @@ export const useAuth = () => {
   return context;
 };
 
-// Timeout para carregamento de perfil
-const PROFILE_LOAD_TIMEOUT = 10000; // 10 segundos
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Carregar perfil com timeout e retry
-  const loadUserProfile = async (userId: string, retryCount = 0): Promise<UserProfile | null> => {
+  // Carregar perfil do usuário
+  const loadUserProfile = async (userId: string): Promise<UserProfile | null> => {
     try {
-      console.log(`🔍 Tentativa ${retryCount + 1} de carregamento do perfil para usuário:`, userId);
+      console.log('🔍 Carregando perfil para usuário:', userId);
       
-      // Timeout de 5 segundos para a query
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Timeout na consulta do perfil')), 5000);
-      });
-
-      const profilePromise = supabase
+      const { data, error } = await supabase
         .from('usuarios')
         .select('*')
         .eq('auth_user_id', userId)
         .single();
 
-      const { data, error } = await Promise.race([profilePromise, timeoutPromise]);
-
       if (error) {
         console.error('❌ Erro ao carregar perfil:', error);
-        
-        // Se for super admin e não encontrar perfil, criar modo de emergência
-        const { data: { user: authUser } } = await supabase.auth.getUser();
-        
-        if (authUser?.email === 'andreey.siilva@icloud.com' && retryCount < 2) {
-          console.log('🛡️ Tentando modo de emergência para super admin...');
-          
-          // Tentar criar o registro se não existir
-          const { error: insertError } = await supabase
-            .from('usuarios')
-            .upsert({
-              nome: 'Administrador Principal',
-              email: authUser.email,
-              role: 'super_admin',
-              nivel_acesso: 'super_admin',
-              empresa_id: null,
-              ativo: true,
-              primeiro_acesso_concluido: true,
-              auth_user_id: userId
-            }, { onConflict: 'email' });
-
-          if (!insertError) {
-            console.log('✅ Registro criado, tentando carregar novamente...');
-            // Esperar um pouco e tentar novamente
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            return await loadUserProfile(userId, retryCount + 1);
-          }
-        }
-        
         return null;
       }
 
-      console.log('✅ Perfil carregado com sucesso:', data);
+      console.log('✅ Perfil carregado:', data);
       return data as UserProfile;
-
     } catch (error) {
       console.error('❌ Erro inesperado ao carregar perfil:', error);
-      
-      // Se timeout e é super admin, usar modo de emergência
-      if (error instanceof Error && error.message.includes('Timeout')) {
-        const { data: { user: authUser } } = await supabase.auth.getUser();
-        
-        if (authUser?.email === 'andreey.siilva@icloud.com') {
-          console.log('🛡️ Timeout detectado, usando perfil de emergência...');
-          
-          const emergencyProfile: UserProfile = {
-            id: userId,
-            nome: 'Administrador Principal',
-            email: authUser.email,
-            role: 'super_admin',
-            nivel_acesso: 'super_admin',
-            empresa_id: null,
-            ativo: true,
-            ultimo_acesso: new Date().toISOString(),
-            primeiro_acesso_concluido: true
-          };
-          
-          toast.warning('Sistema carregado em modo de emergência');
-          return emergencyProfile;
-        }
-      }
-      
       return null;
     }
   };
@@ -232,18 +168,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Configurar listeners de autenticação
   useEffect(() => {
     let mounted = true;
-    let loadingTimeout: NodeJS.Timeout | null = null;
-
-    // Timeout global de loading
-    const setLoadingTimeout = () => {
-      if (loadingTimeout) clearTimeout(loadingTimeout);
-      loadingTimeout = setTimeout(() => {
-        if (mounted) {
-          console.log('⏰ Timeout de loading atingido');
-          setIsLoading(false);
-        }
-      }, PROFILE_LOAD_TIMEOUT);
-    };
 
     // Configurar listener de mudanças de auth
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -258,19 +182,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser(session.user);
           setIsLoading(true);
           
-          // Definir timeout
-          setLoadingTimeout();
-          
           // Carregar perfil
           const userProfile = await loadUserProfile(session.user.id);
           if (mounted) {
             setProfile(userProfile);
             setIsLoading(false);
-            
-            if (loadingTimeout) {
-              clearTimeout(loadingTimeout);
-              loadingTimeout = null;
-            }
             
             console.log('✅ Perfil carregado:', userProfile);
             
@@ -285,11 +201,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser(null);
           setProfile(null);
           setIsLoading(false);
-          
-          if (loadingTimeout) {
-            clearTimeout(loadingTimeout);
-            loadingTimeout = null;
-          }
         }
       }
     );
@@ -305,18 +216,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(session.user);
         setIsLoading(true);
         
-        // Definir timeout
-        setLoadingTimeout();
-        
         const userProfile = await loadUserProfile(session.user.id);
         if (mounted) {
           setProfile(userProfile);
           setIsLoading(false);
-          
-          if (loadingTimeout) {
-            clearTimeout(loadingTimeout);
-            loadingTimeout = null;
-          }
           
           console.log('✅ Perfil carregado na inicialização:', userProfile);
         }
@@ -329,20 +232,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return () => {
       mounted = false;
-      if (loadingTimeout) {
-        clearTimeout(loadingTimeout);
-      }
       subscription.unsubscribe();
     };
   }, []);
 
   // Verificações de papel
   const isSuperAdmin = !isLoading && profile 
-    ? profile.role === 'super_admin' && profile.nivel_acesso === 'super_admin' && profile.empresa_id === null
+    ? profile.role === 'super_admin' && profile.nivel_acesso === 'super_admin'
     : false;
     
   const isGlobalAdmin = !isLoading && profile 
-    ? (profile.role === 'admin' || profile.role === 'super_admin') && profile.empresa_id === null
+    ? (profile.role === 'admin' || profile.role === 'super_admin') && profile.empresa_id !== null
     : false;
     
   const isCompanyUser = !isLoading && profile 
@@ -351,22 +251,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
   const isAuthenticated = !isLoading && !!user && !!profile;
   const needsPasswordChange = !isLoading && profile?.primeiro_acesso_concluido === false && isCompanyUser;
-
-  // Log detalhado para debug
-  console.log('🔍 Auth Debug State:', {
-    isLoading,
-    isAuthenticated,
-    isSuperAdmin,
-    isGlobalAdmin,
-    isCompanyUser,
-    hasUser: !!user,
-    hasProfile: !!profile,
-    profileRole: profile?.role,
-    profileEmpresaId: profile?.empresa_id,
-    profileNivelAcesso: profile?.nivel_acesso,
-    userEmail: user?.email,
-    authUserId: user?.id
-  });
 
   const value = {
     user,
