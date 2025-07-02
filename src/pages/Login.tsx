@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Car, Lock, Mail, AlertTriangle, CheckCircle2, XCircle } from 'lucide-react';
+import { Car, Lock, Mail, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import ForgotPasswordForm from '@/components/auth/ForgotPasswordForm';
 import { getClientLoginUrl } from '@/utils/linkUtils';
@@ -16,7 +16,6 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const [loginAttempts, setLoginAttempts] = useState(0);
   const { signIn, isAuthenticated, isGlobalAdmin, profile, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
 
@@ -46,7 +45,6 @@ const Login: React.FC = () => {
     }
 
     setIsLoading(true);
-    setLoginAttempts(prev => prev + 1);
 
     try {
       console.log('🔐 Tentando fazer login...');
@@ -71,16 +69,6 @@ const Login: React.FC = () => {
     return <ForgotPasswordForm onBack={() => setShowForgotPassword(false)} />;
   }
 
-  // Status do sistema para diagnóstico
-  const getSystemStatus = () => {
-    if (authLoading) return { icon: AlertTriangle, text: 'Verificando autenticação...', color: 'text-yellow-600' };
-    if (isAuthenticated && profile) return { icon: CheckCircle2, text: 'Sistema funcionando', color: 'text-green-600' };
-    if (loginAttempts > 0 && !isAuthenticated) return { icon: XCircle, text: 'Problemas de autenticação', color: 'text-red-600' };
-    return { icon: CheckCircle2, text: 'Sistema pronto', color: 'text-blue-600' };
-  };
-
-  const systemStatus = getSystemStatus();
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-secondary-50 px-4">
       <div className="w-full max-w-md">
@@ -100,21 +88,20 @@ const Login: React.FC = () => {
             </CardDescription>
             
             {/* Status do Sistema */}
-            <div className={`mt-4 flex items-center justify-center gap-2 text-sm ${systemStatus.color}`}>
-              <systemStatus.icon className="h-4 w-4" />
-              <span>{systemStatus.text}</span>
+            <div className="mt-4 flex items-center justify-center gap-2 text-sm text-green-600">
+              <CheckCircle2 className="h-4 w-4" />
+              <span>Sistema pronto</span>
             </div>
             
-            {/* Debug Info para diagnóstico */}
-            {(authLoading || loginAttempts > 0) && (
+            {/* Debug Info apenas quando necessário */}
+            {authLoading && (
               <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded text-xs text-left">
-                <p className="font-semibold text-blue-700 mb-2">Status do Sistema:</p>
+                <p className="font-semibold text-blue-700 mb-2">Carregando sistema...</p>
                 <div className="space-y-1 text-blue-600">
                   <p>• Auth Loading: {authLoading ? '✓' : '✗'}</p>
                   <p>• Usuário Autenticado: {isAuthenticated ? '✓' : '✗'}</p>
                   <p>• Perfil Carregado: {!!profile ? '✓' : '✗'}</p>
                   {profile && <p>• Papel: {profile.role}</p>}
-                  <p>• Tentativas de Login: {loginAttempts}</p>
                 </div>
               </div>
             )}

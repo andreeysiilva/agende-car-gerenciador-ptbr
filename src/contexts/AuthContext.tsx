@@ -48,103 +48,57 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [retryCount, setRetryCount] = useState(0);
-  const [emergencyMode, setEmergencyMode] = useState(false);
 
-  // Carregar perfil com retry e fallback
-  const loadUserProfile = async (userId: string, attempt: number = 1): Promise<UserProfile | null> => {
-    const maxRetries = 3;
-    const delay = Math.pow(2, attempt - 1) * 1000; // Exponential backoff
-
+  // Carregar perfil com melhor tratamento de erros
+  const loadUserProfile = async (userId: string): Promise<UserProfile | null> => {
     try {
-      console.log(`🔍 Tentativa ${attempt} de carregamento do perfil para usuário:`, userId);
+      console.log('🔍 Carregando perfil para usuário:', userId);
       
-      // Primeiro, tentar carregar o perfil normalmente
       const { data, error } = await supabase
         .from('usuarios')
         .select('*')
         .eq('auth_user_id', userId)
-        .maybeSingle();
+        .single();
 
       if (error) {
-        console.error(`❌ Erro na tentativa ${attempt}:`, error);
+        console.error('❌ Erro ao carregar perfil:', error);
         
-        if (attempt < maxRetries) {
-          console.log(`⏳ Aguardando ${delay}ms antes da próxima tentativa...`);
-          await new Promise(resolve => setTimeout(resolve, delay));
-          return loadUserProfile(userId, attempt + 1);
+        // Se for super admin e não encontrar perfil, tentar modo de emergência
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        
+        if (authUser?.email === 'andreey.siilva@icloud.com') {
+          console.log('🛡️ Criando perfil de emergência para super admin...');
+          
+          const emergencyProfile: UserProfile = {
+            id: userId,
+            nome: 'Administrador Principal',
+            email: authUser.email,
+            role: 'super_admin',
+            nivel_acesso: 'super_admin',
+            empresa_id: null,
+            ativo: true,
+            ultimo_acesso: new Date().toISOString(),
+            primeiro_acesso_concluido: true
+          };
+          
+          toast.warning('Perfil carregado em modo de emergência');
+          return emergencyProfile;
         }
         
-        // Se todas as tentativas falharam, tentar modo de emergência
-        console.log('🚨 Tentando modo de emergência...');
-        return tryEmergencyProfileLoad(userId);
-      }
-
-      if (!data) {
-        console.log('⚠️ Nenhum perfil encontrado, tentando modo de emergência...');
-        return tryEmergencyProfileLoad(userId);
+        return null;
       }
 
       console.log('✅ Perfil carregado com sucesso:', data);
-      setRetryCount(0); // Reset retry count on success
       return data as UserProfile;
 
     } catch (error) {
-      console.error(`❌ Erro inesperado na tentativa ${attempt}:`, error);
-      
-      if (attempt < maxRetries) {
-        console.log(`⏳ Aguardando ${delay}ms antes da próxima tentativa...`);
-        await new Promise(resolve => setTimeout(resolve, delay));
-        return loadUserProfile(userId, attempt + 1);
-      }
-      
-      return tryEmergencyProfileLoad(userId);
-    }
-  };
-
-  // Modo de emergência - criar perfil temporário para super admin
-  const tryEmergencyProfileLoad = async (userId: string): Promise<UserProfile | null> => {
-    try {
-      console.log('🚨 Ativando modo de emergência...');
-      
-      // Verificar se o usuário logado é o super admin pelo email
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      
-      if (authUser?.email === 'andreey.siilva@icloud.com') {
-        console.log('🛡️ Super admin detectado, criando perfil de emergência...');
-        
-        const emergencyProfile: UserProfile = {
-          id: userId,
-          nome: 'Administrador Principal (Emergência)',
-          email: authUser.email,
-          role: 'super_admin',
-          nivel_acesso: 'super_admin',
-          empresa_id: null,
-          ativo: true,
-          ultimo_acesso: new Date().toISOString(),
-          primeiro_acesso_concluido: true
-        };
-        
-        setEmergencyMode(true);
-        toast.warning('Modo de emergência ativado - Algumas funcionalidades podem estar limitadas');
-        
-        return emergencyProfile;
-      }
-      
-      return null;
-    } catch (error) {
-      console.error('❌ Falha no modo de emergência:', error);
+      console.error('❌ Erro inesperado ao carregar perfil:', error);
       return null;
     }
   };
 
   // Atualizar último acesso
   const updateLastAccess = async () => {
-    if (emergencyMode) {
-      console.log('⚠️ Modo de emergência - pulando atualização de último acesso');
-      return;
-    }
-    
     try {
       const { error } = await supabase.rpc('update_last_access');
       if (error) {
@@ -157,11 +111,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Marcar primeiro acesso como concluído
   const markFirstAccessComplete = async () => {
-    if (emergencyMode) {
-      console.log('⚠️ Modo de emergência - pulando marcação de primeiro acesso');
-      return;
-    }
-    
     try {
       const { error } = await supabase.rpc('marcar_primeiro_acesso_concluido');
       if (error) {
@@ -177,12 +126,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Função de login melhorada
+  // Função de login
   const signIn = async (email: string, password: string) => {
     try {
       console.log('🔐 Iniciando login para:', email);
-      setRetryCount(0);
-      setEmergencyMode(false);
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -192,7 +139,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error) {
         console.error('❌ Erro de autenticação:', error);
         
-        // Mensagens de erro mais específicas
         if (error.message.includes('Invalid login credentials')) {
           return { error: 'Email ou senha incorretos. Verifique suas credenciais.' };
         } else if (error.message.includes('Email not confirmed')) {
@@ -219,9 +165,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Função de logout
   const signOut = async () => {
     try {
-      setEmergencyMode(false);
-      setRetryCount(0);
-      
       const { error } = await supabase.auth.signOut();
       if (error) {
         console.error('Erro no logout:', error);
@@ -238,18 +181,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Configurar listeners de autenticação
   useEffect(() => {
     let mounted = true;
-    let loadingTimeout: NodeJS.Timeout;
-
-    // Timeout de segurança mais longo
-    const setLoadingTimeout = () => {
-      if (loadingTimeout) clearTimeout(loadingTimeout);
-      loadingTimeout = setTimeout(() => {
-        if (mounted) {
-          console.log('⏰ Timeout de loading atingido');
-          setIsLoading(false);
-        }
-      }, 15000); // 15 segundos timeout
-    };
 
     // Configurar listener de mudanças de auth
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -262,25 +193,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.log('👤 Sessão ativa, carregando perfil...');
           setSession(session);
           setUser(session.user);
-          setLoadingTimeout();
           
-          try {
-            const userProfile = await loadUserProfile(session.user.id);
-            if (mounted) {
-              setProfile(userProfile);
-              console.log('✅ Perfil carregado:', userProfile);
-              
-              // Atualizar último acesso apenas no login
-              if (event === 'SIGNED_IN' && userProfile && !emergencyMode) {
-                setTimeout(() => updateLastAccess(), 1000);
-              }
-            }
-          } catch (error) {
-            console.error('❌ Erro ao carregar perfil:', error);
-          } finally {
-            if (mounted) {
-              clearTimeout(loadingTimeout);
-              setIsLoading(false);
+          // Carregar perfil
+          const userProfile = await loadUserProfile(session.user.id);
+          if (mounted) {
+            setProfile(userProfile);
+            console.log('✅ Perfil carregado:', userProfile);
+            
+            // Atualizar último acesso apenas no login
+            if (event === 'SIGNED_IN' && userProfile) {
+              setTimeout(() => updateLastAccess(), 1000);
             }
           }
         } else {
@@ -288,9 +210,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setSession(null);
           setUser(null);
           setProfile(null);
-          setEmergencyMode(false);
-          setRetryCount(0);
-          clearTimeout(loadingTimeout);
+        }
+
+        if (mounted) {
           setIsLoading(false);
         }
       }
@@ -305,37 +227,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (session?.user) {
         setSession(session);
         setUser(session.user);
-        setLoadingTimeout();
         
-        try {
-          const userProfile = await loadUserProfile(session.user.id);
-          if (mounted) {
-            setProfile(userProfile);
-            console.log('✅ Perfil carregado na inicialização:', userProfile);
-          }
-        } catch (error) {
-          console.error('❌ Erro ao carregar perfil na inicialização:', error);
-        } finally {
-          if (mounted) {
-            clearTimeout(loadingTimeout);
-            setIsLoading(false);
-          }
-        }
-      } else {
+        const userProfile = await loadUserProfile(session.user.id);
         if (mounted) {
-          setIsLoading(false);
+          setProfile(userProfile);
+          console.log('✅ Perfil carregado na inicialização:', userProfile);
         }
+      }
+      
+      if (mounted) {
+        setIsLoading(false);
       }
     });
 
     return () => {
       mounted = false;
-      if (loadingTimeout) clearTimeout(loadingTimeout);
       subscription.unsubscribe();
     };
   }, []);
 
-  // Verificações de papel - melhoradas com fallbacks
+  // Verificações de papel
   const isSuperAdmin = !isLoading && profile 
     ? profile.role === 'super_admin' && profile.nivel_acesso === 'super_admin' && profile.empresa_id === null
     : false;
@@ -364,9 +275,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     profileEmpresaId: profile?.empresa_id,
     profileNivelAcesso: profile?.nivel_acesso,
     userEmail: user?.email,
-    authUserId: user?.id,
-    emergencyMode,
-    retryCount
+    authUserId: user?.id
   });
 
   const value = {
