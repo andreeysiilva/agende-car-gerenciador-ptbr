@@ -53,9 +53,9 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to="/unauthorized" replace />;
   }
 
-
-  if (requireCompanyAccess && !isCompanyUser) {
-    console.log('❌ Usuário não pertence a uma empresa');
+  // Super admins podem acessar qualquer rota (admin ou empresa)
+  if (requireCompanyAccess && !isCompanyUser && !isSuperAdmin) {
+    console.log('❌ Usuário não pertence a uma empresa e não é super admin');
     return <Navigate to="/unauthorized" replace />;
   }
 

@@ -9,6 +9,38 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      admin_empresa_sessions: {
+        Row: {
+          admin_user_id: string
+          created_at: string | null
+          empresa_id: string
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          admin_user_id: string
+          created_at?: string | null
+          empresa_id: string
+          id?: string
+          updated_at?: string | null
+        }
+        Update: {
+          admin_user_id?: string
+          created_at?: string | null
+          empresa_id?: string
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_empresa_sessions_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agendamentos: {
         Row: {
           cliente_id: string | null
@@ -514,6 +546,10 @@ export type Database = {
         }
         Returns: string
       }
+      get_admin_selected_empresa_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_current_empresa_id: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -545,6 +581,10 @@ export type Database = {
       precisa_trocar_senha: {
         Args: Record<PropertyKey, never>
         Returns: boolean
+      }
+      select_empresa_as_admin: {
+        Args: { p_empresa_id: string }
+        Returns: undefined
       }
       update_last_access: {
         Args: Record<PropertyKey, never>

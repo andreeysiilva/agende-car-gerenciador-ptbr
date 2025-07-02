@@ -2,6 +2,7 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useState } from 'react';
 import {
   Sidebar,
   SidebarContent,
@@ -34,7 +35,10 @@ import {
   UserCheck,
   ChevronUp,
   Shield,
+  ChevronDown,
+  Check,
 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 // Menu items para diferentes tipos de usuário
 const getAdminMenuItems = (isSuperAdmin: boolean) => [
@@ -111,7 +115,8 @@ const companyMenuItems = [
 export function AppSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { profile, signOut, isCompanyUser, isSuperAdmin } = useAuth();
+  const { profile, signOut, isCompanyUser, isSuperAdmin, selectedEmpresaId, selectEmpresa, availableEmpresas } = useAuth();
+  const [showCompanySelector, setShowCompanySelector] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
@@ -120,11 +125,29 @@ export function AppSidebar() {
 
   const getMenuItems = () => {
     if (isSuperAdmin) {
+      // Se super admin está visualizando empresa, mostrar menu da empresa
+      if (location.pathname.startsWith('/app/')) {
+        return companyMenuItems;
+      }
       return getAdminMenuItems(isSuperAdmin);
     } else if (isCompanyUser) {
       return companyMenuItems;
     }
     return [];
+  };
+
+  const handleCompanySelect = (empresaId: string) => {
+    selectEmpresa(empresaId);
+    // Se estava na área admin, redirecionar para área da empresa
+    if (location.pathname.startsWith('/admin/')) {
+      navigate('/app/dashboard');
+    }
+  };
+
+  const getSelectedEmpresaName = () => {
+    if (!selectedEmpresaId) return 'Selecionar Empresa';
+    const empresa = availableEmpresas.find(emp => emp.id === selectedEmpresaId);
+    return empresa ? empresa.nome : 'Empresa não encontrada';
   };
 
   const getUserInitials = (name: string) => {
@@ -163,6 +186,53 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
+        {/* Seletor de contexto para Super Admin */}
+        {isSuperAdmin && (
+          <div className="p-4 border-b">
+            <div className="space-y-2">
+              <div className="flex gap-1">
+                <Button
+                  variant={location.pathname.startsWith('/admin/') ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => navigate('/admin/dashboard')}
+                  className="flex-1 text-xs"
+                >
+                  Admin
+                </Button>
+                <Button
+                  variant={location.pathname.startsWith('/app/') ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => {
+                    if (selectedEmpresaId) {
+                      navigate('/app/dashboard');
+                    } else {
+                      setShowCompanySelector(true);
+                    }
+                  }}
+                  className="flex-1 text-xs"
+                >
+                  Empresa
+                </Button>
+              </div>
+              
+              {location.pathname.startsWith('/app/') && (
+                <Select onValueChange={handleCompanySelect} value={selectedEmpresaId || ''}>
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Selecionar Empresa" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableEmpresas.map((empresa) => (
+                      <SelectItem key={empresa.id} value={empresa.id}>
+                        {empresa.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+          </div>
+        )}
+
         <SidebarMenu>
           {menuItems.map((item) => {
             const isActive = location.pathname === item.url;

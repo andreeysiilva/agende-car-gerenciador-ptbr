@@ -28,6 +28,9 @@ interface AuthContextType {
   updateLastAccess: () => Promise<void>;
   markFirstAccessComplete: () => Promise<void>;
   needsPasswordChange: boolean;
+  selectedEmpresaId: string | null;
+  selectEmpresa: (empresaId: string) => Promise<void>;
+  availableEmpresas: any[];
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -45,6 +48,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [session, setSession] = useState<Session | null>(null);
+  const [selectedEmpresaId, setSelectedEmpresaId] = useState<string | null>(null);
+  const [availableEmpresas, setAvailableEmpresas] = useState<any[]>([]);
 
   // Carregar perfil do usuário
   const loadUserProfile = async (userId: string): Promise<UserProfile | null> => {
@@ -158,6 +163,63 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Carregar empresas disponíveis para super admin
+  const loadAvailableEmpresas = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('empresas')
+        .select('id, nome, email, status')
+        .eq('status', 'Ativo')
+        .order('nome');
+
+      if (error) {
+        console.error('Erro ao carregar empresas:', error);
+        return;
+      }
+
+      setAvailableEmpresas(data || []);
+    } catch (error) {
+      console.error('Erro inesperado ao carregar empresas:', error);
+    }
+  };
+
+  // Selecionar empresa como super admin
+  const selectEmpresa = async (empresaId: string) => {
+    try {
+      const { error } = await supabase.rpc('select_empresa_as_admin', {
+        p_empresa_id: empresaId
+      });
+
+      if (error) {
+        console.error('Erro ao selecionar empresa:', error);
+        toast.error('Erro ao selecionar empresa');
+        return;
+      }
+
+      setSelectedEmpresaId(empresaId);
+      toast.success('Empresa selecionada com sucesso');
+    } catch (error) {
+      console.error('Erro inesperado ao selecionar empresa:', error);
+      toast.error('Erro inesperado');
+    }
+  };
+
+  // Carregar empresa selecionada para super admin
+  const loadSelectedEmpresa = async () => {
+    try {
+      const { data, error } = await supabase.rpc('get_admin_selected_empresa_id');
+      
+      if (error) {
+        console.error('Erro ao carregar empresa selecionada:', error);
+        return;
+      }
+
+      setSelectedEmpresaId(data);
+    } catch (error) {
+      console.error('Erro inesperado ao carregar empresa selecionada:', error);
+    }
+  };
+
   // Configurar listeners de autenticação
   useEffect(() => {
     let mounted = true;
@@ -233,11 +295,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     : false;
     
   const isCompanyUser = profile 
-    ? profile.empresa_id !== null
+    ? profile.empresa_id !== null || isSuperAdmin
     : false;
     
   const isAuthenticated = !!user && !!profile;
   const needsPasswordChange = profile?.primeiro_acesso_concluido === false && isCompanyUser;
+
+  // Carregar dados específicos para super admin
+  useEffect(() => {
+    if (isSuperAdmin) {
+      loadAvailableEmpresas();
+      loadSelectedEmpresa();
+    }
+  }, [isSuperAdmin]);
 
   const value = {
     user,
@@ -251,6 +321,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     updateLastAccess,
     markFirstAccessComplete,
     needsPasswordChange,
+    selectedEmpresaId,
+    selectEmpresa,
+    availableEmpresas,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
