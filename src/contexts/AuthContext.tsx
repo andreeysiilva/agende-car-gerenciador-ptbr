@@ -3,7 +3,6 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
 import { toast } from 'sonner';
-import { useNavigate } from 'react-router-dom';
 
 // Tipos para o contexto de autenticação
 interface UserProfile {
@@ -53,6 +52,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Carregar perfil do usuário
   const loadUserProfile = async (userId: string) => {
     try {
+      console.log('Carregando perfil para usuário:', userId);
+      
       const { data, error } = await supabase
         .from('usuarios')
         .select('*')
@@ -64,6 +65,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return null;
       }
 
+      console.log('Perfil carregado:', data);
       return data as UserProfile;
     } catch (error) {
       console.error('Erro inesperado ao carregar perfil:', error);
@@ -94,9 +96,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Função de login simplificada sem redirecionamento automático
+  // Função de login
   const signIn = async (email: string, password: string) => {
     try {
+      console.log('Iniciando login para:', email);
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -111,15 +115,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { error: 'Erro na autenticação do usuário.' };
       }
 
-      // Apenas atualizar último acesso, sem redirecionamento
-      setTimeout(async () => {
-        try {
-          await updateLastAccess();
-        } catch (error) {
-          console.error('Erro no pós-login:', error);
-        }
-      }, 1000);
+      console.log('Login bem-sucedido para:', data.user.email);
 
+      // O carregamento do perfil será feito pelo onAuthStateChange
       return { error: null };
     } catch (error) {
       console.error('Erro inesperado no login:', error);
@@ -127,7 +125,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Função de logout sem redirecionamento automático
+  // Função de logout
   const signOut = async () => {
     try {
       const { error } = await supabase.auth.signOut();
@@ -136,10 +134,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         toast.error('Erro ao sair do sistema');
       } else {
         toast.success('Logout realizado com sucesso');
-        // Limpar estados locais
-        setUser(null);
-        setSession(null);
-        setProfile(null);
+        // Os estados serão limpos pelo onAuthStateChange
       }
     } catch (error) {
       console.error('Erro inesperado no logout:', error);
@@ -149,22 +144,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Configurar listeners de autenticação
   useEffect(() => {
+    let mounted = true;
+
     // Configurar listener de mudanças de auth
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state changed:', event, session?.user?.email);
         
-        setSession(session);
-        setUser(session?.user ?? null);
-        
+        if (!mounted) return;
+
         if (session?.user) {
-          // Carregar perfil do usuário com delay para evitar race conditions
-          setTimeout(async () => {
+          console.log('Sessão ativa, carregando perfil...');
+          setSession(session);
+          setUser(session.user);
+          
+          // Carregar perfil imediatamente sem delay
+          try {
             const userProfile = await loadUserProfile(session.user.id);
-            setProfile(userProfile);
-            setIsLoading(false);
-          }, 100);
+            if (mounted) {
+              setProfile(userProfile);
+              console.log('Perfil definido:', userProfile);
+              
+              // Atualizar último acesso apenas no login
+              if (event === 'SIGNED_IN') {
+                setTimeout(() => updateLastAccess(), 1000);
+              }
+            }
+          } catch (error) {
+            console.error('Erro ao carregar perfil:', error);
+          } finally {
+            if (mounted) {
+              setIsLoading(false);
+            }
+          }
         } else {
+          console.log('Sessão removida, limpando estados...');
+          setSession(null);
+          setUser(null);
           setProfile(null);
           setIsLoading(false);
         }
@@ -172,29 +188,54 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
 
     // Verificar sessão existente
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!mounted) return;
+
+      console.log('Verificando sessão existente:', session?.user?.email);
       
       if (session?.user) {
-        loadUserProfile(session.user.id).then((userProfile) => {
-          setProfile(userProfile);
-          setIsLoading(false);
-        });
-      } else {
+        setSession(session);
+        setUser(session.user);
+        
+        try {
+          const userProfile = await loadUserProfile(session.user.id);
+          if (mounted) {
+            setProfile(userProfile);
+            console.log('Perfil carregado na inicialização:', userProfile);
+          }
+        } catch (error) {
+          console.error('Erro ao carregar perfil na inicialização:', error);
+        }
+      }
+      
+      if (mounted) {
         setIsLoading(false);
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
-  // Verificações de papel
+  // Verificações de papel - só calculadas quando profile existe
   const isSuperAdmin = profile?.role === 'super_admin' && profile?.nivel_acesso === 'super_admin' && profile?.empresa_id === null;
-  const isGlobalAdmin = (profile?.role === 'admin' || profile?.role === 'super_admin') && profile?.empresa_id === null;
+  const isGlobalAdmin = profile ? (profile.role === 'admin' || profile.role === 'super_admin') && profile.empresa_id === null : false;
   const isCompanyUser = profile?.empresa_id !== null;
   const isAuthenticated = !!user && !!profile;
   const needsPasswordChange = profile?.primeiro_acesso_concluido === false && isCompanyUser;
+
+  // Log para debug
+  console.log('Auth state:', {
+    isAuthenticated,
+    isLoading,
+    isSuperAdmin,
+    isGlobalAdmin,
+    isCompanyUser,
+    profileRole: profile?.role,
+    profileEmpresaId: profile?.empresa_id
+  });
 
   const value = {
     user,

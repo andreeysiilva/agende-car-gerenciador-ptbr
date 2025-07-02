@@ -21,6 +21,17 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const { isAuthenticated, isLoading, isSuperAdmin, isGlobalAdmin, isCompanyUser } = useAuth();
   const location = useLocation();
 
+  console.log('ProtectedRoute check:', {
+    isAuthenticated,
+    isLoading,
+    isSuperAdmin,
+    isGlobalAdmin,
+    isCompanyUser,
+    requireGlobalAdmin,
+    requireSuperAdmin,
+    requireCompanyAccess
+  });
+
   // Mostrar loading enquanto verifica autenticação
   if (isLoading) {
     return (
@@ -35,7 +46,14 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Verificar se requer autenticação
   if (requireAuth && !isAuthenticated) {
-    return <Navigate to="/auth" state={{ from: location }} replace />;
+    // Redirecionar para login apropriado baseado no tipo de acesso requerido
+    if (requireGlobalAdmin || requireSuperAdmin) {
+      return <Navigate to="/login" state={{ from: location }} replace />;
+    } else if (requireCompanyAccess) {
+      return <Navigate to="/cliente/login" state={{ from: location }} replace />;
+    } else {
+      return <Navigate to="/login" state={{ from: location }} replace />;
+    }
   }
 
   // Verificar permissões específicas

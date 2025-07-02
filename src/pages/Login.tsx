@@ -16,15 +16,18 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const { signIn, isAuthenticated, isGlobalAdmin } = useAuth();
+  const { signIn, isAuthenticated, isGlobalAdmin, profile } = useAuth();
   const navigate = useNavigate();
 
   // Redirecionar usuários já autenticados
   useEffect(() => {
-    if (isAuthenticated && isGlobalAdmin) {
-      navigate('/admin/dashboard');
+    console.log('Login useEffect - Auth state:', { isAuthenticated, isGlobalAdmin, profile });
+    
+    if (isAuthenticated && isGlobalAdmin && profile) {
+      console.log('Redirecionando admin global para dashboard');
+      navigate('/admin/dashboard', { replace: true });
     }
-  }, [isAuthenticated, isGlobalAdmin, navigate]);
+  }, [isAuthenticated, isGlobalAdmin, profile, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,17 +40,16 @@ const Login: React.FC = () => {
     setIsLoading(true);
 
     try {
+      console.log('Tentando fazer login...');
       const { error } = await signIn(email.trim(), password);
       
       if (error) {
         console.error('Erro no login:', error);
         toast.error(error);
       } else {
+        console.log('Login bem-sucedido, aguardando redirecionamento...');
         toast.success('Login realizado com sucesso!');
-        // Aguardar um pouco para o contexto ser atualizado
-        setTimeout(() => {
-          navigate('/admin/dashboard');
-        }, 1000);
+        // O redirecionamento será feito pelo useEffect quando o perfil for carregado
       }
     } catch (error) {
       console.error('Erro no login:', error);

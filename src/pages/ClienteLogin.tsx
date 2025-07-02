@@ -17,15 +17,18 @@ const ClienteLogin: React.FC = () => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const { signIn, needsPasswordChange, markFirstAccessComplete, isAuthenticated, isCompanyUser } = useAuth();
+  const { signIn, needsPasswordChange, markFirstAccessComplete, isAuthenticated, isCompanyUser, profile } = useAuth();
   const navigate = useNavigate();
 
   // Redirecionar usuários já autenticados
   useEffect(() => {
-    if (isAuthenticated && isCompanyUser) {
-      navigate('/app/dashboard');
+    console.log('ClienteLogin useEffect - Auth state:', { isAuthenticated, isCompanyUser, profile, needsPasswordChange });
+    
+    if (isAuthenticated && isCompanyUser && profile && !needsPasswordChange) {
+      console.log('Redirecionando usuário da empresa para dashboard');
+      navigate('/app/dashboard', { replace: true });
     }
-  }, [isAuthenticated, isCompanyUser, navigate]);
+  }, [isAuthenticated, isCompanyUser, profile, needsPasswordChange, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,19 +41,16 @@ const ClienteLogin: React.FC = () => {
     setIsLoading(true);
 
     try {
+      console.log('Tentando fazer login do cliente...');
       const { error } = await signIn(email.trim(), password);
       
       if (error) {
         console.error('Erro no login:', error);
         toast.error(error);
       } else {
+        console.log('Login do cliente bem-sucedido, aguardando redirecionamento...');
         toast.success('Login realizado com sucesso!');
-        // O redirecionamento será baseado no needsPasswordChange
-        if (!needsPasswordChange) {
-          setTimeout(() => {
-            navigate('/app/dashboard');
-          }, 1000);
-        }
+        // O redirecionamento será baseado no needsPasswordChange no useEffect
       }
     } catch (error) {
       console.error('Erro no login:', error);
