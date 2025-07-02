@@ -50,7 +50,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   // Carregar perfil do usuário
-  const loadUserProfile = async (userId: string) => {
+  const loadUserProfile = async (userId: string): Promise<UserProfile | null> => {
     try {
       console.log('Carregando perfil para usuário:', userId);
       
@@ -65,7 +65,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return null;
       }
 
-      console.log('Perfil carregado:', data);
+      console.log('Perfil carregado com sucesso:', data);
       return data as UserProfile;
     } catch (error) {
       console.error('Erro inesperado ao carregar perfil:', error);
@@ -76,30 +76,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Atualizar último acesso
   const updateLastAccess = async () => {
     try {
-      await supabase.rpc('update_last_access');
+      const { error } = await supabase.rpc('update_last_access');
+      if (error) {
+        console.error('Erro ao atualizar último acesso:', error);
+      }
     } catch (error) {
-      console.error('Erro ao atualizar último acesso:', error);
+      console.error('Erro inesperado ao atualizar último acesso:', error);
     }
   };
 
   // Marcar primeiro acesso como concluído
   const markFirstAccessComplete = async () => {
     try {
-      await supabase.rpc('marcar_primeiro_acesso_concluido');
-      // Recarregar perfil para atualizar estado
-      if (user) {
-        const updatedProfile = await loadUserProfile(user.id);
-        setProfile(updatedProfile);
+      const { error } = await supabase.rpc('marcar_primeiro_acesso_concluido');
+      if (error) {
+        console.error('Erro ao marcar primeiro acesso:', error);
+      } else {
+        // Recarregar perfil para atualizar estado
+        if (user) {
+          const updatedProfile = await loadUserProfile(user.id);
+          setProfile(updatedProfile);
+        }
       }
     } catch (error) {
-      console.error('Erro ao marcar primeiro acesso:', error);
+      console.error('Erro inesperado ao marcar primeiro acesso:', error);
     }
   };
 
   // Função de login
   const signIn = async (email: string, password: string) => {
     try {
-      console.log('Iniciando login para:', email);
+      console.log('🔐 Iniciando login para:', email);
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -107,7 +114,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       if (error) {
-        console.error('Erro de autenticação:', error);
+        console.error('❌ Erro de autenticação:', error);
         return { error: 'Credenciais inválidas. Verifique seu email e senha.' };
       }
 
@@ -115,12 +122,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { error: 'Erro na autenticação do usuário.' };
       }
 
-      console.log('Login bem-sucedido para:', data.user.email);
-
-      // O carregamento do perfil será feito pelo onAuthStateChange
+      console.log('✅ Login bem-sucedido para:', data.user.email);
       return { error: null };
     } catch (error) {
-      console.error('Erro inesperado no login:', error);
+      console.error('❌ Erro inesperado no login:', error);
       return { error: 'Erro interno do sistema. Tente novamente.' };
     }
   };
@@ -134,7 +139,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         toast.error('Erro ao sair do sistema');
       } else {
         toast.success('Logout realizado com sucesso');
-        // Os estados serão limpos pelo onAuthStateChange
       }
     } catch (error) {
       console.error('Erro inesperado no logout:', error);
@@ -149,21 +153,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Configurar listener de mudanças de auth
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.email);
+        console.log('🔄 Auth state changed:', event, session?.user?.email);
         
         if (!mounted) return;
 
         if (session?.user) {
-          console.log('Sessão ativa, carregando perfil...');
+          console.log('👤 Sessão ativa, carregando perfil...');
           setSession(session);
           setUser(session.user);
           
-          // Carregar perfil imediatamente sem delay
           try {
             const userProfile = await loadUserProfile(session.user.id);
             if (mounted) {
               setProfile(userProfile);
-              console.log('Perfil definido:', userProfile);
+              console.log('✅ Perfil carregado:', userProfile);
               
               // Atualizar último acesso apenas no login
               if (event === 'SIGNED_IN') {
@@ -171,14 +174,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               }
             }
           } catch (error) {
-            console.error('Erro ao carregar perfil:', error);
+            console.error('❌ Erro ao carregar perfil:', error);
           } finally {
             if (mounted) {
               setIsLoading(false);
             }
           }
         } else {
-          console.log('Sessão removida, limpando estados...');
+          console.log('🚪 Sessão removida, limpando estados...');
           setSession(null);
           setUser(null);
           setProfile(null);
@@ -191,7 +194,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!mounted) return;
 
-      console.log('Verificando sessão existente:', session?.user?.email);
+      console.log('🔍 Verificando sessão existente:', session?.user?.email);
       
       if (session?.user) {
         setSession(session);
@@ -201,10 +204,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const userProfile = await loadUserProfile(session.user.id);
           if (mounted) {
             setProfile(userProfile);
-            console.log('Perfil carregado na inicialização:', userProfile);
+            console.log('✅ Perfil carregado na inicialização:', userProfile);
           }
         } catch (error) {
-          console.error('Erro ao carregar perfil na inicialização:', error);
+          console.error('❌ Erro ao carregar perfil na inicialização:', error);
         }
       }
       
@@ -219,22 +222,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  // Verificações de papel - só calculadas quando profile existe
-  const isSuperAdmin = profile?.role === 'super_admin' && profile?.nivel_acesso === 'super_admin' && profile?.empresa_id === null;
-  const isGlobalAdmin = profile ? (profile.role === 'admin' || profile.role === 'super_admin') && profile.empresa_id === null : false;
-  const isCompanyUser = profile?.empresa_id !== null;
-  const isAuthenticated = !!user && !!profile;
-  const needsPasswordChange = profile?.primeiro_acesso_concluido === false && isCompanyUser;
+  // Verificações de papel - calculadas apenas quando profile existe e carregamento terminou
+  const isSuperAdmin = !isLoading && profile 
+    ? profile.role === 'super_admin' && profile.nivel_acesso === 'super_admin' && profile.empresa_id === null
+    : false;
+    
+  const isGlobalAdmin = !isLoading && profile 
+    ? (profile.role === 'admin' || profile.role === 'super_admin') && profile.empresa_id === null
+    : false;
+    
+  const isCompanyUser = !isLoading && profile 
+    ? profile.empresa_id !== null
+    : false;
+    
+  const isAuthenticated = !isLoading && !!user && !!profile;
+  const needsPasswordChange = !isLoading && profile?.primeiro_acesso_concluido === false && isCompanyUser;
 
-  // Log para debug
-  console.log('Auth state:', {
-    isAuthenticated,
+  // Log detalhado para debug
+  console.log('🔍 Auth Debug State:', {
     isLoading,
+    isAuthenticated,
     isSuperAdmin,
     isGlobalAdmin,
     isCompanyUser,
+    hasUser: !!user,
+    hasProfile: !!profile,
     profileRole: profile?.role,
-    profileEmpresaId: profile?.empresa_id
+    profileEmpresaId: profile?.empresa_id,
+    profileNivelAcesso: profile?.nivel_acesso
   });
 
   const value = {

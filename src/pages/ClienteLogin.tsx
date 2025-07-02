@@ -17,18 +17,25 @@ const ClienteLogin: React.FC = () => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const { signIn, needsPasswordChange, markFirstAccessComplete, isAuthenticated, isCompanyUser, profile } = useAuth();
+  const { signIn, needsPasswordChange, markFirstAccessComplete, isAuthenticated, isCompanyUser, profile, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
 
-  // Redirecionar usuários já autenticados
+  // Redirecionar usuários já autenticados quando o perfil estiver carregado
   useEffect(() => {
-    console.log('ClienteLogin useEffect - Auth state:', { isAuthenticated, isCompanyUser, profile, needsPasswordChange });
+    console.log('🔍 ClienteLogin useEffect - Auth state:', { 
+      authLoading, 
+      isAuthenticated, 
+      isCompanyUser, 
+      hasProfile: !!profile, 
+      needsPasswordChange 
+    });
     
-    if (isAuthenticated && isCompanyUser && profile && !needsPasswordChange) {
-      console.log('Redirecionando usuário da empresa para dashboard');
+    // Só redirecionar quando não estiver mais carregando e estiver autenticado
+    if (!authLoading && isAuthenticated && isCompanyUser && profile && !needsPasswordChange) {
+      console.log('✅ Redirecionando usuário da empresa para dashboard');
       navigate('/app/dashboard', { replace: true });
     }
-  }, [isAuthenticated, isCompanyUser, profile, needsPasswordChange, navigate]);
+  }, [authLoading, isAuthenticated, isCompanyUser, profile, needsPasswordChange, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,19 +48,19 @@ const ClienteLogin: React.FC = () => {
     setIsLoading(true);
 
     try {
-      console.log('Tentando fazer login do cliente...');
+      console.log('🔐 Tentando fazer login do cliente...');
       const { error } = await signIn(email.trim(), password);
       
       if (error) {
-        console.error('Erro no login:', error);
+        console.error('❌ Erro no login:', error);
         toast.error(error);
       } else {
-        console.log('Login do cliente bem-sucedido, aguardando redirecionamento...');
+        console.log('✅ Login do cliente bem-sucedido, aguardando carregamento do perfil...');
         toast.success('Login realizado com sucesso!');
         // O redirecionamento será baseado no needsPasswordChange no useEffect
       }
     } catch (error) {
-      console.error('Erro no login:', error);
+      console.error('❌ Erro no login:', error);
       toast.error('Erro interno do sistema. Tente novamente.');
     } finally {
       setIsLoading(false);
@@ -70,7 +77,7 @@ const ClienteLogin: React.FC = () => {
     return <ForgotPasswordForm onBack={() => setShowForgotPassword(false)} />;
   }
 
-  if (needsPasswordChange) {
+  if (!authLoading && needsPasswordChange) {
     return <FirstAccessPasswordChange onSuccess={handlePasswordChangeSuccess} />;
   }
 
@@ -109,7 +116,7 @@ const ClienteLogin: React.FC = () => {
                     onChange={(e) => setEmail(e.target.value)}
                     required
                     className="h-11 pl-10"
-                    disabled={isLoading}
+                    disabled={isLoading || authLoading}
                     autoComplete="email"
                   />
                 </div>
@@ -129,7 +136,7 @@ const ClienteLogin: React.FC = () => {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     className="h-11 pl-10"
-                    disabled={isLoading}
+                    disabled={isLoading || authLoading}
                     autoComplete="current-password"
                   />
                 </div>
@@ -141,7 +148,7 @@ const ClienteLogin: React.FC = () => {
                   variant="ghost"
                   className="text-sm text-primary hover:text-primary-hover"
                   onClick={() => setShowForgotPassword(true)}
-                  disabled={isLoading}
+                  disabled={isLoading || authLoading}
                 >
                   Esqueci minha senha
                 </Button>
@@ -150,12 +157,17 @@ const ClienteLogin: React.FC = () => {
               <Button 
                 type="submit" 
                 className="w-full h-11 bg-primary hover:bg-primary-hover text-white font-medium"
-                disabled={isLoading}
+                disabled={isLoading || authLoading}
               >
                 {isLoading ? (
                   <div className="flex items-center gap-2">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                     Entrando...
+                  </div>
+                ) : authLoading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Carregando...
                   </div>
                 ) : (
                   'Entrar no Sistema'
@@ -172,6 +184,7 @@ const ClienteLogin: React.FC = () => {
                   variant="link"
                   className="text-sm text-primary hover:text-primary-hover underline p-0"
                   onClick={() => navigate(getAdminLoginUrl())}
+                  disabled={authLoading}
                 >
                   Acessar como administrador
                 </Button>
