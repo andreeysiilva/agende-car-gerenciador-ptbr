@@ -74,7 +74,7 @@ export const vincularUsuarioTabela = async (
   try {
     console.log('Vinculando usuário na tabela usuarios...');
 
-    // Criar/atualizar registro na tabela usuarios
+    // Criar/atualizar registro na tabela usuarios como admin da empresa
     const { error: upsertError } = await supabase
       .from('usuarios')
       .upsert({
@@ -83,6 +83,7 @@ export const vincularUsuarioTabela = async (
         empresa_id: empresaId,
         auth_user_id: authUserId,
         role: 'admin',
+        role_empresa: 'admin_empresa', // Definir como admin da empresa
         nivel_acesso: 'admin',
         ativo: true,
         primeiro_acesso_concluido: false
@@ -103,10 +104,7 @@ export const vincularUsuarioTabela = async (
 
 export const limparUsuarioAuth = async (authUserId: string): Promise<void> => {
   try {
-    console.log('Limpando usuário do Supabase Auth devido a erro...');
-    // Note: A API pública do Supabase não permite deletar usuários diretamente
-    // Isso precisaria ser feito via API Admin ou Edge Function
-    console.warn('Limpeza de usuário Auth não implementada - requer API Admin');
+    console.log('Limpeza de usuário Auth não implementada - requer API Admin');
   } catch (error) {
     console.error('Erro ao limpar usuário Auth:', error);
   }

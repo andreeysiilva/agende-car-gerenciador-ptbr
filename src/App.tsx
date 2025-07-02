@@ -1,4 +1,3 @@
-
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/sonner';
@@ -32,6 +31,7 @@ import ClienteFinanceiro from '@/pages/ClienteFinanceiro';
 import ClienteEstatisticas from '@/pages/ClienteEstatisticas';
 import ClienteConta from '@/pages/ClienteConta';
 import ClienteLogin from '@/pages/ClienteLogin';
+import ClienteUsuarios from '@/pages/ClienteUsuarios';
 
 const queryClient = new QueryClient();
 
@@ -48,6 +48,7 @@ function App() {
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/unauthorized" element={<Unauthorized />} />
             <Route path="/cliente/login" element={<ClienteLogin />} />
+            <Route path="/cliente/usuarios" element={<ClienteUsuarios />} />
 
             {/* Rotas administrativas com sidebar */}
             <Route path="/admin/*" element={

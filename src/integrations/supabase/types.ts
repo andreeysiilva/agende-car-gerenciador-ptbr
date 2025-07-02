@@ -448,6 +448,7 @@ export type Database = {
           nome: string
           primeiro_acesso_concluido: boolean | null
           role: string | null
+          role_empresa: Database["public"]["Enums"]["empresa_role"] | null
           ultimo_acesso: string | null
           updated_at: string | null
         }
@@ -462,6 +463,7 @@ export type Database = {
           nome: string
           primeiro_acesso_concluido?: boolean | null
           role?: string | null
+          role_empresa?: Database["public"]["Enums"]["empresa_role"] | null
           ultimo_acesso?: string | null
           updated_at?: string | null
         }
@@ -476,6 +478,7 @@ export type Database = {
           nome?: string
           primeiro_acesso_concluido?: boolean | null
           role?: string | null
+          role_empresa?: Database["public"]["Enums"]["empresa_role"] | null
           ultimo_acesso?: string | null
           updated_at?: string | null
         }
@@ -494,6 +497,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_manage_empresa_users: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       criar_usuario_empresa: {
         Args: {
           p_email: string
@@ -506,6 +513,10 @@ export type Database = {
       get_current_empresa_id: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      is_empresa_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
       }
       is_global_admin: {
         Args: Record<PropertyKey, never>
@@ -529,7 +540,12 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      empresa_role:
+        | "admin_empresa"
+        | "gerente"
+        | "funcionario"
+        | "atendente"
+        | "visualizador"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -644,6 +660,14 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      empresa_role: [
+        "admin_empresa",
+        "gerente",
+        "funcionario",
+        "atendente",
+        "visualizador",
+      ],
+    },
   },
 } as const
