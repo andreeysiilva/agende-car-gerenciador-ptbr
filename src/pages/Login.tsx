@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -6,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Car, Lock, Mail, CheckCircle2 } from 'lucide-react';
+import { Car, Lock, Mail, CheckCircle2, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import ForgotPasswordForm from '@/components/auth/ForgotPasswordForm';
 import { getClientLoginUrl } from '@/utils/linkUtils';
@@ -16,7 +15,7 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const { signIn, isAuthenticated, isGlobalAdmin, profile, isLoading: authLoading } = useAuth();
+  const { signIn, isAuthenticated, isGlobalAdmin, profile, isLoading: authLoading, forceReloadProfile } = useAuth();
   const navigate = useNavigate();
 
   // Redirecionar usuários já autenticados
@@ -32,6 +31,7 @@ const Login: React.FC = () => {
     
     if (!authLoading && isAuthenticated && isGlobalAdmin && profile) {
       console.log('✅ Redirecionando admin global para dashboard');
+      toast.success('Bem-vindo ao sistema!');
       navigate('/admin/dashboard', { replace: true });
     }
   }, [authLoading, isAuthenticated, isGlobalAdmin, profile, navigate]);
@@ -65,6 +65,17 @@ const Login: React.FC = () => {
     }
   };
 
+  const handleForceReload = async () => {
+    try {
+      toast.info('Recarregando perfil...');
+      await forceReloadProfile();
+      toast.success('Perfil recarregado!');
+    } catch (error) {
+      console.error('Erro ao recarregar perfil:', error);
+      toast.error('Erro ao recarregar perfil');
+    }
+  };
+
   if (showForgotPassword) {
     return <ForgotPasswordForm onBack={() => setShowForgotPassword(false)} />;
   }
@@ -93,15 +104,29 @@ const Login: React.FC = () => {
               <span>Sistema pronto</span>
             </div>
             
-            {/* Debug Info apenas quando necessário */}
-            {authLoading && (
+            {/* Debug Info e controles */}
+            {(authLoading || isAuthenticated) && (
               <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded text-xs text-left">
-                <p className="font-semibold text-blue-700 mb-2">Carregando sistema...</p>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="font-semibold text-blue-700">
+                    {authLoading ? 'Carregando sistema...' : 'Sistema carregado'}
+                  </p>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleForceReload}
+                    className="h-6 w-6 p-0 text-blue-600 hover:text-blue-800"
+                  >
+                    <RefreshCw className="h-3 w-3" />
+                  </Button>
+                </div>
                 <div className="space-y-1 text-blue-600">
-                  <p>• Auth Loading: {authLoading ? '✓' : '✗'}</p>
-                  <p>• Usuário Autenticado: {isAuthenticated ? '✓' : '✗'}</p>
-                  <p>• Perfil Carregado: {!!profile ? '✓' : '✗'}</p>
+                  <p>• Auth Loading: {authLoading ? '🔄' : '✅'}</p>
+                  <p>• Usuário Autenticado: {isAuthenticated ? '✅' : '❌'}</p>
+                  <p>• Perfil Carregado: {!!profile ? '✅' : '❌'}</p>
                   {profile && <p>• Papel: {profile.role}</p>}
+                  {profile && <p>• Email: {profile.email}</p>}
                 </div>
               </div>
             )}
