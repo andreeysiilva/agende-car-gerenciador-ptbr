@@ -2,17 +2,22 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/sonner';
-import { AuthProvider } from '@/contexts/AuthContext';
-import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { AdminAuthProvider } from '@/contexts/AdminAuthContext';
+import { CompanyAuthProvider } from '@/contexts/CompanyAuthContext';
+import { AdminProtectedRoute } from '@/components/auth/AdminProtectedRoute';
+import { CompanyProtectedRoute } from '@/components/auth/CompanyProtectedRoute';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/layout/AppSidebar';
 
 // Páginas públicas
 import Index from '@/pages/Index';
 import NotFound from '@/pages/NotFound';
-import Login from '@/pages/Login';
 import Unauthorized from '@/pages/Unauthorized';
 import ResetPassword from '@/pages/ResetPassword';
+
+// Páginas de login específicas
+import AdminLogin from '@/pages/AdminLogin';
+import CompanyLogin from '@/pages/CompanyLogin';
 
 // Páginas administrativas (rotas /admin/*)
 import Dashboard from '@/pages/Dashboard';
@@ -37,19 +42,29 @@ const queryClient = new QueryClient();
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <Router>
-          <Routes>
-            {/* Rotas públicas */}
-            <Route path="/" element={<Index />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/unauthorized" element={<Unauthorized />} />
-            <Route path="/cliente/usuarios" element={<ClienteUsuarios />} />
+      <Router>
+        <Routes>
+          {/* Rotas públicas */}
+          <Route path="/" element={<Index />} />
+          <Route path="/unauthorized" element={<Unauthorized />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
 
-            {/* Rotas administrativas com sidebar */}
-            <Route path="/admin/*" element={
-              <ProtectedRoute requireSuperAdmin>
+          {/* Rotas de login específicas */}
+          <Route path="/admin/login" element={
+            <AdminAuthProvider>
+              <AdminLogin />
+            </AdminAuthProvider>
+          } />
+          <Route path="/app/login" element={
+            <CompanyAuthProvider>
+              <CompanyLogin />
+            </CompanyAuthProvider>
+          } />
+
+          {/* Rotas administrativas com sidebar */}
+          <Route path="/admin/*" element={
+            <AdminAuthProvider>
+              <AdminProtectedRoute>
                 <SidebarProvider>
                   <div className="flex min-h-screen">
                     <AppSidebar />
@@ -65,12 +80,14 @@ function App() {
                     </main>
                   </div>
                 </SidebarProvider>
-              </ProtectedRoute>
-            } />
+              </AdminProtectedRoute>
+            </AdminAuthProvider>
+          } />
 
-            {/* Rotas da empresa com sidebar */}
-            <Route path="/app/*" element={
-              <ProtectedRoute requireCompanyAccess>
+          {/* Rotas da empresa com sidebar */}
+          <Route path="/app/*" element={
+            <CompanyAuthProvider>
+              <CompanyProtectedRoute>
                 <SidebarProvider>
                   <div className="flex min-h-screen">
                     <AppSidebar />
@@ -87,15 +104,15 @@ function App() {
                     </main>
                   </div>
                 </SidebarProvider>
-              </ProtectedRoute>
-            } />
+              </CompanyProtectedRoute>
+            </CompanyAuthProvider>
+          } />
 
-            {/* 404 */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-          <Toaster />
-        </Router>
-      </AuthProvider>
+          {/* 404 */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+        <Toaster />
+      </Router>
     </QueryClientProvider>
   );
 }
