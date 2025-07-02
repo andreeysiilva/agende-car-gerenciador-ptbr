@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 // Tipos simplificados
 interface UserProfile {
   id: string;
+  auth_user_id: string;
   nome: string;
   email: string;
   role: 'super_admin' | 'admin' | 'funcionario' | 'moderador' | 'suporte';
@@ -227,35 +228,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Configurar listener de mudanças de auth
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('🔄 Auth state changed:', event, session?.user?.email || 'N/A');
-        
         if (!mounted) return;
 
         setSession(session);
+        setIsLoading(false);
         
         if (session?.user) {
           setUser(session.user);
           
-          // Carregar perfil apenas quando necessário
-          if (event === 'SIGNED_IN') {
-            console.log('📝 Carregando perfil após login...');
+          // Carregar perfil apenas se não temos ou se mudou de usuário
+          if (!profile || (profile && profile.auth_user_id !== session.user.id)) {
             const userProfile = await loadUserProfile(session.user.id);
             if (mounted) {
               setProfile(userProfile);
               
-              // Atualizar último acesso apenas no login
-              if (userProfile) {
-                setTimeout(() => updateLastAccess(), 1000);
+              // Atualizar último acesso apenas no login inicial
+              if (event === 'SIGNED_IN' && userProfile) {
+                setTimeout(() => updateLastAccess(), 100);
               }
             }
           }
-          
-          setIsLoading(false);
         } else {
-          console.log('🚪 Usuário desconectado');
           setUser(null);
           setProfile(null);
-          setIsLoading(false);
+          setSelectedEmpresaId(null);
+          setAvailableEmpresas([]);
         }
       }
     );
@@ -263,15 +260,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Verificar sessão existente
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!mounted) return;
-
-      console.log('🔍 Verificando sessão existente:', session?.user?.email || 'Nenhuma');
       
       setSession(session);
       
       if (session?.user) {
         setUser(session.user);
-        
-        console.log('📋 Carregando perfil da sessão existente...');
         const userProfile = await loadUserProfile(session.user.id);
         if (mounted) {
           setProfile(userProfile);
@@ -287,19 +280,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       mounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [profile]);
 
-  // Verificações de papel
-  const isSuperAdmin = profile 
-    ? profile.role === 'super_admin' && profile.nivel_acesso === 'super_admin'
-    : false;
-    
-  const isCompanyUser = profile 
-    ? profile.empresa_id !== null || isSuperAdmin
-    : false;
-    
+  // Verificações de papel (memoizadas para performance)
+  const isSuperAdmin = profile?.role === 'super_admin' && profile?.nivel_acesso === 'super_admin';
+  const isCompanyUser = profile ? (profile.empresa_id !== null || isSuperAdmin) : false;
   const isAuthenticated = !!user && !!profile;
-  const needsPasswordChange = profile?.primeiro_acesso_concluido === false && isCompanyUser;
+  const needsPasswordChange = profile?.primeiro_acesso_concluido === false && isAuthenticated;
 
   // Carregar dados específicos para super admin
   useEffect(() => {
