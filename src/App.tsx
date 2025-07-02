@@ -10,7 +10,6 @@ import { AppSidebar } from '@/components/layout/AppSidebar';
 // Páginas públicas
 import Index from '@/pages/Index';
 import NotFound from '@/pages/NotFound';
-import Auth from '@/pages/Auth';
 import Login from '@/pages/Login';
 import Unauthorized from '@/pages/Unauthorized';
 import ResetPassword from '@/pages/ResetPassword';
@@ -31,7 +30,6 @@ import ClienteServicos from '@/pages/ClienteServicos';
 import ClienteFinanceiro from '@/pages/ClienteFinanceiro';
 import ClienteEstatisticas from '@/pages/ClienteEstatisticas';
 import ClienteConta from '@/pages/ClienteConta';
-import ClienteLogin from '@/pages/ClienteLogin';
 import ClienteUsuarios from '@/pages/ClienteUsuarios';
 
 const queryClient = new QueryClient();
@@ -44,11 +42,9 @@ function App() {
           <Routes>
             {/* Rotas públicas */}
             <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
             <Route path="/login" element={<Login />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/unauthorized" element={<Unauthorized />} />
-            <Route path="/cliente/login" element={<ClienteLogin />} />
             <Route path="/cliente/usuarios" element={<ClienteUsuarios />} />
 
             {/* Rotas administrativas com sidebar */}
