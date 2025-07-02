@@ -537,6 +537,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      check_is_super_admin_robust: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       criar_usuario_empresa: {
         Args: {
           p_email: string
@@ -545,6 +549,20 @@ export type Database = {
           p_empresa_id: string
         }
         Returns: string
+      }
+      debug_user_permissions: {
+        Args: { p_email?: string }
+        Returns: {
+          email: string
+          auth_user_id: string
+          role: string
+          nivel_acesso: string
+          empresa_id: string
+          role_empresa: string
+          ativo: boolean
+          is_super_admin: boolean
+          auth_uid_result: string
+        }[]
       }
       get_admin_selected_empresa_id: {
         Args: Record<PropertyKey, never>

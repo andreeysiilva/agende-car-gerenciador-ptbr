@@ -1,197 +1,180 @@
 
 import React, { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Plus, Building } from 'lucide-react';
+import { Empresa } from '@/types/empresa';
 import { useEmpresas } from '@/hooks/useEmpresas';
 import { useEmpresaModals } from '@/hooks/useEmpresaModals';
-import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import EmpresaForm from '@/components/forms/EmpresaForm';
-import VisualizarEmpresaModal from '@/components/empresa/VisualizarEmpresaModal';
+import EmpresaList from '@/components/empresa/EmpresaList';
 import EditarEmpresaModal from '@/components/empresa/EditarEmpresaModal';
+import VisualizarEmpresaModal from '@/components/empresa/VisualizarEmpresaModal';
 import ExcluirEmpresaDialog from '@/components/empresa/ExcluirEmpresaDialog';
 import EmpresaStatsCards from '@/components/empresa/EmpresaStatsCards';
-import EmpresaList from '@/components/empresa/EmpresaList';
-import { Empresa } from '@/types/empresa';
-
-// Mock data for planos - em produção viria do backend
-const mockPlanos = [
-  { nome: 'Básico', preco: 29.90 },
-  { nome: 'Profissional', preco: 59.90 },
-  { nome: 'Premium', preco: 99.90 },
-  { nome: 'Enterprise', preco: 199.90 }
-];
+import DebugPermissions from '@/components/admin/DebugPermissions';
+import { toast } from 'sonner';
 
 const Empresas: React.FC = () => {
-  const { 
-    empresas, 
-    isLoading, 
-    criarEmpresa, 
-    atualizarEmpresa, 
-    deletarEmpresa, 
-    buscarEmpresaPorId, 
+  const [showForm, setShowForm] = useState(false);
+  const {
+    empresas,
+    isLoading,
+    criarEmpresa,
+    atualizarEmpresa,
+    deletarEmpresa,
+    buscarEmpresaPorId,
+    renovarPlanoEmpresa,
     recarregarEmpresas,
     reenviarCredenciais
   } = useEmpresas();
-  
-  const {
-    dialogOpen,
-    empresaSelecionada,
-    visualizarModalOpen,
-    editarModalOpen,
-    excluirDialogOpen,
-    openCreateDialog,
-    closeCreateDialog,
-    openVisualizarModal,
-    closeVisualizarModal,
-    openEditarModal,
-    closeEditarModal,
-    openExcluirDialog,
-    closeExcluirDialog
-  } = useEmpresaModals();
-  
-  // Estados para loading
-  const [isCreating, setIsCreating] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [isReenviandoCredenciais, setIsReenviandoCredenciais] = useState(false);
 
-  const handleCriarEmpresa = async (dadosEmpresa: any) => {
-    setIsCreating(true);
-    try {
-      const result = await criarEmpresa(dadosEmpresa);
-      if (result) {
-        closeCreateDialog();
-        await recarregarEmpresas();
-      }
-    } catch (error) {
-      console.error('Erro ao criar empresa:', error);
-    } finally {
-      setIsCreating(false);
+  const {
+    empresaSelecionada,
+    modalVisualizarAberto,
+    modalEditarAberto,
+    modalExcluirAberto,
+    abrirModalVisualizar,
+    abrirModalEditar,
+    abrirModalExcluir,
+    fecharModalVisualizar,
+    fecharModalEditar,
+    fecharModalExcluir,
+    setEmpresaSelecionada
+  } = useEmpresaModals();
+
+  const handleCreateEmpresa = async (dadosEmpresa: any) => {
+    const result = await criarEmpresa(dadosEmpresa);
+    if (result) {
+      setShowForm(false);
+      toast.success('Empresa criada com sucesso!');
     }
   };
 
   const handleVisualizarEmpresa = async (empresaId: string) => {
     const empresa = await buscarEmpresaPorId(empresaId);
     if (empresa) {
-      openVisualizarModal(empresa);
+      setEmpresaSelecionada(empresa);
+      abrirModalVisualizar();
     }
+  };
+
+  const handleEditarEmpresa = (empresa: Empresa) => {
+    setEmpresaSelecionada(empresa);
+    abrirModalEditar();
   };
 
   const handleSalvarEdicao = async (empresaId: string, dadosAtualizados: Partial<Empresa>) => {
-    setIsEditing(true);
-    try {
-      const empresaAtualizada = await atualizarEmpresa(empresaId, dadosAtualizados);
-      if (empresaAtualizada) {
-        closeEditarModal();
-        await recarregarEmpresas();
-      }
-    } catch (error) {
-      console.error('Erro ao atualizar empresa:', error);
-    } finally {
-      setIsEditing(false);
+    const empresaAtualizada = await atualizarEmpresa(empresaId, dadosAtualizados);
+    if (empresaAtualizada) {
+      fecharModalEditar();
+      toast.success('Empresa atualizada com sucesso!');
     }
   };
 
-  const handleConfirmarExclusao = async (empresaId: string) => {
-    setIsDeleting(true);
-    try {
-      const success = await deletarEmpresa(empresaId);
-      if (success) {
-        closeExcluirDialog();
-        await recarregarEmpresas();
+  const handleExcluirEmpresa = (empresa: Empresa) => {
+    setEmpresaSelecionada(empresa);
+    abrirModalExcluir();
+  };
+
+  const handleConfirmarExclusao = async () => {
+    if (empresaSelecionada) {
+      const sucesso = await deletarEmpresa(empresaSelecionada.id);
+      if (sucesso) {
+        fecharModalExcluir();
+        toast.success('Empresa excluída com sucesso!');
       }
-    } catch (error) {
-      console.error('Erro ao deletar empresa:', error);
-    } finally {
-      setIsDeleting(false);
     }
   };
 
-  const handleReenviarCredenciais = async (empresa: Empresa) => {
-    setIsReenviandoCredenciais(true);
-    try {
-      const success = await reenviarCredenciais(empresa.id);
-      if (success) {
-        // Sucesso já é tratado no serviço com toast
-      }
-    } catch (error) {
-      console.error('Erro ao reenviar credenciais:', error);
-    } finally {
-      setIsReenviandoCredenciais(false);
+  const handleRenovarPlano = async (empresaId: string) => {
+    const sucesso = await renovarPlanoEmpresa(empresaId);
+    if (sucesso) {
+      toast.success('Plano renovado com sucesso!');
+    }
+  };
+
+  const handleReenviarCredenciais = async (empresaId: string) => {
+    const sucesso = await reenviarCredenciais(empresaId);
+    if (sucesso) {
+      toast.success('Credenciais reenviadas com sucesso!');
     }
   };
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+          <p className="text-sm text-gray-600">Carregando empresas...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Empresas</h1>
-          <p className="text-gray-600">Gerencie as empresas cadastradas no sistema</p>
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Gerenciar Empresas</h1>
+            <p className="text-gray-600 mt-1">Administre todas as empresas do sistema</p>
+          </div>
+          <Button onClick={() => setShowForm(!showForm)} className="bg-primary hover:bg-primary-hover">
+            <Plus className="h-4 w-4 mr-2" />
+            {showForm ? 'Cancelar' : 'Nova Empresa'}
+          </Button>
         </div>
-        
-        <Dialog open={dialogOpen} onOpenChange={closeCreateDialog}>
-          <DialogTrigger asChild>
-            <Button className="bg-primary hover:bg-primary-hover" onClick={openCreateDialog}>
-              <Plus className="h-4 w-4 mr-2" />
-              Nova Empresa
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Criar Nova Empresa</DialogTitle>
-            </DialogHeader>
-            <EmpresaForm
-              onSubmit={handleCriarEmpresa}
-              isLoading={isCreating}
-              planos={mockPlanos}
-            />
-          </DialogContent>
-        </Dialog>
+
+        <DebugPermissions />
+
+        <EmpresaStatsCards empresas={empresas} />
+
+        {showForm && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Nova Empresa</CardTitle>
+              <CardDescription>
+                Preencha os dados para criar uma nova empresa
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <EmpresaForm onSubmit={handleCreateEmpresa} />
+            </CardContent>
+          </Card>
+        )}
+
+        <EmpresaList
+          empresas={empresas}
+          onVisualizarEmpresa={handleVisualizarEmpresa}
+          onEditarEmpresa={handleEditarEmpresa}
+          onExcluirEmpresa={handleExcluirEmpresa}
+          onCreateEmpresa={() => setShowForm(true)}
+        />
+
+        <VisualizarEmpresaModal
+          empresa={empresaSelecionada}
+          isOpen={modalVisualizarAberto}
+          onClose={fecharModalVisualizar}
+          onRenovarPlano={handleRenovarPlano}
+          onReenviarCredenciais={handleReenviarCredenciais}
+        />
+
+        <EditarEmpresaModal
+          empresa={empresaSelecionada}
+          isOpen={modalEditarAberto}
+          onClose={fecharModalEditar}
+          onSave={handleSalvarEdicao}
+          isLoading={false}
+        />
+
+        <ExcluirEmpresaDialog
+          empresa={empresaSelecionada}
+          isOpen={modalExcluirAberto}
+          onClose={fecharModalExcluir}
+          onConfirm={handleConfirmarExclusao}
+        />
       </div>
-
-      <EmpresaStatsCards empresas={empresas} />
-
-      <EmpresaList
-        empresas={empresas}
-        onVisualizarEmpresa={handleVisualizarEmpresa}
-        onEditarEmpresa={openEditarModal}
-        onExcluirEmpresa={openExcluirDialog}
-        onCreateEmpresa={openCreateDialog}
-      />
-
-      <VisualizarEmpresaModal
-        empresa={empresaSelecionada}
-        isOpen={visualizarModalOpen}
-        onClose={closeVisualizarModal}
-        onEdit={openEditarModal}
-        onDelete={openExcluirDialog}
-        onReenviarCredenciais={handleReenviarCredenciais}
-        isReenviandoCredenciais={isReenviandoCredenciais}
-      />
-
-      <EditarEmpresaModal
-        empresa={empresaSelecionada}
-        isOpen={editarModalOpen}
-        onClose={closeEditarModal}
-        onSave={handleSalvarEdicao}
-        isLoading={isEditing}
-      />
-
-      <ExcluirEmpresaDialog
-        empresa={empresaSelecionada}
-        isOpen={excluirDialogOpen}
-        onClose={closeExcluirDialog}
-        onConfirm={handleConfirmarExclusao}
-        isLoading={isDeleting}
-      />
     </div>
   );
 };

@@ -52,6 +52,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [selectedEmpresaId, setSelectedEmpresaId] = useState<string | null>(null);
   const [availableEmpresas, setAvailableEmpresas] = useState<any[]>([]);
 
+  // Função para verificar permissões robustamente
+  const checkUserPermissions = async (userId: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase.rpc('debug_user_permissions', {
+        p_email: null
+      });
+
+      if (error) {
+        console.error('Erro ao verificar permissões:', error);
+        return false;
+      }
+
+      console.log('🔍 Debug permissões:', data);
+      return data?.[0]?.is_super_admin || false;
+    } catch (error) {
+      console.error('Erro inesperado ao verificar permissões:', error);
+      return false;
+    }
+  };
+
   // Carregar perfil do usuário
   const loadUserProfile = async (userId: string): Promise<UserProfile | null> => {
     try {
@@ -64,6 +84,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error) {
         console.error('❌ Erro ao carregar perfil:', error);
         return null;
+      }
+
+      // Verificar permissões após carregar perfil
+      if (data.role === 'super_admin') {
+        await checkUserPermissions(userId);
       }
 
       return data as UserProfile;
@@ -221,22 +246,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       async (event, session) => {
         if (!mounted) return;
 
+        console.log('🔄 Auth state change:', event, session?.user?.email);
         setSession(session);
-        setIsLoading(false);
         
         if (session?.user) {
           setUser(session.user);
           
-          // Carregar perfil apenas se não temos ou se mudou de usuário
-          if (!profile || (profile && profile.auth_user_id !== session.user.id)) {
-            const userProfile = await loadUserProfile(session.user.id);
-            if (mounted) {
-              setProfile(userProfile);
-              
-              // Atualizar último acesso apenas no login inicial
-              if (event === 'SIGNED_IN' && userProfile) {
-                setTimeout(() => updateLastAccess(), 100);
-              }
+          // Carregar perfil
+          const userProfile = await loadUserProfile(session.user.id);
+          if (mounted) {
+            setProfile(userProfile);
+            
+            // Atualizar último acesso apenas no login inicial
+            if (event === 'SIGNED_IN' && userProfile) {
+              setTimeout(() => updateLastAccess(), 100);
             }
           }
         } else {
@@ -244,6 +267,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setProfile(null);
           setSelectedEmpresaId(null);
           setAvailableEmpresas([]);
+        }
+        
+        if (mounted) {
+          setIsLoading(false);
         }
       }
     );
@@ -271,13 +298,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [profile]);
+  }, []);
 
-  // Verificações de papel (memoizadas para performance)
+  // Verificações de papel com logging melhorado
   const isSuperAdmin = profile?.role === 'super_admin' && profile?.nivel_acesso === 'super_admin';
   const isCompanyUser = profile ? (profile.empresa_id !== null || isSuperAdmin) : false;
   const isAuthenticated = !!user && !!profile;
   const needsPasswordChange = profile?.primeiro_acesso_concluido === false && isAuthenticated;
+
+  console.log('👤 Auth State:', {
+    email: profile?.email,
+    role: profile?.role,
+    nivel_acesso: profile?.nivel_acesso,
+    empresa_id: profile?.empresa_id,
+    isSuperAdmin,
+    isCompanyUser,
+    isAuthenticated
+  });
 
   // Carregar dados específicos para super admin
   useEffect(() => {
